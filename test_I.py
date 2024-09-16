@@ -1,8 +1,11 @@
+import os
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils.extmath import randomized_svd
 from scipy.sparse import csr_matrix
 from load_point import load_point_cloud
+from tqdm import tqdm  # 用于显示进度条
+
 def compute_covariance_matrix(points):
     mean = np.mean(points, axis=0)
     centered_points = points - mean
@@ -59,14 +62,26 @@ def compute_multiscale_features(points, scales=[10, 20, 30], w_L=1.0, w_P=1.0, w
     combined_features = np.mean(np.stack(all_features, axis=0), axis=0)
     return combined_features
 
-# 示例点集
-np.random.seed(42)
-# points = np.random.rand(100, 3) * 10
-file_path = '/home/zwj/data/work/datas/LabelledPC/1_avec_feuilles_Ref.txt'
-points = load_point_cloud(file_path)
+def process_files(input_folder, output_folder, scales=[10, 20, 30], w_L=1.0, w_P=1.0, w_S=1.0):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-# 计算特征
-features = compute_multiscale_features(points, scales=[10, 20, 30], w_L=1.0, w_P=1.0, w_S=1.0)
+    # 获取输入文件夹中所有的文件名
+    file_names = [f for f in os.listdir(input_folder) if os.path.isfile(os.path.join(input_folder, f))]
 
-print(f"特征形状: {features.shape}")
-print(f"示例特征: {features[:5,3]}")
+    for file_name in tqdm(file_names, desc="Processing files"):
+        file_path = os.path.join(input_folder, file_name)
+        points = load_point_cloud(file_path)
+        
+        # 计算特征
+        features = compute_multiscale_features(points, scales=scales, w_L=w_L, w_P=w_P, w_S=w_S)
+        
+        # 保存特征到新文件
+        output_file_path = os.path.join(output_folder, file_name.replace('.txt', '_features.txt'))
+        np.savetxt(output_file_path, features, delimiter=',')
+
+# 使用示例
+input_folder = '/path/to/your/input/folder'
+output_folder = '/path/to/your/output/folder'
+
+process_files(input_folder, output_folder, scales=[10, 20, 30], w_L=1.0, w_P=1.0, w_S=1.0)
