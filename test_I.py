@@ -81,7 +81,7 @@ def process_files(input_folder, output_folder, scales=[10, 20, 30], w_L=1.0, w_P
         np.savetxt(output_file_path, features, delimiter=',')
 
 # 使用示例
-input_folder = '/path/to/your/input/folder'
-output_folder = '/path/to/your/output/folder'
+input_folder = '/mnt/lpai-dione/ssai/cvg/team/didonglin/zwj/dataset/LabelledPC'
+output_folder = './Enhanced_LabelledPC'
 
 process_files(input_folder, output_folder, scales=[10, 20, 30], w_L=1.0, w_P=1.0, w_S=1.0)
