@@ -80,9 +80,11 @@ def main(args):
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
-    root = 'data/s3dis/stanford_indoor3d/'
+    root = 'data/'
 
-    TEST_DATASET_WHOLE_SCENE = LeafDatasetWholeScene(root, split='test', block_points=NUM_POINT)
+    TEST_DATASET_WHOLE_SCENE = LeafDatasetWholeScene(root=root, 
+                                                    split='test',
+                                                    block_points=NUM_POINT)
     log_string("The number of test data is: %d" % len(TEST_DATASET_WHOLE_SCENE))
 
     '''MODEL LOADING'''
