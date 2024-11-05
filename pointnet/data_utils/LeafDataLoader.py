@@ -77,7 +77,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_data, 
                                              batch_size=16, 
                                              shuffle=True, 
-                                             num_workers=4, 
+                                             num_workers=0, 
                                              pin_memory=True, 
                                              worker_init_fn=worker_init_fn)
     
