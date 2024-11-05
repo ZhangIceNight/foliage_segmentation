@@ -1,9 +1,0 @@
-{"time":"2024-11-05T19:06:40.658972108+08:00","level":"INFO","msg":"using version","core version":"0.18.5"}
-{"time":"2024-11-05T19:06:40.659007475+08:00","level":"INFO","msg":"created symlink","path":"/home/wjzhang/workspace/codes/foliage_segmentation/pointnet/wandb/run-20241105_190640-6mdvrv4i/logs/debug-core.log"}
-{"time":"2024-11-05T19:06:40.893250944+08:00","level":"INFO","msg":"created new stream","id":"6mdvrv4i"}
-{"time":"2024-11-05T19:06:40.893321102+08:00","level":"INFO","msg":"stream: started","id":"6mdvrv4i"}
-{"time":"2024-11-05T19:06:40.893388493+08:00","level":"INFO","msg":"sender: started","stream_id":"6mdvrv4i"}
-{"time":"2024-11-05T19:06:40.893350167+08:00","level":"INFO","msg":"handler: started","stream_id":{"value":"6mdvrv4i"}}
-{"time":"2024-11-05T19:06:40.893359734+08:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"6mdvrv4i"}}
-{"time":"2024-11-05T19:06:43.113801713+08:00","level":"INFO","msg":"Starting system monitor"}
-{"time":"2024-11-05T19:06:43.114333929+08:00","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
