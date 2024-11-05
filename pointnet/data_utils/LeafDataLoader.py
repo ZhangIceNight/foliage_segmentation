@@ -83,13 +83,27 @@ if __name__ == '__main__':
     
     # 测试数据加载速度
     print("\n测试数据加载速度:")
-    for idx in range(2):
-        end = time.time()
-        for i, (points, labels) in enumerate(train_loader):
-            print('批次: {}/{} - 用时: {:.4f}s'.format(
-                i+1, len(train_loader), time.time() - end))
-            print(f'点云形状: {points.shape}')
-            print(f'标签形状: {labels.shape}')
-            if i == 2:  # 只测试前3个批次
-                break
-            end = time.time() 
+    try:
+        for idx in range(2):
+            print(f"开始第 {idx+1} 轮测试...")
+            end = time.time()
+            
+            for i, data in enumerate(train_loader):
+                print(f"正在处理批次 {i+1}...")
+                try:
+                    points, labels = data
+                    print('批次: {}/{} - 用时: {:.4f}s'.format(
+                        i+1, len(train_loader), time.time() - end))
+                    print(f'点云形状: {points.shape}')
+                    print(f'标签形状: {labels.shape}')
+                    if i == 2:  # 只测试前3个批次
+                        break
+                    end = time.time()
+                except Exception as e:
+                    print(f"处理批次时出错: {str(e)}")
+                    raise e
+                
+    except Exception as e:
+        print(f"发生错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
