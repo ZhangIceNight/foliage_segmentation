@@ -4,6 +4,7 @@ import numpy as np
 import open3d as o3d
 from PIL import Image
 import argparse
+from tqdm import tqdm
 
 
 def generate_dir(path):
@@ -49,12 +50,13 @@ def cut_img(image):
 
 
 # Camera Rotation
-def camera_rotation(path, out_path, file_name):
-    only_file_name = file_name.split(".ply")[0]
-    # read pc
-    pcd = o3d.io.read_point_cloud(path)
+def camera_rotation(points, labels, out_path, file_name):
+    """修改后的camera_rotation函数,处理npy格式数据"""
+    # 创建点云对象
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(points)
 
-    # create o3d.visualization.Visualizer()
+    # 创建可视化窗口
     vis = o3d.visualization.Visualizer()
     vis.create_window(visible=False)
     vis.add_geometry(pcd)
@@ -74,9 +76,9 @@ def camera_rotation(path, out_path, file_name):
             ctrl.rotate(12 * interval / math.sqrt(2), 12 * interval / math.sqrt(2))
         elif 90 <= tmp < 120:
             ctrl.rotate(12 * interval / math.sqrt(2), -12 * interval / math.sqrt(2))
-        # save image and number in use_number
+
         if tmp in use_number:
-            save_path = out_path + '/' + only_file_name + "_" + str(tmp) + '.png'
+            save_path = os.path.join(out_path, f"{file_name}_{tmp}.png")
             if os.path.exists(save_path):
                 continue
             vis.poll_events()
@@ -93,18 +95,21 @@ def camera_rotation(path, out_path, file_name):
 
 
 def projection(path, out_path):
-    # find all the objects 
-    objs = os.walk(path)
-    for path, dir_list, file_list in objs:
-        for dir in dir_list:
-            save_object_path = os.path.join(out_path, dir)
-            generate_dir(save_object_path)
-
-            object_path = os.path.join(path, dir)
-            files = os.listdir(object_path)
-            for f in files:
-                file_object_path = os.path.join(object_path, f)
-                camera_rotation(file_object_path, save_object_path, f)
+    """修改后的projection函数,处理npy文件"""
+    files = [f for f in os.listdir(path) if f.endswith('.npy')]
+    print(f"找到 {len(files)} 个npy文件")
+    
+    for file in tqdm(files, desc="处理进度"):
+        # 读取npy文件
+        data = np.load(os.path.join(path, file))
+        points = data[:, :3]
+        labels = data[:, -1].astype(np.int32)
+        
+        # 获取文件名(不含扩展名)
+        file_name = file.split('.npy')[0]
+        
+        # 多角度投影
+        camera_rotation(points, labels, out_path, file_name)
 
 
 def main(config):
