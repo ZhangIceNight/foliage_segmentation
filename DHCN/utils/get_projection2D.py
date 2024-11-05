@@ -66,12 +66,17 @@ def camera_rotation(points, labels, out_path, file_name):
     unique_labels = np.unique(labels)
     for i, label in enumerate(unique_labels):
         mask = labels == label
-        colors[mask] = plt.cm.tab10(i)[:3]  # 使用matplotlib的颜色映射
+        colors[mask] = plt.cm.tab10(i)[:3]
     pcd.colors = o3d.utility.Vector3dVector(colors)
     
-    # 创建离屏渲染器
+    # 创建离屏渲染器和材质
     render = o3d.visualization.rendering.OffscreenRenderer(640, 480)
-    render.scene.add_geometry("cloud", pcd)
+    mat = o3d.visualization.rendering.MaterialRecord()
+    mat.shader = 'defaultUnlit'
+    mat.point_size = 2.0
+    
+    # 添加几何体
+    render.scene.add_geometry("cloud", pcd, mat)
     
     # 设置相机参数
     bounds = pcd.get_axis_aligned_bounding_box()
