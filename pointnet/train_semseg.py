@@ -111,13 +111,14 @@ def main(args):
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
+    print("model loaded")
     shutil.copy('models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
-    print("model loaded")
+    print("model copied")
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
-
+    print("model applied")
     def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv2d') != -1:
@@ -126,7 +127,7 @@ def main(args):
         elif classname.find('Linear') != -1:
             torch.nn.init.xavier_normal_(m.weight.data)
             torch.nn.init.constant_(m.bias.data, 0.0)
-
+    print("weights initialized")
     try:
         checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
         start_epoch = checkpoint['epoch']
@@ -147,11 +148,12 @@ def main(args):
         )
     else:
         optimizer = torch.optim.SGD(classifier.parameters(), lr=args.learning_rate, momentum=0.9)
+    print("optimizer created")
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
-
+    print("bn momentum adjusted")
     LEARNING_RATE_CLIP = 1e-5
     MOMENTUM_ORIGINAL = 0.1
     MOMENTUM_DECCAY = 0.5
@@ -159,6 +161,8 @@ def main(args):
 
     global_epoch = 0
     best_iou = 0
+    print("global epoch initialized")
+    print("best iou initialized")
 
     # 初始化wandb
     wandb.init(
@@ -173,7 +177,7 @@ def main(args):
             "optimizer": args.optimizer
         }
     )
-
+    print("wandb initialized")
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
         log_string('**** Epoch %d (%d/%s) ****' % (global_epoch + 1, epoch + 1, args.epoch))
