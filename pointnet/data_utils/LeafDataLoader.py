@@ -25,7 +25,8 @@ class LeafDatasetWholeScene(Dataset):
         
         # 加载所有场景数据
         for file in self.file_list:
-            data = np.loadtxt(os.path.join(root, file))
+            # 使用空格分隔符读取数据
+            data = np.loadtxt(os.path.join(root, file), delimiter=' ')
             points = data[:, :3]  # XYZ
             labels = data[:, -1]  # 标签
             
