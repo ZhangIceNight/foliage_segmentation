@@ -112,8 +112,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_dir', type=str, required=True, help='输入npy文件目录')
-    parser.add_argument('--output_dir', type=str, required=True, help='输出patch文件目录')
+    parser.add_argument('--input_dir', type=str, default='input', help='输入npy文件目录')
+    parser.add_argument('--output_dir', type=str, default='output', help='输出patch文件目录')
     parser.add_argument('--patch_size', type=int, default=2048, help='每个patch的点数')
     args = parser.parse_args()
     
