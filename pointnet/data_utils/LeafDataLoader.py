@@ -15,16 +15,19 @@ class LeafDatasetWholeScene(Dataset):
         self.block_points = block_points
         self.split = split
         
-        # 加载数据文件列表
-        self.file_list = [f for f in os.listdir(os.path.join(root, split)) if f.endswith('.txt')]
+        # 读取文件列表
+        list_filename = 'trainval_list.txt' if split == 'train' else 'test_list.txt'
+        with open(os.path.join(root, 'leaf_dataset', list_filename), 'r') as f:
+            self.file_list = [line.strip() for line in f.readlines()]
+            
         self.scene_points_list = []
         self.semantic_labels_list = []
         
         # 加载所有场景数据
         for file in self.file_list:
-            data = np.loadtxt(os.path.join(root, split, file))
+            data = np.loadtxt(os.path.join(root, file))
             points = data[:, :3]  # XYZ
-            labels = data[:, -1]  # 标签 (0: 非叶子, 1: 叶子)
+            labels = data[:, -1]  # 标签
             
             points = pc_normalize(points)
             self.scene_points_list.append(points)
