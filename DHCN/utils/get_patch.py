@@ -2,10 +2,10 @@ import open3d as o3d
 import numpy as np
 import os
 import argparse
+from tqdm import tqdm
 
 
 def pc_normalize(pc):
-    l = pc.shape[0]
     centroid = np.mean(pc, axis=0)
     pc = pc - centroid
     m = np.max(np.sqrt(np.sum(pc**2, axis=1)))
@@ -13,16 +13,15 @@ def pc_normalize(pc):
     return pc
 
 
-def farthest_point_sample(point, patch_size, color):
+def farthest_point_sample(point, npoint=6):
     """
     Input:
-        xyz: pointcloud data, [N, D]
-        npoint: number of samples
+        point: 点云数据, [N, D]
+        npoint: 采样点数量
     Return:
-        centroids: sampled pointcloud index, [npoint, D]
+        centroids: 采样后的点云索引
     """
     N, D = point.shape
-    npoint = 6
     if N < npoint:
         idxes = np.hstack((np.tile(np.arange(N), npoint//N), np.random.randint(N, size=npoint%N)))
         return point[idxes, :]
@@ -31,6 +30,7 @@ def farthest_point_sample(point, patch_size, color):
     centroids = np.zeros((npoint,))
     distance = np.ones((N,)) * 1e10
     farthest = np.random.randint(0, N)
+    
     for i in range(npoint):
         centroids[i] = farthest
         centroid = xyz[farthest, :]
@@ -38,49 +38,83 @@ def farthest_point_sample(point, patch_size, color):
         mask = dist < distance
         distance[mask] = dist[mask]
         farthest = np.argmax(distance, -1)
-    point = point[centroids.astype(np.int32)]
-    return point, color
+    
+    return point[centroids.astype(np.int32)]
 
 
-def knn_patch(pcd_name, patch_size=2048):
-    pcd = o3d.io.read_point_cloud(pcd_name)
-    print(pcd_name)
-    print(pcd)
-
-    # nomalize pc and set up kdtree
-    points = pc_normalize(np.array(pcd.points))
-    color = np.array(pcd.colors)
+def knn_patch(points, labels, patch_size=2048):
+    """
+    Input:
+        points: 点云坐标 [N, 3]
+        labels: 点云标签 [N]
+        patch_size: 每个patch的点数
+    Return:
+        patches: [num_patches, patch_size, 3]
+        patch_labels: [num_patches, patch_size]
+    """
+    # 归一化点云
+    points = pc_normalize(points)
+    
+    # 创建KD树
+    pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
-
-    # Build KDTrees using FLANN
     kdtree = o3d.geometry.KDTreeFlann(pcd)
+    
+    # FPS采样获取中心点
+    fps_points = farthest_point_sample(points)
+    
+    patches = []
+    patch_labels = []
+    
+    for center in fps_points:
+        # 获取K近邻点
+        [_, idx, _] = kdtree.search_knn_vector_3d(center, patch_size)
+        patches.append(points[idx])
+        patch_labels.append(labels[idx])
+        
+    return np.array(patches), np.array(patch_labels)
 
-    fps_point, color = farthest_point_sample(points, patch_size, color)
-    point_size = fps_point.shape[0]
 
-    patch_list = []
-    for i in range(point_size):
-        # the k nearest neighbors of the anchor
-        [_, idx, dis] = kdtree.search_knn_vector_3d(fps_point[i], patch_size)
-        patch_list.append(np.asarray(points)[idx[:], :])
-    return np.array(patch_list)
+def process_file(input_file, output_file, patch_size=2048):
+    """处理单个文件"""
+    # 读取npy文件
+    data = np.load(input_file)
+    points = data[:, :3]
+    labels = data[:, -1].astype(np.int32)
+    
+    # 获取patches
+    patches, patch_labels = knn_patch(points, labels, patch_size)
+    
+    # 合并坐标和标签
+    output_data = []
+    for patch, patch_label in zip(patches, patch_labels):
+        combined = np.column_stack((patch, patch_label))
+        output_data.append(combined)
+    
+    # 保存结果
+    np.save(output_file, np.array(output_data))
 
 
-def main(config):
-    objs = os.walk(config.path)
-    for path, dir_list, file_list in objs:
-        for obj in file_list:
-            pcd_name = os.path.join(path, obj)
-            npy_name = os.path.join(config.out_path, obj.split('.ply')[0] + '.npy')
-            patch = knn_patch(pcd_name)
-            np.save(npy_name, patch)
+def main(args):
+    # 创建输出目录
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    # 获取所有npy文件
+    files = [f for f in os.listdir(args.input_dir) if f.endswith('.npy')]
+    print(f"找到 {len(files)} 个npy文件")
+    
+    # 处理所有文件
+    for file in tqdm(files, desc="处理进度"):
+        input_path = os.path.join(args.input_dir, file)
+        output_path = os.path.join(args.output_dir, f"patch_{file}")
+        process_file(input_path, output_path, args.patch_size)
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default='input')
-    parser.add_argument('--out_path', type=str, default='output')
-    config = parser.parse_args()
-
-    main(config)
+    parser.add_argument('--input_dir', type=str, required=True, help='输入npy文件目录')
+    parser.add_argument('--output_dir', type=str, required=True, help='输出patch文件目录')
+    parser.add_argument('--patch_size', type=int, default=2048, help='每个patch的点数')
+    args = parser.parse_args()
+    
+    main(args)
