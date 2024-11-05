@@ -2,6 +2,7 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import torch  
 
 def pc_normalize(pc):
     centroid = np.mean(pc, axis=0)
