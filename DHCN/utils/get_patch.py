@@ -44,6 +44,8 @@ def farthest_point_sample(point, patch_size, color):
 
 def knn_patch(pcd_name, patch_size=2048):
     pcd = o3d.io.read_point_cloud(pcd_name)
+    print(pcd_name)
+    print(pcd)
 
     # nomalize pc and set up kdtree
     points = pc_normalize(np.array(pcd.points))
