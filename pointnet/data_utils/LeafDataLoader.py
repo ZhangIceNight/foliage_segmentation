@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 def pc_normalize(pc):
     centroid = np.mean(pc, axis=0)
@@ -20,31 +21,30 @@ class LeafDatasetWholeScene(Dataset):
         with open(os.path.join(root, list_filename), 'r') as f:
             self.file_list = [line.strip() for line in f.readlines()]
         
-        # 加载所有场景数据
-        for file in self.file_list:
-            # 使用npy格式加载数据
-            data = np.load(os.path.join(root, file))
-            points = data[:, :3]  # XYZ 
-            labels = data[:, -1]  # 标签
-            points = pc_normalize(points)
-            self.scene_points_list.append(points)
-            self.semantic_labels_list.append(labels)
+        print(f"Loading {split} data...")
 
     def __len__(self):
-        return len(self.scene_points_list)
+        return len(self.file_list)
 
     def __getitem__(self, index):
-        points = self.scene_points_list[index]
-        labels = self.semantic_labels_list[index]
+        # 按需加载数据
+        data = np.load(os.path.join(self.root, self.file_list[index]))
+        points = data[:, :3]  # XYZ坐标
+        labels = data[:, -1].astype(np.int32)  # 标签
         
-        # 采样点云块
-        point_idxs = np.arange(points.shape[0])
-        np.random.shuffle(point_idxs)
+        # 归一化点云
+        points = pc_normalize(points)
         
-        block_points = points[point_idxs[:self.block_points]]
-        block_labels = labels[point_idxs[:self.block_points]]
+        # 采样处理
+        if points.shape[0] > self.block_points:
+            point_idxs = np.random.choice(points.shape[0], self.block_points, replace=False)
+        else:
+            point_idxs = np.random.choice(points.shape[0], self.block_points, replace=True)
         
-        return block_points, block_labels, point_idxs[:self.block_points] 
+        points = points[point_idxs]
+        labels = labels[point_idxs]
+        
+        return torch.FloatTensor(points), torch.LongTensor(labels)
 
 if __name__ == '__main__':
     # 测试数据路径
@@ -84,12 +84,11 @@ if __name__ == '__main__':
     print("\n测试数据加载速度:")
     for idx in range(2):
         end = time.time()
-        for i, (points, labels, point_idxs) in enumerate(train_loader):
+        for i, (points, labels) in enumerate(train_loader):
             print('批次: {}/{} - 用时: {:.4f}s'.format(
                 i+1, len(train_loader), time.time() - end))
             print(f'点云形状: {points.shape}')
             print(f'标签形状: {labels.shape}')
-            print(f'索引形状: {point_idxs.shape}')
             if i == 2:  # 只测试前3个批次
                 break
             end = time.time() 
