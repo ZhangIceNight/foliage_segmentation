@@ -4,7 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.S3DISDataLoader import S3DISDataset
+from data_utils.LeafDataLoader import LeafDatasetWholeScene
 import torch
 import datetime
 import logging
@@ -16,13 +16,13 @@ from tqdm import tqdm
 import provider
 import numpy as np
 import time
+import wandb
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
-           'board', 'clutter']
+classes = ['non-leaf', 'leaf']
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -88,15 +88,15 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = 'data/stanford_indoor3d/'
-    NUM_CLASSES = 13
+    root = 'data/leaf_dataset/'
+    NUM_CLASSES = 2
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
+    TRAIN_DATASET = LeafDatasetWholeScene(root, split='train', num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
     print("start loading test data ...")
-    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
+    TEST_DATASET = LeafDatasetWholeScene(root, split='test', num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
@@ -159,6 +159,20 @@ def main(args):
     global_epoch = 0
     best_iou = 0
 
+    # 初始化wandb
+    wandb.init(
+        project="pointnet-leaf-seg",
+        name=args.log_dir,
+        config={
+            "model": args.model,
+            "batch_size": args.batch_size,
+            "num_point": args.npoint,
+            "learning_rate": args.learning_rate,
+            "epochs": args.epoch,
+            "optimizer": args.optimizer
+        }
+    )
+
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
         log_string('**** Epoch %d (%d/%s) ****' % (global_epoch + 1, epoch + 1, args.epoch))
@@ -202,6 +216,13 @@ def main(args):
             loss_sum += loss
         log_string('Training mean loss: %f' % (loss_sum / num_batches))
         log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
+
+        # 记录训练指标
+        wandb.log({
+            "train/loss": loss_sum / num_batches,
+            "train/accuracy": total_correct / float(total_seen),
+            "learning_rate": lr
+        }, step=global_epoch)
 
         if epoch % 5 == 0:
             logger.info('Save model...')
@@ -272,6 +293,21 @@ def main(args):
             log_string('Eval mean loss: %f' % (loss_sum / num_batches))
             log_string('Eval accuracy: %f' % (total_correct / float(total_seen)))
 
+            # 记录验证指标
+            wandb.log({
+                "val/loss": loss_sum / num_batches,
+                "val/accuracy": total_correct / float(total_seen),
+                "val/mean_iou": mIoU,
+                "val/class_avg_iou": avg_class_iou,
+                "val/class_avg_acc": avg_class_acc
+            }, step=global_epoch)
+
+            # 记录每个类别的IoU
+            for i, iou in enumerate(class_iou):
+                wandb.log({
+                    f"val/class_{classes[i]}_iou": iou
+                }, step=global_epoch)
+
             if mIoU >= best_iou:
                 best_iou = mIoU
                 logger.info('Save model...')
@@ -287,6 +323,8 @@ def main(args):
                 log_string('Saving model....')
             log_string('Best mIoU: %f' % best_iou)
         global_epoch += 1
+
+    wandb.finish()
 
 
 if __name__ == '__main__':

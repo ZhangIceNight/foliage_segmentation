@@ -4,7 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.S3DISDataLoader import ScannetDatasetWholeScene
+from data_utils.LeafDataLoader import LeafDatasetWholeScene
 from data_utils.indoor3d_util import g_label2color
 import torch
 import logging
@@ -14,13 +14,15 @@ import importlib
 from tqdm import tqdm
 import provider
 import numpy as np
+import wandb
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
-           'board', 'clutter']
+classes = ['non-leaf', 'leaf']
+           
+
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -36,7 +38,6 @@ def parse_args():
     parser.add_argument('--num_point', type=int, default=4096, help='point number [default: 4096]')
     parser.add_argument('--log_dir', type=str, required=True, help='experiment root')
     parser.add_argument('--visual', action='store_true', default=False, help='visualize result [default: False]')
-    parser.add_argument('--test_area', type=int, default=5, help='area for testing, option: 1-6 [default: 5]')
     parser.add_argument('--num_votes', type=int, default=3, help='aggregate segmentation scores with voting [default: 5]')
     return parser.parse_args()
 
@@ -75,13 +76,13 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 13
+    NUM_CLASSES = 2
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.num_point
 
     root = 'data/s3dis/stanford_indoor3d/'
 
-    TEST_DATASET_WHOLE_SCENE = ScannetDatasetWholeScene(root, split='test', test_area=args.test_area, block_points=NUM_POINT)
+    TEST_DATASET_WHOLE_SCENE = LeafDatasetWholeScene(root, split='test', block_points=NUM_POINT)
     log_string("The number of test data is: %d" % len(TEST_DATASET_WHOLE_SCENE))
 
     '''MODEL LOADING'''
@@ -91,6 +92,13 @@ def main(args):
     checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
     classifier.load_state_dict(checkpoint['model_state_dict'])
     classifier = classifier.eval()
+
+    # 初始化wandb
+    wandb.init(
+        project="pointnet-leaf-seg",
+        name=f"{args.log_dir}-test",
+        config=args
+    )
 
     with torch.no_grad():
         scene_id = TEST_DATASET_WHOLE_SCENE.file_list
@@ -182,20 +190,30 @@ def main(args):
                 fout.close()
                 fout_gt.close()
 
-        IoU = np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6)
-        iou_per_class_str = '------- IoU --------\n'
-        for l in range(NUM_CLASSES):
-            iou_per_class_str += 'class %s, IoU: %.3f \n' % (
-                seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])),
-                total_correct_class[l] / float(total_iou_deno_class[l]))
-        log_string(iou_per_class_str)
-        log_string('eval point avg class IoU: %f' % np.mean(IoU))
-        log_string('eval whole scene point avg class acc: %f' % (
-            np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
-        log_string('eval whole scene point accuracy: %f' % (
-                np.sum(total_correct_class) / float(np.sum(total_seen_class) + 1e-6)))
+            # 记录整体指标
+            wandb.log({
+                "test/loss": eval_loss,
+                "test/accuracy": accuracy,
+                "test/mean_iou": mIoU,
+                "test/class_avg_iou": avg_class_iou
+            })
 
-        print("Done!")
+            # 记录每个类别的指标
+            for i in range(NUM_CLASSES):
+                wandb.log({
+                    f"test/class_{classes[i]}_iou": class_iou[i],
+                    f"test/class_{classes[i]}_acc": class_acc[i]
+                })
+
+            # 如果需要可视化,保存预测结果图片
+            if args.visual:
+                for scene_idx in range(num_batches):
+                    # ... 生成可视化图片 ...
+                    wandb.log({
+                        f"visualization/scene_{scene_id[scene_idx]}": wandb.Image(visual_img)
+                    })
+
+    wandb.finish()
 
 
 if __name__ == '__main__':
