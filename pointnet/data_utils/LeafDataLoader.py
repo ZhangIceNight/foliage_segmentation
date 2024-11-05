@@ -77,7 +77,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_data, 
                                              batch_size=2, 
                                              shuffle=True,
-                                             pin_memory=True)
+                                             worker_init_fn=worker_init_fn)
     
     # 测试数据加载速度
     print("\n测试数据加载速度:")
