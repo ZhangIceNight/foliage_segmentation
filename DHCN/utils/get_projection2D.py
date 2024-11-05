@@ -6,6 +6,7 @@ from PIL import Image
 import argparse
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from get_patch import pc_normalize  # 导入pc_normalize函数
 
 # 设置离屏渲染
 os.environ["OPEN3D_CPU_RENDERING"] = "true"
