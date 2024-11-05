@@ -103,7 +103,6 @@ def main(args):
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
     testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
                                                  pin_memory=True, drop_last=True)
-    weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
@@ -205,7 +204,7 @@ def main(args):
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
             target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
+            loss = criterion(seg_pred, target, trans_feat)
             loss.backward()
             optimizer.step()
 
@@ -242,10 +241,6 @@ def main(args):
             total_correct = 0
             total_seen = 0
             loss_sum = 0
-            labelweights = np.zeros(NUM_CLASSES)
-            total_seen_class = [0 for _ in range(NUM_CLASSES)]
-            total_correct_class = [0 for _ in range(NUM_CLASSES)]
-            total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
             classifier = classifier.eval()
 
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
@@ -261,61 +256,24 @@ def main(args):
 
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat, weights)
+                loss = criterion(seg_pred, target, trans_feat)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
                 total_seen += (BATCH_SIZE * NUM_POINT)
-                tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
-                labelweights += tmp
 
-                for l in range(NUM_CLASSES):
-                    total_seen_class[l] += np.sum((batch_label == l))
-                    total_correct_class[l] += np.sum((pred_val == l) & (batch_label == l))
-                    total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
-
-            labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6))
             log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
-            log_string('eval point avg class IoU: %f' % (mIoU))
             log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
-            log_string('eval point avg class acc: %f' % (
-                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
 
-            iou_per_class_str = '------- IoU --------\n'
-            for l in range(NUM_CLASSES):
-                iou_per_class_str += 'class %s weight: %.3f, IoU: %.3f \n' % (
-                    seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])), labelweights[l - 1],
-                    total_correct_class[l] / float(total_iou_deno_class[l]))
-
-            log_string(iou_per_class_str)
-            log_string('Eval mean loss: %f' % (loss_sum / num_batches))
-            log_string('Eval accuracy: %f' % (total_correct / float(total_seen)))
-
-            # 记录验证指标
-            wandb.log({
-                "val/loss": loss_sum / num_batches,
-                "val/accuracy": total_correct / float(total_seen),
-                "val/mean_iou": mIoU,
-                "val/class_avg_iou": avg_class_iou,
-                "val/class_avg_acc": avg_class_acc
-            }, step=global_epoch)
-
-            # 记录每个类别的IoU
-            for i, iou in enumerate(class_iou):
-                wandb.log({
-                    f"val/class_{classes[i]}_iou": iou
-                }, step=global_epoch)
-
-            if mIoU >= best_iou:
-                best_iou = mIoU
+            if total_correct / float(total_seen) >= best_iou:
+                best_iou = total_correct / float(total_seen)
                 logger.info('Save model...')
                 savepath = str(checkpoints_dir) + '/best_model.pth'
                 log_string('Saving at %s' % savepath)
                 state = {
                     'epoch': epoch,
-                    'class_avg_iou': mIoU,
+                    'class_avg_iou': best_iou,
                     'model_state_dict': classifier.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }

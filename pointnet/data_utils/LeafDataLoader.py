@@ -44,7 +44,52 @@ class LeafDatasetWholeScene(Dataset):
         block_points = points[point_idxs[:self.block_points]]
         block_labels = labels[point_idxs[:self.block_points]]
         
-        # 计算采样权重
-        sample_weight = np.ones(shape=(self.block_points,))
-        
-        return block_points, block_labels, sample_weight, point_idxs[:self.block_points] 
+        return block_points, block_labels, point_idxs[:self.block_points] 
+
+if __name__ == '__main__':
+    # 测试数据路径
+    data_root = 'data/'
+    num_point = 4096
+    
+    # 初始化数据集
+    train_data = LeafDatasetWholeScene(root=data_root, split='train', block_points=num_point)
+    print('训练数据大小:', train_data.__len__())
+    if len(train_data) > 0:
+        print('单个点云数据形状:', train_data.__getitem__(0)[0].shape)
+        print('单个标签数据形状:', train_data.__getitem__(0)[1].shape)
+    
+    # 测试数据加载器
+    import torch
+    import time
+    import random
+    
+    # 设置随机种子
+    manual_seed = 123
+    random.seed(manual_seed)
+    np.random.seed(manual_seed)
+    torch.manual_seed(manual_seed)
+    
+    def worker_init_fn(worker_id):
+        random.seed(manual_seed + worker_id)
+    
+    # 创建数据加载器
+    train_loader = torch.utils.data.DataLoader(train_data, 
+                                             batch_size=16, 
+                                             shuffle=True, 
+                                             num_workers=4, 
+                                             pin_memory=True, 
+                                             worker_init_fn=worker_init_fn)
+    
+    # 测试数据加载速度
+    print("\n测试数据加载速度:")
+    for idx in range(2):
+        end = time.time()
+        for i, (points, labels, point_idxs) in enumerate(train_loader):
+            print('批次: {}/{} - 用时: {:.4f}s'.format(
+                i+1, len(train_loader), time.time() - end))
+            print(f'点云形状: {points.shape}')
+            print(f'标签形状: {labels.shape}')
+            print(f'索引形状: {point_idxs.shape}')
+            if i == 2:  # 只测试前3个批次
+                break
+            end = time.time() 
