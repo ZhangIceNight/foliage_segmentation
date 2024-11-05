@@ -6,8 +6,8 @@ def create_data_lists(data_dir, output_dir, train_ratio=0.8, seed=42):
     """创建训练集和测试集的文件列表"""
     random.seed(seed)
     
-    # 获取所有txt文件
-    files = [f for f in os.listdir(data_dir) if f.endswith('.txt')]
+    # 获取所有npy文件
+    files = [f for f in os.listdir(data_dir) if f.endswith('.npy')]
     random.shuffle(files)
     
     # 计算训练集大小
@@ -32,10 +32,10 @@ def create_data_lists(data_dir, output_dir, train_ratio=0.8, seed=42):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='data')
-    parser.add_argument('--output_dir', type=str, default='data/leaf_dataset')
+    parser.add_argument('--data_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy')
+    parser.add_argument('--output_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy')
     parser.add_argument('--train_ratio', type=float, default=0.8)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
     
-    create_data_lists(args.data_dir, args.output_dir, args.train_ratio, args.seed) 
+    create_data_lists(args.data_dir, args.output_dir, args.train_ratio, args.seed)

@@ -18,15 +18,15 @@ class LeafDatasetWholeScene(Dataset):
         # 读取文件列表
         list_filename = 'trainval_list.txt' if split == 'train' else 'test_list.txt'
         with open(os.path.join(root, 'leaf_dataset', list_filename), 'r') as f:
-            self.file_list = [line.strip() for line in f.readlines()]
+            self.file_list = [line.strip().replace('.txt', '.npy') for line in f.readlines()]
             
         self.scene_points_list = []
         self.semantic_labels_list = []
         
         # 加载所有场景数据
         for file in self.file_list:
-            # 使用空格分隔符读取数据
-            data = np.loadtxt(os.path.join(root, file))
+            # 使用npy格式加载数据
+            data = np.load(os.path.join(root, 'npy_data', file))
             points = data[:, :3]  # XYZ
             labels = data[:, -1]  # 标签
             
