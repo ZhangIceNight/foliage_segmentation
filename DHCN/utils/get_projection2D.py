@@ -5,7 +5,10 @@ import open3d as o3d
 from PIL import Image
 import argparse
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
+# 设置离屏渲染
+os.environ["OPEN3D_CPU_RENDERING"] = "true"
 
 def generate_dir(path):
     if not os.path.exists(path):
@@ -52,63 +55,79 @@ def cut_img(image):
 # Camera Rotation
 def camera_rotation(points, labels, out_path, file_name):
     """修改后的camera_rotation函数,处理npy格式数据"""
-    # 创建点云对象
+    # 创建点云对象并归一化
+    points = pc_normalize(points)
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
-
-    # 创建可视化窗口
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(visible=False)
-    vis.add_geometry(pcd)
-    ctrl = vis.get_view_control()
-
+    
+    # 根据标签设置颜色
+    colors = np.zeros((len(points), 3))
+    unique_labels = np.unique(labels)
+    for i, label in enumerate(unique_labels):
+        mask = labels == label
+        colors[mask] = plt.cm.tab10(i)[:3]  # 使用matplotlib的颜色映射
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    
+    # 创建离屏渲染器
+    render = o3d.visualization.rendering.OffscreenRenderer(640, 480)
+    render.scene.add_geometry("cloud", pcd)
+    
+    # 设置相机参数
+    bounds = pcd.get_axis_aligned_bounding_box()
+    center = bounds.get_center()
+    extent = bounds.get_extent()
+    eye = center + [0, 0, np.linalg.norm(extent)]
+    up = [0, 1, 0]
+    
     tmp = 0
     interval = 5.82
-
     use_number = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28]
+    
     while tmp < 60:
         tmp += 1
+        # 计算旋转矩阵
         if tmp < 30:
-            ctrl.rotate(12 * interval, 0)
+            angle_x = 12 * interval * tmp
+            angle_y = 0
         elif 30 <= tmp < 60:
-            ctrl.rotate(0, 12 * interval)
+            angle_x = 0
+            angle_y = 12 * interval * (tmp - 30)
         elif 60 <= tmp < 90:
-            ctrl.rotate(12 * interval / math.sqrt(2), 12 * interval / math.sqrt(2))
-        elif 90 <= tmp < 120:
-            ctrl.rotate(12 * interval / math.sqrt(2), -12 * interval / math.sqrt(2))
-
+            angle = 12 * interval * (tmp - 60)
+            angle_x = angle / math.sqrt(2)
+            angle_y = angle / math.sqrt(2)
+        else:
+            angle = 12 * interval * (tmp - 90)
+            angle_x = angle / math.sqrt(2)
+            angle_y = -angle / math.sqrt(2)
+            
         if tmp in use_number:
+            # 应用旋转
+            rot_mat = o3d.geometry.get_rotation_matrix_from_xyz(
+                [math.radians(angle_y), math.radians(angle_x), 0])
+            current_eye = np.dot(rot_mat, eye - center) + center
+            
+            # 设置相机
+            render.setup_camera(60.0, current_eye, center, up)
+            
+            # 渲染和保存
             save_path = os.path.join(out_path, f"{file_name}_{tmp}.png")
-            if os.path.exists(save_path):
-                continue
-            vis.poll_events()
-            vis.update_renderer()
-
-            img = vis.capture_screen_float_buffer(True)
-            img = Image.fromarray((np.asarray(img) * 255).astype(np.uint8))
-            img = cut_img(img)
-            img.save(save_path)
-
-    vis.destroy_window()
-    del ctrl
-    del vis
+            if not os.path.exists(save_path):
+                img = render.render_to_image()
+                img = cut_img(Image.fromarray(np.asarray(img)))
+                img.save(save_path)
 
 
 def projection(path, out_path):
-    """修改后的projection函数,处理npy文件"""
+    """处理npy文件并生成多视角投影"""
     files = [f for f in os.listdir(path) if f.endswith('.npy')]
     print(f"找到 {len(files)} 个npy文件")
     
     for file in tqdm(files, desc="处理进度"):
-        # 读取npy文件
         data = np.load(os.path.join(path, file))
         points = data[:, :3]
         labels = data[:, -1].astype(np.int32)
-        
-        # 获取文件名(不含扩展名)
         file_name = file.split('.npy')[0]
-        
-        # 多角度投影
         camera_rotation(points, labels, out_path, file_name)
 
 
@@ -122,9 +141,8 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
     parser.add_argument('--path', type=str, default='input')
     parser.add_argument('--out_path', type=str, default='output')
     config = parser.parse_args()
-
+    
     main(config)
