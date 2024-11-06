@@ -13,7 +13,7 @@ import sys
 import importlib
 import shutil
 from tqdm import tqdm
-import provider
+# import provider
 import numpy as np
 import time
 import wandb
@@ -200,7 +200,7 @@ def main(args):
             optimizer.zero_grad()
 
             points = points.data.numpy()
-            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+            # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
