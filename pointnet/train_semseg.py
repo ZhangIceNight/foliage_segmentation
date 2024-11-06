@@ -116,7 +116,7 @@ def main(args):
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
     print("model copied")
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
-    criterion = MODEL.get_loss(weight=None).cuda()
+    criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
     print("model applied")
     def weights_init(m):

@@ -37,8 +37,8 @@ class get_loss(torch.nn.Module):
     def __init__(self):
         super(get_loss, self).__init__()
 
-    def forward(self, pred, target, weight):
-        loss = F.nll_loss(pred, target, weight=weight)
+    def forward(self, pred, target):
+        loss = F.nll_loss(pred, target)
         return loss
 
 
