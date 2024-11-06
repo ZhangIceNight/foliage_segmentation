@@ -12,7 +12,7 @@ class get_model(nn.Module):
         
         self.fp3 = PointNetFeaturePropagation(1280, [256, 256])
         self.fp2 = PointNetFeaturePropagation(384, [256, 128])
-        self.fp1 = PointNetFeaturePropagation(128 + 16 + 6, [128, 128, 128])
+        self.fp1 = PointNetFeaturePropagation(131, [128, 128, 128])
         self.conv1 = nn.Conv1d(128, 128, 1)
         self.bn1 = nn.BatchNorm1d(128)
         self.drop1 = nn.Dropout(0.5)
