@@ -13,7 +13,7 @@ checkpoints/
 *.txt
 
 # 数据文件
-data/
+**/data/
 *.npy
 *.npz
 *.obj
