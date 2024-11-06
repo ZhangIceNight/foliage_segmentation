@@ -115,8 +115,8 @@ def main(args):
     shutil.copy('models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
     print("model copied")
-    classifier = MODEL.get_model(NUM_CLASSES)
-    criterion = MODEL.get_loss()
+    classifier = MODEL.get_model(NUM_CLASSES).cuda()
+    criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
     print("model applied")
     def weights_init(m):
@@ -205,12 +205,12 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred, trans_feat = classifier(points)
+            seg_pred = classifier(points)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
             target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat)
+            loss = criterion(seg_pred, target)
             loss.backward()
             optimizer.step()
 
@@ -256,13 +256,13 @@ def main(args):
                 points, target = points.float().cuda(), target.long().cuda()
                 points = points.transpose(2, 1)
 
-                seg_pred, trans_feat = classifier(points)
+                seg_pred = classifier(points)
                 pred_val = seg_pred.contiguous().cpu().data.numpy()
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat)
+                loss = criterion(seg_pred, target)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
