@@ -247,9 +247,13 @@ def main(args):
             total_correct = 0
             total_seen = 0
             loss_sum = 0
+            total_seen_class = [0 for _ in range(NUM_CLASSES)]
+            total_correct_class = [0 for _ in range(NUM_CLASSES)]
+            total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
+            
             classifier = classifier.eval()
-
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
+            
             for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
                 points = points.data.numpy()
                 points = torch.Tensor(points)
@@ -268,12 +272,42 @@ def main(args):
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
                 total_seen += (BATCH_SIZE * NUM_POINT)
+                
+                # 计算每个类别的指标
+                for l in range(NUM_CLASSES):
+                    total_seen_class[l] += np.sum((batch_label == l))
+                    total_correct_class[l] += np.sum((pred_val == l) & (batch_label == l))
+                    total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
-            log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
-            log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
+            # 计算平均指标
+            eval_loss = loss_sum / float(num_batches)
+            accuracy = total_correct / float(total_seen)
+            class_acc = np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6)
+            class_iou = np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6)
+            avg_class_iou = np.mean(class_iou)
+            
+            # 记录评估指标
+            wandb.log({
+                "eval/loss": eval_loss,
+                "eval/accuracy": accuracy,
+                "eval/mean_iou": avg_class_iou,
+                "eval/class_avg_iou": avg_class_iou
+            }, step=global_epoch)
 
-            if total_correct / float(total_seen) >= best_iou:
-                best_iou = total_correct / float(total_seen)
+            # 记录每个类别的指标
+            for i in range(NUM_CLASSES):
+                wandb.log({
+                    f"eval/class_{classes[i]}_iou": class_iou[i],
+                    f"eval/class_{classes[i]}_acc": class_acc[i]
+                }, step=global_epoch)
+
+            log_string('eval mean loss: %f' % eval_loss)
+            log_string('eval accuracy: %f' % accuracy)
+            log_string('eval avg class acc: %f' % np.mean(class_acc))
+            log_string('eval avg class IoU: %f' % avg_class_iou)
+
+            if accuracy >= best_iou:
+                best_iou = accuracy
                 logger.info('Save model...')
                 savepath = str(checkpoints_dir) + '/best_model.pth'
                 log_string('Saving at %s' % savepath)
@@ -285,7 +319,7 @@ def main(args):
                 }
                 torch.save(state, savepath)
                 log_string('Saving model....')
-            log_string('Best mIoU: %f' % best_iou)
+            log_string('Best accuracy: %f' % best_iou)
         global_epoch += 1
 
     wandb.finish()
