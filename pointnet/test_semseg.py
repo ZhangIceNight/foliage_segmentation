@@ -12,7 +12,7 @@ from pathlib import Path
 import sys
 import importlib
 from tqdm import tqdm
-import provider
+# import pointnet.data_utils.provider as provider
 import numpy as np
 import wandb
 

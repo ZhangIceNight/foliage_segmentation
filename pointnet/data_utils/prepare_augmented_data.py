@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 import argparse
-import provider
+import pointnet.data_utils.provider as provider
 
 def augment_point_cloud(points, labels):
     """对单个点云进行增强"""
