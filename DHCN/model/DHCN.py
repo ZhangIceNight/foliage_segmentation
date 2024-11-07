@@ -278,6 +278,12 @@ class DHCN(nn.Module):
         return nn.Sequential(*layers)
 
     def feature_exact(self, img):
+        """
+        Args:
+            img: [B, 3, H, W] - 单个视角的输入图像
+        Returns:
+            x: [B, 1024] - 特征向量
+        """
         x = self.conv1(img)
         x = self.bn1(x)
         x = self.relu(x)

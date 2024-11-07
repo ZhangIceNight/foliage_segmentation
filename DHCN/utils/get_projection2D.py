@@ -70,7 +70,7 @@ def camera_rotation(points, labels, out_path, file_name):
     pcd.colors = o3d.utility.Vector3dVector(colors)
     
     # 创建离屏渲染器和材质
-    render = o3d.visualization.rendering.OffscreenRenderer(640, 480)
+    render = o3d.visualization.rendering.OffscreenRenderer(224, 224)
     mat = o3d.visualization.rendering.MaterialRecord()
     mat.shader = 'defaultUnlit'
     mat.point_size = 2.0
