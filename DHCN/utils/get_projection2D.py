@@ -134,7 +134,7 @@ def projection(path, out_path):
         points = data[:, :3]
         labels = data[:, -1].astype(np.int32)
         file_name = file.split('.npy')[0]
-        g(points, labels, out_path, file_name)
+        camera_rotation(points, labels, out_path, file_name)
 
 
 def main(config):
