@@ -11,7 +11,10 @@ from PIL import Image, ImagePath
 def pil_loader(path):
     with open(path, 'rb') as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        img = img.convert('RGB')
+        # 将图像调整为224x224
+        img = img.resize((224, 224), Image.Resampling.BILINEAR)
+        return img
 
 
 class SJTUFolder(data.Dataset):

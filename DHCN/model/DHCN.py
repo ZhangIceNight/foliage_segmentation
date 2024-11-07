@@ -241,7 +241,7 @@ class DHCN(nn.Module):
         self.HGCNlinear3 = nn.Linear(2048, 256)
 
         img_len = 10
-        self.HGCN_W = Parameter(torch.ones(img_len * 4))
+        self.HGCN_W = Parameter(torch.ones(img_len * 3))
         self.HGCN = HGCNNet(img_len=img_len)
 
         self.HGCN_linear6 = nn.Linear(2, 1)
@@ -303,8 +303,8 @@ class DHCN(nn.Module):
         x = torch.cat((g1, g2, g3, g4), dim=1)
         return x
 
-    def hyperG(self, A, knn, l1, sim, W):
-        H = np.concatenate((A, knn, l1, sim), axis=1)
+    def hyperG(self, knn, l1, sim, W):
+        H = np.concatenate((knn, l1, sim), axis=1)
         # the degree of the node
         DV = np.sum(H, axis=1)
         # the degree of the hyperedge
@@ -409,9 +409,10 @@ class DHCN(nn.Module):
         return sim
 
 
-    def forward(self, img, A, pc):
+    def forward(self, img, pc):
         batch_size = img.size(0)
         img_len = img.size(1)
+        
         x_feature = []
         for i in range(img_len):
             x = self.feature_exact(img[:, i, :, :, :].squeeze(1))
@@ -425,19 +426,19 @@ class DHCN(nn.Module):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
-            G = self.hyperG(A[j, :, :], knn, l1, sim, self.HGCN_W)
+            G = self.hyperG(knn, l1, sim, self.HGCN_W)
             H.append(torch.as_tensor(G).unsqueeze(0))
 
         H = torch.cat(H, dim=0)
         gc5 = self.HGCN(x, H)
-        out = gc5.view(batch_size, -1)
-        img_score = torch.mean(out, dim=1).unsqueeze(1)
 
-        pc_score = self.pcnet(pc)
-
-        s = torch.cat((img_score, pc_score), dim=1)
-        final_score = self.HGCN_linear6(s)
-        return final_score
+        pc_features = self.pcnet(pc)  # [B, 6, 2048, F]
+        # 新的特征融合层
+        fused_features = self.fusion_layer(img_features, pc_features)
+        # 分割头,输出每个点的类别概率
+        point_logits = self.seg_head(fused_features)  # [B, 6, 2048, 2]
+        
+        return point_logits
 
 
 def get_model(pretrained=False, **kwargs):

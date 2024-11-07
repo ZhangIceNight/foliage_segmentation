@@ -31,7 +31,6 @@ class Model_Solver(object):
         self.mn = config.model_name
         self.lr = config.lr
         self.bs = config.batch_size
-        self.split = config.split
         self.path = path
         self.weight_decay = config.weight_decay
         self.l1_loss = torch.nn.L1Loss().cuda()
@@ -53,9 +52,9 @@ class Model_Solver(object):
         paras = [{'params': self.model.parameters(), 'lr': self.lr}]
         self.optimizer = torch.optim.Adam(paras, weight_decay=self.weight_decay)
 
-        train_loader = DataLoader(self.config, self.config.dataset, self.path, self.split, self.config.image_size,
+        train_loader = DataLoader(self.config, self.config.dataset, self.path, self.config.image_size,
                                   self.bs, istrain=True)
-        test_loader = DataLoader(self.config, self.config.dataset, self.path, self.split, self.config.image_size,
+        test_loader = DataLoader(self.config, self.config.dataset, self.path, self.config.image_size,
                                  istrain=False)
         self.train_data = train_loader.get_data()
         self.test_data = test_loader.get_data()
@@ -75,14 +74,14 @@ class Model_Solver(object):
             epoch_loss = []
             pred_scores_all = []
             gt_scores_all = []
-            for img, label, A, pc in tqdm(self.train_data):
+            for img, label, pc in tqdm(self.train_data):
                 img = torch.as_tensor(img.cuda())
                 pc = torch.as_tensor(pc.cuda())
                 label = torch.as_tensor(label.cuda())
 
                 self.optimizer.zero_grad()
 
-                pred = self.model(img, A, pc)
+                pred = self.model(img, pc)
                 loss = self.l1_loss(pred.squeeze(1), label.float().detach())
                 epoch_loss.append(loss.item())
                 loss.backward()
@@ -101,7 +100,7 @@ class Model_Solver(object):
                 best_plcc = test_plcc
                 torch.save(self.model.state_dict(), self.model_path +
                            "/{}_epoch{}_lr{}_bs{}_split{}_srcc{:.4f}.pth".
-                           format(self.mn, t+1+self.resume_epoch, self.lr, self.bs, self.split, best_srcc))
+                           format(self.mn, t+1+self.resume_epoch, self.lr, self.bs, best_srcc))
             else:
                 no_save_epoch += 1
 
@@ -133,12 +132,12 @@ class Model_Solver(object):
         self.model.train(False)
         pred_scores = []
         gt_scores = []
-        for img, label, A, pc in data:
+        for img, label, pc in data:
             img = torch.as_tensor(img.cuda())
             pc = torch.as_tensor(pc.cuda())
 
             # predict score
-            pred = self.model(img, A, pc)
+            pred = self.model(img, pc)
 
             if self.config.dataset == "wpc":
                 pred_scores.append(float(pred.item() * 10))
@@ -165,4 +164,25 @@ class Model_Solver(object):
             return math.sqrt(sum([(x - y) ** 2 for x, y in zip(records_real, records_predict)]) / len(records_real))
         else:
             return None
+
+    def calculate_metrics(self, pred_labels, true_labels):
+        """计算分割指标"""
+        pred = pred_labels.view(-1)
+        true = true_labels.view(-1)
+        
+        # 计算混淆矩阵
+        confusion_matrix = torch.zeros(2, 2)
+        for t, p in zip(true.view(-1), pred.view(-1)):
+            confusion_matrix[t.long(), p.long()] += 1
+        
+        # 计算IoU
+        intersection = confusion_matrix.diag()
+        union = confusion_matrix.sum(0) + confusion_matrix.sum(1) - confusion_matrix.diag()
+        iou = intersection / union
+        mean_iou = iou.mean()
+        
+        # 计算准确率
+        accuracy = confusion_matrix.diag().sum() / confusion_matrix.sum()
+        
+        return mean_iou.item(), accuracy.item()
 

@@ -89,6 +89,9 @@ def camera_rotation(points, labels, out_path, file_name):
     interval = 5.82
     use_number = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28]
     
+    # 存储每个点在各个视角下的投影坐标
+    point_projections = {}
+    
     while tmp < 60:
         tmp += 1
         # 计算旋转矩阵
@@ -108,10 +111,24 @@ def camera_rotation(points, labels, out_path, file_name):
             angle_y = -angle / math.sqrt(2)
             
         if tmp in use_number:
-            # 应用旋转
+            # 计算相机参数
             rot_mat = o3d.geometry.get_rotation_matrix_from_xyz(
                 [math.radians(angle_y), math.radians(angle_x), 0])
             current_eye = np.dot(rot_mat, eye - center) + center
+            
+            # 构建投影矩阵
+            proj_matrix = np.array([
+                [640/(2*math.tan(math.radians(60/2))), 0, 320],
+                [0, 480/(2*math.tan(math.radians(60/2))), 240],
+                [0, 0, 1]
+            ]) @ np.hstack([rot_mat, (current_eye - center).reshape(3,1)])
+            
+            # 计算每个点的投影坐标
+            homo_points = np.hstack([points, np.ones((points.shape[0], 1))])
+            proj_coords = (proj_matrix @ homo_points.T).T
+            proj_coords = proj_coords[:, :2] / proj_coords[:, 2:]
+            
+            point_projections[f"{tmp}"] = proj_coords
             
             # 设置相机
             render.setup_camera(60.0, current_eye, center, up)
@@ -122,6 +139,10 @@ def camera_rotation(points, labels, out_path, file_name):
                 img = render.render_to_image()
                 img = cut_img(Image.fromarray(np.asarray(img)))
                 img.save(save_path)
+
+    # 保存投影坐标
+    proj_path = os.path.join(out_path, f"{file_name}_projections.npz")
+    np.savez(proj_path, **point_projections)
 
 
 def projection(path, out_path):
@@ -148,7 +169,7 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, default='input')
-    parser.add_argument('--out_path', type=str, default='output')
+    parser.add_argument('--out_path', type=str, default='output_pic')
     config = parser.parse_args()
     
     main(config)

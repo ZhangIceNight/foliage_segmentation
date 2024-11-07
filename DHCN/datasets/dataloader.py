@@ -6,7 +6,7 @@ import data.folder
 class DataLoader(object):
     """Dataset class for IQA databases"""
 
-    def __init__(self, config, dataset, path, split, image_size, batch_size=1, istrain=True):
+    def __init__(self, config, dataset, path, image_size, batch_size=1, istrain=True):
 
         self.batch_size = batch_size
         self.istrain = istrain
@@ -33,14 +33,14 @@ class DataLoader(object):
                                                  std=(0.229, 0.224, 0.225))
             ])
 
-        if dataset == "sjtu":
-            self.data = data.folder.SJTUFolder(root=path, index=split, transform=transforms,
+        if dataset == "LabelledPC":
+            self.data = data.folder.LabelledPC(root=path, transform=transforms,
                                                istrain=istrain, config=config)
         elif dataset == "wpc":
-            self.data = data.folder.WPCFolder(root=path, index=split, transform=transforms,
+            self.data = data.folder.WPCFolder(root=path, transform=transforms,
                                               istrain=istrain, config=config)
         elif dataset == "siat":
-            self.data = data.folder.SIATFolder(root=path, index=split, transform=transforms,
+            self.data = data.folder.SIATFolder(root=path, transform=transforms,
                                                istrain=istrain, config=config)
 
     def get_data(self):
