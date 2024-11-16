@@ -435,15 +435,15 @@ class get_model(nn.Module):
         #                                         drop_path=0.2,
         #                                         fetch_idx=[3, 7, 11])
 
-        self.drop_out = nn.Dropout(0)
-        self.drop_path_rate = 0.1
-        self.drop_path_block = DropPath(self.drop_path_rate) if self.drop_path_rate > 0. else nn.Identity()
+        # self.drop_out = nn.Dropout(0)
+        # self.drop_path_rate = 0.1
+        # self.drop_path_block = DropPath(self.drop_path_rate) if self.drop_path_rate > 0. else nn.Identity()
 
-        self.norm = nn.LayerNorm(self.trans_dim)
+        # self.norm = nn.LayerNorm(self.trans_dim)
 
-        self.label_conv = nn.Sequential(nn.Conv1d(16, 64, kernel_size=1, bias=False),
-                                        nn.BatchNorm1d(64),
-                                        nn.LeakyReLU(0.2))
+        # self.label_conv = nn.Sequential(nn.Conv1d(16, 64, kernel_size=1, bias=False),
+        #                                 nn.BatchNorm1d(64),
+        #                                 nn.LeakyReLU(0.2))
 
         # self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
 
