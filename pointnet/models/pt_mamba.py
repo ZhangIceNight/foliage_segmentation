@@ -447,7 +447,13 @@ class get_model(nn.Module):
 
         self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
 
-        self.convs1 = nn.Conv1d(3392, 512, 1)
+        # 计算特征维度
+        self.feature_dim = 384 * 3  # feature_list 拼接后的维度 (1152)
+        self.global_feature_dim = 1152 * 2  # x_max_feature 和 x_avg_feature 拼接后的维度 (2304)
+        total_feature_dim = self.feature_dim + self.global_feature_dim  # 3456
+
+        # 更新卷积层的输入维度
+        self.convs1 = nn.Conv1d(total_feature_dim, 512, 1)
         self.dp1 = nn.Dropout(0.5)
         self.convs2 = nn.Conv1d(512, 256, 1)
         self.convs3 = nn.Conv1d(256, self.cls_dim, 1)
