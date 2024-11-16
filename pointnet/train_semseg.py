@@ -317,7 +317,7 @@ def main(args):
                 state = {
                     'epoch': epoch,
                     'class_avg_iou': best_iou,
-                    'class_avg_acc': best_acc
+                    'class_avg_acc': best_acc,
                     'model_state_dict': classifier.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }

@@ -1,3 +1,7 @@
+export CUDA_VISIBLE_DEVICES=0
+
+
+
 # python train_semseg.py \
 #     --model pointnet_sem_seg \
 #     --batch_size 16 \
@@ -15,6 +19,6 @@ python train_semseg.py \
     --epoch 128 \
     --learning_rate 0.001 \
     --optimizer Adam \
-    --log_dir pointnet2_leaf_seg \
+    --log_dir pointnet2_leaf_seg_1 \
     --gpu 0
     
