@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from timm.models.layers import DropPath, trunc_normal_
-from logger import get_missing_parameters_message, get_unexpected_parameters_message
+# from logger import get_missing_parameters_message, get_unexpected_parameters_message
 
 from pointnet2_ops import pointnet2_utils
 from knn_cuda import KNN
@@ -476,10 +476,10 @@ class get_model(nn.Module):
             incompatible = self.load_state_dict(base_ckpt, strict=False)
             if incompatible.missing_keys:
                 print('missing_keys')
-                print(get_missing_parameters_message(incompatible.missing_keys))
+                # print(get_missing_parameters_message(incompatible.missing_keys))
             if incompatible.unexpected_keys:
                 print('unexpected_keys')
-                print(get_unexpected_parameters_message(incompatible.unexpected_keys))
+                # print(get_unexpected_parameters_message(incompatible.unexpected_keys))
             print(f'[Mamba] Successful Loading the ckpt from {bert_ckpt_path}')
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
