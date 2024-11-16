@@ -445,7 +445,7 @@ class get_model(nn.Module):
                                         nn.BatchNorm1d(64),
                                         nn.LeakyReLU(0.2))
 
-        self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
+        # self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
 
         self.convs1 = nn.Conv1d(3392, 512, 1)
         self.dp1 = nn.Dropout(0.5)
