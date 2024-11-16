@@ -13,11 +13,19 @@ checkpoints/
 *.txt
 
 # 数据文件
+*/**/@*
+*/**/*.lnk
+*/**/*.sym
+*/**/*.symbolic
+
+
 **/data/
 **/data
 *.npy
 *.npz
 *.obj
+*.ply
+*.las
 
 # Python
 __pycache__/
