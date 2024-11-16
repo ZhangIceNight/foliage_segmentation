@@ -90,7 +90,7 @@ class HGCNNet(nn.Module):
         self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
         self.HGCN_layer4 = HGCN_layer(img_len, 32)
 
-        self.gc5 = GraphConvolution(32, 1)
+        self.gc5 = GraphConvolution(32, 1024)
         self.relu = nn.Softplus()
 
     def forward(self, feature, H):

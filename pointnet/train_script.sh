@@ -18,3 +18,12 @@ python train_semseg.py \
     --log_dir pointnet2_leaf_seg \
     --gpu 0
     
+python train_semseg.py \
+    --model pt_mamba \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 128 \
+    --learning_rate 0.001 \
+    --optimizer Adam \
+    --log_dir pt_mamba \
+    --gpu 0
