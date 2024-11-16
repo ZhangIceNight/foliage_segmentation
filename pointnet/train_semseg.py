@@ -161,8 +161,10 @@ def main(args):
 
     global_epoch = 0
     best_iou = 0
+    best_acc = 0
     print("global epoch initialized")
     print("best iou initialized")
+    print("best acc initialized")
 
     # 初始化wandb
     wandb.init(
@@ -306,20 +308,23 @@ def main(args):
             log_string('eval avg class acc: %f' % np.mean(class_acc))
             log_string('eval avg class IoU: %f' % avg_class_iou)
 
-            if accuracy >= best_iou:
-                best_iou = accuracy
+            if avg_class_iou >= best_iou:
+                best_iou = avg_class_iou
+                best_acc = accuracy
                 logger.info('Save model...')
                 savepath = str(checkpoints_dir) + '/best_model.pth'
                 log_string('Saving at %s' % savepath)
                 state = {
                     'epoch': epoch,
                     'class_avg_iou': best_iou,
+                    'class_avg_acc': best_acc
                     'model_state_dict': classifier.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
                 torch.save(state, savepath)
                 log_string('Saving model....')
-            log_string('Best accuracy: %f' % best_iou)
+            log_string('Best accuracy: %f' % best_acc)
+            log_string('Best mIoU: %f' % best_iou)
         global_epoch += 1
 
     wandb.finish()
