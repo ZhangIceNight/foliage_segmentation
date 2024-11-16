@@ -447,11 +447,11 @@ class get_model(nn.Module):
 
         # self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
 
-        self.convs1 = nn.Conv1d(3392, 512, 1)
-        self.dp1 = nn.Dropout(0.5)
-        self.convs2 = nn.Conv1d(512, 256, 1)
-        self.convs3 = nn.Conv1d(256, self.cls_dim, 1)
-        self.bns1 = nn.BatchNorm1d(512)
+        # self.convs1 = nn.Conv1d(3392, 512, 1)
+        # self.dp1 = nn.Dropout(0.5)
+        # self.convs2 = nn.Conv1d(512, 256, 1)
+        # self.convs3 = nn.Conv1d(256, self.cls_dim, 1)
+        # self.bns1 = nn.BatchNorm1d(512)
         self.bns2 = nn.BatchNorm1d(256)
 
         self.relu = nn.ReLU()
