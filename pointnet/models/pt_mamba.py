@@ -429,11 +429,11 @@ class get_model(nn.Module):
             nn.GELU(),
             nn.Linear(128, self.trans_dim)
         )
-        self.blocks = MixerModelForSegmentation(d_model=self.trans_dim,
-                                                n_layer=self.depth,
-                                                rms_norm=False,
-                                                drop_path=0.2,
-                                                fetch_idx=[3, 7, 11])
+        # self.blocks = MixerModelForSegmentation(d_model=self.trans_dim,
+        #                                         n_layer=self.depth,
+        #                                         rms_norm=False,
+        #                                         drop_path=0.2,
+        #                                         fetch_idx=[3, 7, 11])
 
         self.drop_out = nn.Dropout(0)
         self.drop_path_rate = 0.1
