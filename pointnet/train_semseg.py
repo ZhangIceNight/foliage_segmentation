@@ -116,6 +116,7 @@ def main(args):
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
     print("model copied")
     classifier = MODEL.get_model(NUM_CLASSES)
+    print(classifier)
     classifier = classifier.cuda()
     print("classifier created")
     criterion = MODEL.get_loss().cuda()
