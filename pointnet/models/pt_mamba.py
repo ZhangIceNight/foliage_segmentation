@@ -424,35 +424,35 @@ class get_model(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         # self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        # self.pos_embed = nn.Sequential(
-        #     nn.Linear(3, 128),
-        #     nn.GELU(),
-        #     nn.Linear(128, self.trans_dim)
-        # )
-        # # self.blocks = MixerModelForSegmentation(d_model=self.trans_dim,
-        # #                                         n_layer=self.depth,
-        # #                                         rms_norm=False,
-        # #                                         drop_path=0.2,
-        # #                                         fetch_idx=[3, 7, 11])
+        self.pos_embed = nn.Sequential(
+            nn.Linear(3, 128),
+            nn.GELU(),
+            nn.Linear(128, self.trans_dim)
+        )
+        # self.blocks = MixerModelForSegmentation(d_model=self.trans_dim,
+        #                                         n_layer=self.depth,
+        #                                         rms_norm=False,
+        #                                         drop_path=0.2,
+        #                                         fetch_idx=[3, 7, 11])
 
-        # self.drop_out = nn.Dropout(0)
-        # self.drop_path_rate = 0.1
-        # self.drop_path_block = DropPath(self.drop_path_rate) if self.drop_path_rate > 0. else nn.Identity()
+        self.drop_out = nn.Dropout(0)
+        self.drop_path_rate = 0.1
+        self.drop_path_block = DropPath(self.drop_path_rate) if self.drop_path_rate > 0. else nn.Identity()
 
-        # self.norm = nn.LayerNorm(self.trans_dim)
+        self.norm = nn.LayerNorm(self.trans_dim)
 
-        # self.label_conv = nn.Sequential(nn.Conv1d(16, 64, kernel_size=1, bias=False),
-        #                                 nn.BatchNorm1d(64),
-        #                                 nn.LeakyReLU(0.2))
+        self.label_conv = nn.Sequential(nn.Conv1d(16, 64, kernel_size=1, bias=False),
+                                        nn.BatchNorm1d(64),
+                                        nn.LeakyReLU(0.2))
 
-        # self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
+        self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
 
-        # self.convs1 = nn.Conv1d(3392, 512, 1)
-        # self.dp1 = nn.Dropout(0.5)
-        # self.convs2 = nn.Conv1d(512, 256, 1)
-        # self.convs3 = nn.Conv1d(256, self.cls_dim, 1)
-        # self.bns1 = nn.BatchNorm1d(512)
-        # self.bns2 = nn.BatchNorm1d(256)
+        self.convs1 = nn.Conv1d(3392, 512, 1)
+        self.dp1 = nn.Dropout(0.5)
+        self.convs2 = nn.Conv1d(512, 256, 1)
+        self.convs3 = nn.Conv1d(256, self.cls_dim, 1)
+        self.bns1 = nn.BatchNorm1d(512)
+        self.bns2 = nn.BatchNorm1d(256)
 
         self.relu = nn.ReLU()
 
