@@ -424,11 +424,11 @@ class get_model(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         # self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        self.pos_embed = nn.Sequential(
-            nn.Linear(3, 128),
-            nn.GELU(),
-            nn.Linear(128, self.trans_dim)
-        )
+        # self.pos_embed = nn.Sequential(
+        #     nn.Linear(3, 128),
+        #     nn.GELU(),
+        #     nn.Linear(128, self.trans_dim)
+        # )
         # self.blocks = MixerModelForSegmentation(d_model=self.trans_dim,
         #                                         n_layer=self.depth,
         #                                         rms_norm=False,
