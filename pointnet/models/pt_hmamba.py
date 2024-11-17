@@ -322,6 +322,118 @@ class MixerModel(nn.Module):
         return hidden_states
 
 
+
+class GraphConvolution(nn.Module):
+    """
+    Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
+    """
+
+    def __init__(self, in_features, out_features, bias=False):
+        super(GraphConvolution, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = Parameter(torch.Tensor(in_features, out_features))
+        if bias:
+            self.bias = Parameter(torch.Tensor(1, 1, out_features))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_normal_(self.weight.data)
+        if self.bias is not None:
+            init.constant_(self.bias.data, 0.1)
+
+    def forward(self, input, adj):
+        support = torch.matmul(input, self.weight)
+        output = torch.matmul(adj.float(), support)
+        if self.bias is not None:
+            return output + self.bias
+        else:
+            return output
+
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' \
+               + str(self.in_features) + ' -> ' \
+               + str(self.out_features) + ')'
+
+
+class HGCN_layer(nn.Module):
+    def __init__(self, img_len, in_c):
+        super(HGCN_layer, self).__init__()
+        self.gc1 = GraphConvolution(in_c, in_c)
+        self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+
+        self.gc2 = GraphConvolution(in_c, in_c)
+        self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+
+        self.gc3 = GraphConvolution(in_c, in_c)
+        self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.relu = nn.Softplus()
+
+    def forward(self, feature, H):
+        gc1 = self.gc1(feature, H)
+        gc1 = self.bn1(gc1)
+        gc1 = self.relu(feature + gc1)
+
+        gc2 = self.gc2(gc1, H)
+        gc2 = self.bn2(gc2)
+        gc2 = self.relu(feature + gc2)
+
+        gc3 = self.gc3(gc2, H)
+        gc3 = self.bn3(gc3)
+        gc3 = self.relu(feature + gc3)
+        return gc3
+
+
+class HGCNNet(nn.Module):
+    def __init__(self, img_len):
+        super(HGCNNet, self).__init__()
+        self.gc1 = GraphConvolution(1024, 512)
+        self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer1 = HGCN_layer(img_len, 512)
+
+        self.gc2 = GraphConvolution(512, 256)
+        self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer2 = HGCN_layer(img_len, 256)
+
+        self.gc3 = GraphConvolution(256, 128)
+        self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer3 = HGCN_layer(img_len, 128)
+
+        self.gc4 = GraphConvolution(128, 32)
+        self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer4 = HGCN_layer(img_len, 32)
+
+        self.gc5 = GraphConvolution(32, 1024)
+        self.relu = nn.Softplus()
+
+    def forward(self, feature, H):
+        gc1 = self.gc1(feature, H)
+        gc1 = self.bn1(gc1)
+        gc1 = self.relu(gc1)
+        gc1 = self.HGCN_layer1(gc1, H)
+
+        gc2 = self.gc2(gc1, H)
+        gc2 = self.bn2(gc2)
+        gc2 = self.relu(gc2)
+        gc2 = self.HGCN_layer2(gc2, H)
+
+        gc3 = self.gc3(gc2, H)
+        gc3 = self.bn3(gc3)
+        gc3 = self.relu(gc3)
+        gc3 = self.HGCN_layer3(gc3, H)
+
+        gc4 = self.gc4(gc3, H)
+        gc4 = self.bn4(gc4)
+        gc4 = self.relu(gc4)
+        gc4 = self.HGCN_layer4(gc4, H)
+
+        gc5 = self.gc5(gc4, H)
+        gc5 = self.relu(gc5)
+        return gc5
+
+
 class MixerModelForSegmentation(MixerModel):
     def __init__(
             self,
@@ -432,6 +544,7 @@ class get_model(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
+        self.HGCN = HGCNNet(img_len=self.num_group)
         self.pos_embed = nn.Sequential(
             nn.Linear(3, 128),
             nn.GELU(),
