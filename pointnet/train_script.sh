@@ -10,7 +10,8 @@ export CUDA_VISIBLE_DEVICES=0
 #     --learning_rate 0.001 \
 #     --optimizer Adam \
 #     --log_dir pointnet_leaf_seg \
-#     --gpu 0
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
 
 # pointnet2
 # python train_semseg.py \
@@ -21,7 +22,8 @@ export CUDA_VISIBLE_DEVICES=0
 #     --learning_rate 0.001 \
 #     --optimizer Adam \
 #     --log_dir pointnet2_leaf_seg_1 \
-#     --gpu 0
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
 
 # # pt_mamba
 # python train_semseg.py \
@@ -29,10 +31,11 @@ export CUDA_VISIBLE_DEVICES=0
 #     --batch_size 16 \
 #     --npoint 4096 \
 #     --epoch 128 \
-#     --learning_rate 0.001 \
-#     --optimizer Adam \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
 #     --log_dir pt_mamba_0 \
-#     --gpu 0
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
 
 # pt_hmamba
 python train_semseg.py \
@@ -40,8 +43,9 @@ python train_semseg.py \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 128 \
-    --learning_rate 0.001 \
-    --optimizer Adam \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
     --log_dir pt_hmamba_0 \
-    --gpu 0
+    --gpu 0 \
+    --ckpts 'pretrain.pth'
 
