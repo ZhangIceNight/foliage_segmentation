@@ -17,7 +17,6 @@ from tqdm import tqdm
 import numpy as np
 import time
 import wandb
-from timm.scheduler import CosineLRScheduler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -48,8 +47,7 @@ def parse_args():
     parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
-    parser.add_argument('--ckpts', type=str, default='pretrain.pth', help='ckpts')
-    
+
     return parser.parse_args()
 
 
@@ -121,76 +119,60 @@ def main(args):
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
     print("model applied")
-    def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
-        decay = []
-        no_decay = []
-        num_trainable_params = 0
-        for name, param in model.named_parameters():
-            if not param.requires_grad:
-                continue  # frozen weights
-            if len(param.shape) == 1 or name.endswith(".bias") or 'token' in name or name in skip_list:
-                # print(name)
-                no_decay.append(param)
-                num_trainable_params += param.numel()
-            else:
-                decay.append(param)
-                num_trainable_params += param.numel()
-
-        total_params = sum([v.numel() for v in model.parameters()])
-        non_trainable_params = total_params - num_trainable_params
-        log_string('########################################################################')
-        log_string('>> {:25s}\t{:.2f}\tM  {:.2f}\tK'.format(
-            '# TrainableParams:', num_trainable_params / (1.0 * 10 ** 6), num_trainable_params / (1.0 * 10 ** 3)))
-        log_string('>> {:25s}\t{:.2f}\tM'.format('# NonTrainableParams:', non_trainable_params / (1.0 * 10 ** 6)))
-        log_string('>> {:25s}\t{:.2f}\tM'.format('# TotalParams:', total_params / (1.0 * 10 ** 6)))
-        log_string('>> {:25s}\t{:.2f}\t%'.format('# TuningRatio:', num_trainable_params / total_params * 100.))
-        log_string('########################################################################')
-
-        return [
-            {'params': no_decay, 'weight_decay': 0.},
-            {'params': decay, 'weight_decay': weight_decay}]
-    
-    # load checkpoint
-    start_epoch = 0
-    if args.ckpts is not None:
-        if args.ckpts[:13] == "segmentation/":
-            args.ckpts = args.ckpts[13:]
-        classifier.load_model_from_ckpt(args.ckpts)
-        log_string('Load model from %s' % args.ckpts)
-    else:
+    def weights_init(m):
+        classname = m.__class__.__name__
+        if classname.find('Conv2d') != -1:
+            torch.nn.init.xavier_normal_(m.weight.data)
+            if m.bias is not None:
+                torch.nn.init.constant_(m.bias.data, 0.0)
+        elif classname.find('Linear') != -1:
+            torch.nn.init.xavier_normal_(m.weight.data)
+            if m.bias is not None:
+                torch.nn.init.constant_(m.bias.data, 0.0)
+    print("weights initialized")
+    try:
+        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
+        start_epoch = checkpoint['epoch']
+        classifier.load_state_dict(checkpoint['model_state_dict'])
+        log_string('Use pretrain model')
+    except:
         log_string('No existing model, starting training from scratch...')
+        start_epoch = 0
+        classifier = classifier.apply(weights_init)
 
-    # try:
-    #     checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
-    #     start_epoch = checkpoint['epoch']
-    #     classifier.load_state_dict(checkpoint['model_state_dict'])
-    #     log_string('Use pretrain model')
-    # except:
-    #     log_string('No existing model, starting training from scratch...')
-    #     start_epoch = 0
-
-
-    param_groups = add_weight_decay(classifier, weight_decay=0.05)
-
-    optimizer = torch.optim.AdamW(param_groups, lr=args.learning_rate, weight_decay=args.decay_rate)
-
-    scheduler = CosineLRScheduler(optimizer,
-                                  t_initial=args.epoch,
-                                  t_mul=1,
-                                  lr_min=1e-6,
-                                  decay_rate=0.1,
-                                  warmup_lr_init=1e-6,
-                                  warmup_t=args.warmup_epoch,
-                                  cycle_limit=1,
-                                  t_in_epochs=True)
-    
-    
+    if args.optimizer == 'Adam':
+        optimizer = torch.optim.Adam(
+            classifier.parameters(),
+            lr=args.learning_rate,
+            betas=(0.9, 0.999),
+            eps=1e-08,
+            weight_decay=args.decay_rate
+        )
+    elif args.optimizer == 'AdamW':
+        optimizer = torch.optim.AdamW(
+            classifier.parameters(),
+            lr=args.learning_rate,
+            weight_decay=args.decay_rate
+        )
+    else:
+        optimizer = torch.optim.SGD(classifier.parameters(), lr=args.learning_rate, momentum=0.9)
     print("optimizer created")
+
+    def bn_momentum_adjust(m, momentum):
+        if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
+            m.momentum = momentum
+    print("bn momentum adjusted")
+    LEARNING_RATE_CLIP = 1e-5
+    MOMENTUM_ORIGINAL = 0.1
+    MOMENTUM_DECCAY = 0.5
+    MOMENTUM_DECCAY_STEP = args.step_size
 
     global_epoch = 0
     best_iou = 0
     best_acc = 0
-  
+    print("global epoch initialized")
+    print("best iou initialized")
+    print("best acc initialized")
 
     # 初始化wandb
     wandb.init(
@@ -206,18 +188,26 @@ def main(args):
         }
     )
     print("wandb initialized")
-    classifier.zero_grad()
-
-    # Start training
     for epoch in range(start_epoch, args.epoch):
+        '''Train on chopped scenes'''
         log_string('**** Epoch %d (%d/%s) ****' % (global_epoch + 1, epoch + 1, args.epoch))
-
-
-        loss_batch = []
-        mean_correct = []
+        lr = max(args.learning_rate * (args.lr_decay ** (epoch // args.step_size)), LEARNING_RATE_CLIP)
+        log_string('Learning rate:%f' % lr)
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+        momentum = MOMENTUM_ORIGINAL * (MOMENTUM_DECCAY ** (epoch // MOMENTUM_DECCAY_STEP))
+        if momentum < 0.01:
+            momentum = 0.01
+        print('BN momentum updated to: %f' % momentum)
+        classifier = classifier.apply(lambda x: bn_momentum_adjust(x, momentum))
+        num_batches = len(trainDataLoader)
+        total_correct = 0
+        total_seen = 0
+        loss_sum = 0
         classifier = classifier.train()
-        '''learning one epoch'''
+
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
+            optimizer.zero_grad()
 
             points = points.data.numpy()
             # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
@@ -227,40 +217,26 @@ def main(args):
 
             seg_pred = classifier(points)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
+
+            batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
             target = target.view(-1, 1)[:, 0]
-            pred_choice = seg_pred.data.max(1)[1]
-
-            correct = pred_choice.eq(target.data).cpu().sum()
-            mean_correct.append(correct.item() / (args.batch_size * args.npoint))
-
             loss = criterion(seg_pred, target)
             loss.backward()
             optimizer.step()
-            loss_batch.append(loss.detach().cpu())
 
-            if num_iter == 1:
-                torch.nn.utils.clip_grad_norm_(classifier.parameters(), 10, norm_type=2)
-                num_iter = 0
-                optimizer.step()
-                classifier.zero_grad()
-
-
-        if isinstance(scheduler, list):
-            for item in scheduler:
-                item.step(epoch)
-        else:
-            scheduler.step(epoch)
-
-        train_acc = np.mean(mean_correct)
-        train_loss = np.mean(loss_batch)
-        log_string('Training mean loss: %.5f' % train_loss)
-        log_string('Training accuracy: %.5f' % train_acc)
+            pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
+            correct = np.sum(pred_choice == batch_label)
+            total_correct += correct
+            total_seen += (BATCH_SIZE * NUM_POINT)
+            loss_sum += loss
+        log_string('Training mean loss: %f' % (loss_sum / num_batches))
+        log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
 
         # 记录训练指标
         wandb.log({
-            "train/loss": train_loss,
-            "train/accuracy": train_acc,
-            "learning_rate": optimizer.param_groups[0]['lr']
+            "train/loss": loss_sum / num_batches,
+            "train/accuracy": total_correct / float(total_seen),
+            "learning_rate": lr
         }, step=global_epoch)
 
         if epoch % 5 == 0:
@@ -277,8 +253,10 @@ def main(args):
 
         '''Evaluate on chopped scenes'''
         with torch.no_grad():
-            loss_batch = []
-            mean_correct = []
+            num_batches = len(testDataLoader)
+            total_correct = 0
+            total_seen = 0
+            loss_sum = 0
             total_seen_class = [0 for _ in range(NUM_CLASSES)]
             total_correct_class = [0 for _ in range(NUM_CLASSES)]
             total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
@@ -287,51 +265,43 @@ def main(args):
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
             
             for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
-                #load data
-                points = points.data.numpy() # [B, N, 3]
-                points = torch.Tensor(points) # [B, N, 3]
-                points, target = points.float().cuda(), target.long().cuda() # [B, N, 3]
-                points = points.transpose(2, 1) # [B, 3, N]
+                points = points.data.numpy()
+                points = torch.Tensor(points)
+                points, target = points.float().cuda(), target.long().cuda()
+                points = points.transpose(2, 1)
 
-                #forward
-                seg_pred = classifier(points) # [B, N, 2]
-                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
-                target = target.view(-1, 1)[:, 0] # [B*N]
+                seg_pred = classifier(points)
+                pred_val = seg_pred.contiguous().cpu().data.numpy()
+                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
 
-                #loss
+                batch_label = target.cpu().data.numpy()
+                target = target.view(-1, 1)[:, 0]
                 loss = criterion(seg_pred, target)
-                loss_batch.append(loss.detach().cpu())
-
-                #accuracy
-
-                ## get max class index        
-                pred_choice = seg_pred.data.max(1)[1] # [B*N, 2] -> [B*N]
-                ## compare batch accuracy
-                correct = pred_choice.eq(target.data).cpu().sum()   
-                mean_correct.append(correct.item() / (args.batch_size * args.npoint))
-
+                loss_sum += loss
+                pred_val = np.argmax(pred_val, 2)
+                correct = np.sum((pred_val == batch_label))
+                total_correct += correct
+                total_seen += (BATCH_SIZE * NUM_POINT)
                 
-                ## pred and target to numpy
-                pred_val = seg_pred.contiguous().cpu().data.numpy() # [B*N, 2]
-                target = target.cpu().data.numpy() # [B*N]
-                ## 计算每个类别的指标
+                # 计算每个类别的指标
                 for l in range(NUM_CLASSES):
-                    total_seen_class[l] += np.sum((target == l))
-                    total_correct_class[l] += np.sum((pred_val == l) & (target == l))
-                    total_iou_deno_class[l] += np.sum(((pred_val == l) | (target == l)))
+                    total_seen_class[l] += np.sum((batch_label == l))
+                    total_correct_class[l] += np.sum((pred_val == l) & (batch_label == l))
+                    total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
             # 计算平均指标
-            eval_loss = np.mean(loss_batch)
-            test_overall_accuracy = np.mean(mean_correct)
+            eval_loss = loss_sum / float(num_batches)
+            accuracy = total_correct / float(total_seen)
             class_acc = np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6)
             class_iou = np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6)
-            mean_iou = np.mean(class_iou)
+            avg_class_iou = np.mean(class_iou)
             
             # 记录评估指标
             wandb.log({
                 "eval/loss": eval_loss,
-                "eval/accuracy": test_overall_accuracy,
-                "eval/mean_iou": mean_iou,
+                "eval/accuracy": accuracy,
+                "eval/mean_iou": avg_class_iou,
+                "eval/class_avg_iou": avg_class_iou
             }, step=global_epoch)
 
             # 记录每个类别的指标
@@ -341,27 +311,28 @@ def main(args):
                     f"eval/class_{classes[i]}_acc": class_acc[i]
                 }, step=global_epoch)
 
-            log_string('test mean loss: %.5f' % eval_loss)
-            log_string('test accuracy: %.5f' % test_overall_accuracy)
-            log_string('test mean IoU: %.5f' % mean_iou)
+            log_string('eval mean loss: %f' % eval_loss)
+            log_string('eval accuracy: %f' % accuracy)
+            log_string('eval avg class acc: %f' % np.mean(class_acc))
+            log_string('eval avg class IoU: %f' % avg_class_iou)
 
-            if mean_iou >= best_iou:
-                best_iou = mean_iou
-                best_acc = test_overall_accuracy
+            if avg_class_iou >= best_iou:
+                best_iou = avg_class_iou
+                best_acc = accuracy
                 logger.info('Save model...')
                 savepath = str(checkpoints_dir) + '/best_model.pth'
                 log_string('Saving at %s' % savepath)
                 state = {
                     'epoch': epoch,
-                    'mean_iou': best_iou,
-                    'accuracy': best_acc,
+                    'class_avg_iou': best_iou,
+                    'class_avg_acc': best_acc,
                     'model_state_dict': classifier.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
                 torch.save(state, savepath)
-                # log_string('Saving model....')
-            log_string('Best accuracy: %.5f' % best_acc)
-            log_string('Best mIoU: %.5f' % best_iou)
+                log_string('Saving model....')
+            log_string('Best accuracy: %f' % best_acc)
+            log_string('Best mIoU: %f' % best_iou)
         global_epoch += 1
 
     wandb.finish()
