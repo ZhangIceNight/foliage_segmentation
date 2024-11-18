@@ -314,7 +314,7 @@ def main(args):
 
                 
                 ## pred and target to numpy
-                pred_val = seg_pred.contiguous().cpu().data.numpy() # [B*N, 2]
+                pred_val = pred_choice.contiguous().cpu().data.numpy() # [B*N, 2]
                 target = target.cpu().data.numpy() # [B*N]
                 ## 计算每个类别的指标
                 for l in range(NUM_CLASSES):
