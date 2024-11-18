@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 
 if [ -z "$1" ]; then
     echo "错误：请指定存储目录编号"
