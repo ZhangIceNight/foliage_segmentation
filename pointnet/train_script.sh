@@ -1,5 +1,10 @@
 export CUDA_VISIBLE_DEVICES=0
 
+if [ -z "$1" ]; then
+    echo "错误：请指定存储目录编号"
+    echo "使用方法: sh train_script.sh <编号>"
+    exit 1
+fi
 
 # pointnet
 # python train_semseg.py \
@@ -9,7 +14,7 @@ export CUDA_VISIBLE_DEVICES=0
 #     --epoch 128 \
 #     --learning_rate 0.001 \
 #     --optimizer Adam \
-#     --log_dir pointnet_leaf_seg \
+#     --log_dir "pointnet_leaf_seg_$1" \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
@@ -21,7 +26,7 @@ export CUDA_VISIBLE_DEVICES=0
 #     --epoch 128 \
 #     --learning_rate 0.001 \
 #     --optimizer Adam \
-#     --log_dir pointnet2_leaf_seg_1 \
+#     --log_dir "pointnet2_leaf_seg_$1" \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
@@ -33,7 +38,7 @@ export CUDA_VISIBLE_DEVICES=0
 #     --epoch 128 \
 #     --learning_rate 0.0002 \
 #     --optimizer AdamW \
-#     --log_dir pt_mamba_0 \
+#     --log_dir "pt_mamba_$1" \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
@@ -45,7 +50,7 @@ python train_semseg.py \
     --epoch 128 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir pt_hmamba_0 \
+    --log_dir "pt_hmamba_$1" \
     --gpu 0 \
     --ckpts 'pretrain.pth'
 
