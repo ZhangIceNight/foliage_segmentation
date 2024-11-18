@@ -217,9 +217,10 @@ def main(args):
         loss_batch = []
         mean_correct = []
         classifier = classifier.train()
+        num_iter = 0
         '''learning one epoch'''
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
-
+            num_iter += 1
             points = points.data.numpy()
             # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
