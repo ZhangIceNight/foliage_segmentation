@@ -90,14 +90,26 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# pt_hmamba_orderMultiply_hungarian
+# # pt_hmamba_orderMultiply_hungarian
+# python train_semseg.py \
+#     --model pt_hmamba_orderMultiply_hungarian \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_orderMultiply_hungarian_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
+
+# pt_mamba_random   
 python train_semseg.py \
-    --model pt_hmamba_orderMultiply_hungarian \
+    --model pt_mamba_random \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pt_hmamba_orderMultiply_hungarian_$1" \
+    --log_dir "pt_mamba_random_$1" \
     --gpu 0 \
     --ckpts 'pretrain.pth'
