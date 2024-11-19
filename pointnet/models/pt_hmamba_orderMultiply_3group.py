@@ -744,40 +744,42 @@ class get_model(nn.Module):
         return l1
     def get_transform_matrix(self, H):
         """
-        使用超图H和固定对角矩阵生成变换矩阵
+        使用HGCN生成3G×G的变换矩阵
         Args:
             H: 超图矩阵 [B, 3, G, G]
         Returns:
             transform: 变换矩阵 [B, 3G, G]
         """
-
-        B = H.shape[0]
-        G = self.num_group
-        # # 对H进行归一化
-        # H = F.normalize(H, p=2, dim=-1)
-
-        # 使用HGCN得到分数矩阵
-        scores1 = self.HGCN_group1(self.base_rotation_matrix[:G, :].to(H.device), H[:, 0, :, :])  # [B, G, G]
-        scores2 = self.HGCN_group2(self.base_rotation_matrix[G:2*G, :].to(H.device), H[:, 1, :, :])  # [B, G, G]
-        scores3 = self.HGCN_group3(self.base_rotation_matrix[2*G:, :].to(H.device), H[:, 2, :, :])  # [B, G, G]
-        # 将三个scores拼接起来
-        scores = torch.stack([scores1, scores2, scores3], dim=1)  # [B, 3, G, G]
-        # 对每个G×G块分别找最大值位置
-        _, indices = torch.max(scores, dim=-1)  # [B, 3, G]
-
+        B, _, G, _ = H.shape
         
-        # 构建变换矩阵
-        transform = torch.zeros(B, 3, G, G, device=scores.device)
+        # 分别对三个G×G块使用HGCN
+        scores1 = self.HGCN_group1(self.base_rotation_matrix[:G, :].to(H.device), H[:, 0])  # [B, G, G]
+        scores2 = self.HGCN_group2(self.base_rotation_matrix[G:2*G, :].to(H.device), H[:, 1])  # [B, G, G]
+        scores3 = self.HGCN_group3(self.base_rotation_matrix[2*G:, :].to(H.device), H[:, 2])  # [B, G, G]
+        
+        # 找每个scores的最大值位置
+        _, indices1 = torch.max(scores1, dim=-1)  # [B, G]
+        _, indices2 = torch.max(scores2, dim=-1)  # [B, G]
+        _, indices3 = torch.max(scores3, dim=-1)  # [B, G]
+        
+        # 构建三个变换矩阵
+        transform1 = torch.zeros(B, G, G, device=scores1.device)
+        transform2 = torch.zeros(B, G, G, device=scores2.device)
+        transform3 = torch.zeros(B, G, G, device=scores3.device)
+        
         for b in range(B):
-            for i in range(3):
-                # 在每个G×G块内构建映射
-                transform[b, i, torch.arange(G), indices[b, i]] = 1
+            transform1[b, torch.arange(G), indices1[b]] = 1
+            transform2[b, torch.arange(G), indices2[b]] = 1
+            transform3[b, torch.arange(G), indices3[b]] = 1
         
-        # 对每个G×G块分别转置
-        transform = transform.transpose(-1, -2)  # [B, 3, G, G] -> [B, 3, G, G
+        # 对每个变换矩阵进行转置
+        transform1 = transform1.transpose(-1, -2)  # [B, G, G]
+        transform2 = transform2.transpose(-1, -2)  # [B, G, G]
+        transform3 = transform3.transpose(-1, -2)  # [B, G, G]
         
-        # 重塑回 [B, 3G, G]
-        transform = transform.view(B, 3*G, G)
+        # 将三个转置后的变换矩阵拼接
+        transform = torch.cat([transform1, transform2, transform3], dim=1)  # [B, 3G, G]
+        
         return transform
 
     def forward(self, pts):
