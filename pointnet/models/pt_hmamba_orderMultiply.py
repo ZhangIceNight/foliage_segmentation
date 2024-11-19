@@ -564,7 +564,8 @@ class get_model(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        self.HGCN = HGCNNet(img_len=self.num_group)
+        self.HGCN_group = HGCNNet(img_len=self.num_group)
+        self.HGCN_point = HGCNNet(img_len=self.trans_dim)
         self.pos_embed = nn.Sequential(
             nn.Linear(3, 128),
             nn.GELU(),
@@ -746,7 +747,7 @@ class get_model(nn.Module):
         # H = F.normalize(H, p=2, dim=-1)
         
         # 使用HGCN得到分数矩阵
-        scores = self.HGCN(self.base_rotation_matrix.to(H.device), H)  # [B, G, G]
+        scores = self.HGCN_group(self.base_rotation_matrix.to(H.device), H)  # [B, G, G]
         
         # 对每一行找到最大值的位置
         _, indices = torch.max(scores, dim=-1)  # [B, G]
