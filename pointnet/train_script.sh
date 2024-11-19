@@ -78,14 +78,26 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# pt_hmamba_orderMultiply_3group
+# # pt_hmamba_orderMultiply_3group
+# python train_semseg.py \
+#     --model pt_hmamba_orderMultiply_3group \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_orderMultiply_3group_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
+
+# pt_hmamba_orderMultiply_hungarian
 python train_semseg.py \
-    --model pt_hmamba_orderMultiply_3group \
+    --model pt_hmamba_orderMultiply_hungarian \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pt_hmamba_orderMultiply_3group_$1" \
+    --log_dir "pt_hmamba_orderMultiply_hungarian_$1" \
     --gpu 0 \
     --ckpts 'pretrain.pth'
