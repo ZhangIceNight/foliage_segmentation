@@ -845,7 +845,7 @@ class get_model(nn.Module):
         # 使用HGCN得到分数矩阵
         scores = self.HGCN_group(self.base_rotation_matrix.to(H.device), H)  # [B, G, G]
         
-        permutation_matrix = self.hungarian_algorithm(scores)
+        permutation_matrix = hungarian_algorithm_gpu(scores)
             
         return permutation_matrix
 
@@ -875,7 +875,7 @@ class get_model(nn.Module):
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
 
         
-        permutation_matrix = get_permutation_matrix(H) # [B, G, G]
+        permutation_matrix = self.get_permutation_matrix(H) # [B, G, G]
         group_input_tokens = torch.bmm(permutation_matrix, group_input_tokens)  # [B, G, 384]
 
 
