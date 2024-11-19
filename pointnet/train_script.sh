@@ -54,14 +54,26 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# pt_hmamba_orderMultiply
+# # pt_hmamba_orderMultiply
+# python train_semseg.py \
+#     --model pt_hmamba_orderMultiply \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_orderMultiply_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
+
+# pt_hmamba_orderMultiply_static
 python train_semseg.py \
-    --model pt_hmamba_orderMultiply \
+    --model pt_hmamba_orderMultiply_static \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pt_hmamba_orderMultiply_$1" \
+    --log_dir "pt_hmamba_orderMultiply_static_$1" \
     --gpu 0 \
     --ckpts 'pretrain.pth'
