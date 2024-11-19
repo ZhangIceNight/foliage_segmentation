@@ -389,25 +389,44 @@ class HGCN_layer(nn.Module):
 class HGCNNet(nn.Module):
     def __init__(self, img_len):
         super(HGCNNet, self).__init__()
-        self.gc1 = GraphConvolution(384, 384)
+        self.gc1 = GraphConvolution(img_len, img_len)
         self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer1 = HGCN_layer(img_len, 384)
+        self.HGCN_layer1 = HGCN_layer(img_len, img_len)
 
-        self.gc2 = GraphConvolution(384, 384)
+        self.gc2 = GraphConvolution(img_len, img_len)
         self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer2 = HGCN_layer(img_len, 384)
+        self.HGCN_layer2 = HGCN_layer(img_len, img_len)
 
-        self.gc3 = GraphConvolution(384, 384)
+        self.gc3 = GraphConvolution(img_len, img_len)
         self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer3 = HGCN_layer(img_len, 384)
+        self.HGCN_layer3 = HGCN_layer(img_len, img_len)
 
-        self.gc4 = GraphConvolution(384, 384)
+        self.gc4 = GraphConvolution(img_len, img_len)
         self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer4 = HGCN_layer(img_len, 384)
+        self.HGCN_layer4 = HGCN_layer(img_len, img_len)
 
-        self.gc5 = GraphConvolution(384, 384)
+        self.gc5 = GraphConvolution(img_len, img_len)
         self.relu = nn.Softplus()
 
+
+        # self.gc1 = GraphConvolution(384, 384)
+        # self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        # self.HGCN_layer1 = HGCN_layer(img_len, 384)
+
+        # self.gc2 = GraphConvolution(384, 384)
+        # self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        # self.HGCN_layer2 = HGCN_layer(img_len, 384)
+
+        # self.gc3 = GraphConvolution(384, 384)
+        # self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        # self.HGCN_layer3 = HGCN_layer(img_len, 384)
+
+        # self.gc4 = GraphConvolution(384, 384)
+        # self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        # self.HGCN_layer4 = HGCN_layer(img_len, 384)
+
+        # self.gc5 = GraphConvolution(384, 384)
+        # self.relu = nn.Softplus()
     def forward(self, feature, H):
         gc1 = self.gc1(feature, H)
         gc1 = self.bn1(gc1)
