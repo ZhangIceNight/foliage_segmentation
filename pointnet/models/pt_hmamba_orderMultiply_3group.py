@@ -757,9 +757,9 @@ class get_model(nn.Module):
         # H = F.normalize(H, p=2, dim=-1)
 
         # 使用HGCN得到分数矩阵
-        scores1 = self.HGCN_group1(self.base_rotation_matrix[:G, :].to(H.device), H)  # [B, G, G]
-        scores2 = self.HGCN_group2(self.base_rotation_matrix[G:2*G, :].to(H.device), H)  # [B, G, G]
-        scores3 = self.HGCN_group3(self.base_rotation_matrix[2*G:, :].to(H.device), H)  # [B, G, G]
+        scores1 = self.HGCN_group1(self.base_rotation_matrix[:G, :].to(H.device), H[:, 0, :, :])  # [B, G, G]
+        scores2 = self.HGCN_group2(self.base_rotation_matrix[G:2*G, :].to(H.device), H[:, 1, :, :])  # [B, G, G]
+        scores3 = self.HGCN_group3(self.base_rotation_matrix[2*G:, :].to(H.device), H[:, 2, :, :])  # [B, G, G]
         # 将三个scores拼接起来
         scores = torch.stack([scores1, scores2, scores3], dim=1)  # [B, 3, G, G]
         # 对每个G×G块分别找最大值位置
