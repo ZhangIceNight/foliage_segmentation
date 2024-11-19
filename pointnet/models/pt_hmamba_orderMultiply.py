@@ -727,7 +727,7 @@ class get_model(nn.Module):
         # H = F.normalize(H, p=2, dim=-1)
         
         # 使用HGCN得到分数矩阵
-        scores = self.HGCN(H, self.base_rotation_matrix.to(H.device))  # [B, G, G]
+        scores = self.HGCN(self.base_rotation_matrix.to(H.device), H)  # [B, G, G]
         
         # 对每一行找到最大值的位置
         _, indices = torch.max(scores, dim=-1)  # [B, G]
