@@ -720,13 +720,24 @@ class get_model(nn.Module):
         Returns:
             transform: 变换矩阵 [B, G, G]
         """
-    
+
+        B, _, _ = H.shape
+        G = self.num_group
         # # 对H进行归一化
         # H = F.normalize(H, p=2, dim=-1)
         
-        # 超图卷积：
-        transform = self.HGCN(H, self.base_rotation_matrix)
+        # 使用HGCN得到分数矩阵
+        scores = self.HGCN(H, self.base_rotation_matrix.to(H.device))  # [B, G, G]
         
+        # 对每一行找到最大值的位置
+        _, indices = torch.max(scores, dim=-1)  # [B, G]
+        
+        # 构建置换矩阵（每行只有一个1，其余为0）
+        transform = torch.zeros_like(scores)  # [B, G, G]
+        batch_indices = torch.arange(B, device=scores.device).unsqueeze(1).expand(-1, G)
+        row_indices = torch.arange(G, device=scores.device).unsqueeze(0).expand(B, -1)
+        transform[batch_indices, row_indices, indices] = 1
+            
         return transform
 
     def forward(self, pts):
