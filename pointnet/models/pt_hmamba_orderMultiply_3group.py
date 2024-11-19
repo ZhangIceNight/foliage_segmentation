@@ -751,7 +751,7 @@ class get_model(nn.Module):
             transform: 变换矩阵 [B, 3G, G]
         """
 
-        B, _, _ = H.shape
+        B = H.shape[0]
         G = self.num_group
         # # 对H进行归一化
         # H = F.normalize(H, p=2, dim=-1)
