@@ -819,7 +819,8 @@ class get_model(nn.Module):
         
         transform_matrix = self.get_transform_matrix(H) # [B, G, G]
         group_input_tokens = torch.bmm(transform_matrix, group_input_tokens)  # [B, 3G, 384]
-
+        # 对pos也进行相同的重排序
+        pos = torch.bmm(transform_matrix, pos)  # [B, 3G, 384]
 
         # final input
         x = group_input_tokens # [B, 3G, 384]
