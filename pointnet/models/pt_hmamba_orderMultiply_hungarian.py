@@ -875,7 +875,7 @@ class get_model(nn.Module):
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
 
         
-        permutation_matrix = self.get_permutation_matrix(H) # [B, G, G]
+        permutation_matrix = get_permutation_matrix(H) # [B, G, G]
         group_input_tokens = torch.bmm(permutation_matrix, group_input_tokens)  # [B, G, 384]
 
 
