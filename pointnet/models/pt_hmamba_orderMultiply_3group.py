@@ -742,7 +742,7 @@ class get_model(nn.Module):
         """
         使用超图H和固定对角矩阵生成变换矩阵
         Args:
-            H: 超图矩阵 [B, 3G, 3G]
+            H: 超图矩阵 [B, G, G]
         Returns:
             transform: 变换矩阵 [B, 3G, G]
         """
@@ -751,7 +751,9 @@ class get_model(nn.Module):
         G = self.num_group
         # # 对H进行归一化
         # H = F.normalize(H, p=2, dim=-1)
-        
+        # 将H重复三次
+        H = H.unsqueeze(1).repeat(1, 3, 1, 1)  # [B, 3, G, G]
+        H = H.view(B, 3*G, G)  # [B, 3G, G]
         # 使用HGCN得到分数矩阵
         scores = self.HGCN_group(self.base_rotation_matrix.to(H.device), H)  # [B, 3G, G]
         # 将scores分成三个G×G块
