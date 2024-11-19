@@ -757,7 +757,7 @@ class get_model(nn.Module):
         batch_indices = torch.arange(B, device=scores.device).unsqueeze(1).expand(-1, G)
         row_indices = torch.arange(G, device=scores.device).unsqueeze(0).expand(B, -1)
         transform[batch_indices, row_indices, indices] = 1
-            
+        transform = transform.transpose(-1, -2)    
         return transform
 
     def forward(self, pts):

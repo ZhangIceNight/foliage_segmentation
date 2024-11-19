@@ -559,7 +559,9 @@ class get_model(nn.Module):
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
-        self.W = Parameter(torch.ones(self.num_group * 3))
+        self.W_knn = Parameter(torch.ones(self.num_group))
+        self.W_l1 = Parameter(torch.ones(self.num_group))
+        self.W_sim = Parameter(torch.ones(self.num_group))
         
         # 初始化base_rotation_matrix [3G, G]
         self.base_rotation_matrix = torch.zeros(3*self.num_group, self.num_group)
@@ -570,8 +572,10 @@ class get_model(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        self.HGCN_group = HGCNNet(img_len=self.num_group)
-        self.HGCN_point = HGCNNet(img_len=self.trans_dim)
+        self.HGCN_group1 = HGCNNet(img_len=self.num_group)
+        self.HGCN_group2 = HGCNNet(img_len=self.num_group)
+        self.HGCN_group3 = HGCNNet(img_len=self.num_group)
+        # self.HGCN_point = HGCNNet(img_len=self.trans_dim)
         self.pos_embed = nn.Sequential(
             nn.Linear(3, 128),
             nn.GELU(),
@@ -681,8 +685,8 @@ class get_model(nn.Module):
                 sim[i][ind] = 1.0
         return sim
 
-    def hyperG(self, knn, l1, sim, W):
-        H = np.concatenate((knn, l1, sim), axis=1)
+    def hyperG(self, h, W):
+        H = h
         # H = knn
         # the degree of the node
         DV = np.sum(H, axis=1)
@@ -742,7 +746,7 @@ class get_model(nn.Module):
         """
         使用超图H和固定对角矩阵生成变换矩阵
         Args:
-            H: 超图矩阵 [B, G, G]
+            H: 超图矩阵 [B, 3, G, G]
         Returns:
             transform: 变换矩阵 [B, 3G, G]
         """
@@ -751,16 +755,16 @@ class get_model(nn.Module):
         G = self.num_group
         # # 对H进行归一化
         # H = F.normalize(H, p=2, dim=-1)
-        # 将H重复三次
-        H = H.unsqueeze(1).repeat(1, 3, 1, 1)  # [B, 3, G, G]
-        H = H.view(B, 3*G, G)  # [B, 3G, G]
+
         # 使用HGCN得到分数矩阵
-        scores = self.HGCN_group(self.base_rotation_matrix.to(H.device), H)  # [B, 3G, G]
-        # 将scores分成三个G×G块
-        scores = scores.view(B, 3, G, G)  # [B, 3, G, G]
-        
+        scores1 = self.HGCN_group1(self.base_rotation_matrix[:G, :].to(H.device), H)  # [B, G, G]
+        scores2 = self.HGCN_group2(self.base_rotation_matrix[G:2*G, :].to(H.device), H)  # [B, G, G]
+        scores3 = self.HGCN_group3(self.base_rotation_matrix[2*G:, :].to(H.device), H)  # [B, G, G]
+        # 将三个scores拼接起来
+        scores = torch.stack([scores1, scores2, scores3], dim=1)  # [B, 3, G, G]
         # 对每个G×G块分别找最大值位置
         _, indices = torch.max(scores, dim=-1)  # [B, 3, G]
+
         
         # 构建变换矩阵
         transform = torch.zeros(B, 3, G, G, device=scores.device)
@@ -768,6 +772,9 @@ class get_model(nn.Module):
             for i in range(3):
                 # 在每个G×G块内构建映射
                 transform[b, i, torch.arange(G), indices[b, i]] = 1
+        
+        # 对每个G×G块分别转置
+        transform = transform.transpose(-1, -2)  # [B, 3, G, G] -> [B, 3, G, G
         
         # 重塑回 [B, 3G, G]
         transform = transform.view(B, 3*G, G)
@@ -793,18 +800,27 @@ class get_model(nn.Module):
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 
-            G = self.hyperG(knn, l1, sim, self.W)
-            H.append(torch.as_tensor(G).unsqueeze(0))
+            G_knn = self.hyperG(knn, self.W_knn)
+            G_l1 = self.hyperG(l1, self.W_l1)
+            G_sim = self.hyperG(sim, self.W_sim)
+            
+            # 将三个G堆叠在一起
+            G_combined = torch.stack([
+                torch.as_tensor(G_knn),
+                torch.as_tensor(G_l1),
+                torch.as_tensor(G_sim)], dim=0).unsqueeze(0)  # [1, 3, G, G]
+        
+            H.append(G_combined)
 
-        H = torch.cat(H, dim=0) # [B, 3G, 3G]
+        H = torch.cat(H, dim=0) # [B, G, G]
 
         
         transform_matrix = self.get_transform_matrix(H) # [B, G, G]
-        group_input_tokens = torch.bmm(transform_matrix, group_input_tokens)  # [B, G, 384]
+        group_input_tokens = torch.bmm(transform_matrix, group_input_tokens)  # [B, 3G, 384]
 
 
         # final input
-        x = group_input_tokens # [B, G, 384]
+        x = group_input_tokens # [B, 3G, 384]
 
         feature_list = self.blocks(x, pos) # List of 3 tensors, each [B, 3G, 384]
 
