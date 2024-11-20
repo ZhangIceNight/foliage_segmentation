@@ -789,7 +789,7 @@ class get_model(nn.Module):
         
         transform_matrix = self.get_transform_matrix(H) # [B, G, G]
         group_input_tokens = torch.bmm(transform_matrix, group_input_tokens)  # [B, G, 384]
-
+        pos = torch.bmm(transform_matrix, pos)  # [B, G, 384]
 
         # final input
         x = group_input_tokens # [B, G, 384]
