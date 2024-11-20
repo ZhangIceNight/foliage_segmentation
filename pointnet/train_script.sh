@@ -112,4 +112,4 @@ python train_semseg.py \
     --optimizer AdamW \
     --log_dir "pt_mamba_random_$1" \
     --gpu 0 \
-    --ckpts 'pretrain.pth'
+    # --ckpts 'pretrain.pth'
