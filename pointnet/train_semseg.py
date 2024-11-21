@@ -224,6 +224,7 @@ def main(args):
 
             seg_pred = classifier(points)
             seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
+            seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
             target = target.view(-1)
             loss = criterion(seg_pred, target)
@@ -296,7 +297,7 @@ def main(args):
                 #forward
                 seg_pred = classifier(points) # [B, N, 2]
                 seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
-
+                seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
                 target = target.view(-1) # [B*N]
 
