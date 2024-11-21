@@ -102,27 +102,27 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# # pt_mamba_random   
-# python train_semseg.py \
-#     --model pt_mamba_random \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 300 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pt_mamba_random_$1" \
-#     --gpu 0 \
-#     # --ckpts 'pretrain.pth'
-
-
-# pt_hmamba_orderMultiply_center
+# pt_mamba_random   
 python train_semseg.py \
-    --model pt_hmamba_orderMultiply_center \
+    --model pt_mamba_random \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pt_hmamba_orderMultiply_center_$1" \
+    --log_dir "pt_mamba_random_$1" \
     --gpu 0 \
     --ckpts 'pretrain.pth'
+
+
+# # pt_hmamba_orderMultiply_center
+# python train_semseg.py \
+#     --model pt_hmamba_orderMultiply_center \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_orderMultiply_center_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'

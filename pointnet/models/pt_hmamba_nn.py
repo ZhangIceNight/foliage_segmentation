@@ -722,6 +722,24 @@ class get_model(nn.Module):
 
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
 
+
+        # hypergraph serailization
+        X = group_input_tokens.cpu().detach().numpy()
+        H = []
+        n_neighbors = 1
+        for j in range(B):
+            knn = self.KNN(X[j, :, :], n_neighbors)
+            l1 = self.l1_representation(X[j, :, :], n_neighbors)
+            sim = self.similarity(X[j, :, :], n_neighbors)
+
+            G = self.hyperG(knn, l1, sim, self.W)
+            H.append(torch.as_tensor(G).unsqueeze(0))
+
+        H = torch.cat(H, dim=0) # [B, 3G, 3G]
+
+        group_input_tokens = self.HGCN(group_input_tokens, H) # [B, G, 384]
+
+
         # final input
         x = group_input_tokens # [B, 3G, 384]
 
@@ -745,57 +763,15 @@ class get_model(nn.Module):
         x = self.dp1(x)  # [B, 512, N]
         x = self.relu(self.bns2(self.convs2(x)))  # [B, 256, N]
         x = self.convs3(x)  # [B, cls_dim, N]
-        # x = F.log_softmax(x, dim=1)  # [B, cls_dim, N]
+        x = F.log_softmax(x, dim=1)  # [B, cls_dim, N]
         x = x.permute(0, 2, 1)  # [B, N, cls_dim]
         return x
 
 
-# class get_loss(nn.Module):
-#     def __init__(self):
-#         super(get_loss, self).__init__()
-
-#     def forward(self, pred, target):
-#         total_loss = F.nll_loss(pred, target)
-#         return total_loss
-
-
-
 class get_loss(nn.Module):
-    def __init__(self, alpha=0.5, smooth=1.0):
+    def __init__(self):
         super(get_loss, self).__init__()
-        self.bce = nn.BCEWithLogitsLoss()
-        self.alpha = alpha
-        self.smooth = smooth
-        
-    def dice_loss(self, pred, target):
-        """
-        pred: [B*N, 2] (logits)
-        target: [B*N] (class indices)
-        """
-        pred = torch.sigmoid(pred)
-        target = F.one_hot(target, 2).float()
-        
-        # 计算每个类别的Dice系数
-        intersection = (pred * target).sum(dim=0)
-        union = pred.sum(dim=0) + target.sum(dim=0)
-        
-        # 添加平滑项避免除零
-        dice = (2. * intersection + self.smooth) / (union + self.smooth)
-        return 1 - dice.mean()
-    
+
     def forward(self, pred, target):
-        """
-        pred: [-1, num_classes] (logits)
-        target: [-1] (class indices)
-        """
-        
-        # 计算BCE loss
-        target_onehot = F.one_hot(target, 2).float()
-        bce_loss = self.bce(pred, target_onehot)
-        
-        # 计算Dice loss
-        dice_loss = self.dice_loss(pred, target)
-        
-        # 组合loss
-        total_loss = self.alpha * bce_loss + (1 - self.alpha) * dice_loss
+        total_loss = F.nll_loss(pred, target)
         return total_loss

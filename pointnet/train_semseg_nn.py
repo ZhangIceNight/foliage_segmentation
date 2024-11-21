@@ -1,11 +1,8 @@
-"""
-Author: Benny
-Date: Nov 2019
-"""
 import argparse
 import os
 from data_utils.LeafDataLoader import LeafDatasetWholeScene
 import torch
+import torch.nn.functional as F
 import datetime
 import logging
 from pathlib import Path
@@ -13,11 +10,11 @@ import sys
 import importlib
 import shutil
 from tqdm import tqdm
-# import provider
 import numpy as np
 import time
 import wandb
 from timm.scheduler import CosineLRScheduler
+from models import Point_NN_Seg
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -46,6 +43,13 @@ def parse_args():
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--ckpts', type=str, default='pretrain.pth', help='ckpts')
     
+    parser.add_argument('--stages', type=int, default=4)
+    parser.add_argument('--dim', type=int, default=144)
+    parser.add_argument('--k', type=int, default=90)
+    parser.add_argument('--de_k', type=int, default=6)
+    parser.add_argument('--alpha', type=int, default=1000)
+    parser.add_argument('--beta', type=int, default=100)
+    parser.add_argument('--gamma', type=int, default=300)
     return parser.parse_args()
 
 
@@ -203,6 +207,51 @@ def main(args):
     )
     print("wandb initialized")
     classifier.zero_grad()
+    
+
+    # load point_nn model
+    point_nn = Point_NN_Seg(input_points=args.npoint, 
+                           num_stages=args.stages,
+                           embed_dim=args.dim, 
+                           k_neighbors=args.k, 
+                           de_neighbors=args.de_k,
+                           alpha=args.alpha, 
+                           beta=args.beta).cuda()
+    point_nn.eval()
+    
+    feature_memory = []
+    label_memory = []
+    for points, target in tqdm(trainDataLoader):
+        points = points.float().cuda()
+        points = points.transpose(2, 1)
+        target = target.long().cuda()
+        
+        with torch.no_grad():
+            point_features = point_nn(points)
+            point_features = point_features.permute(0, 2, 1)
+        
+        for b in range(points.shape[0]):
+            for class_idx in range(NUM_CLASSES):
+                class_mask = (target[b] == class_idx)
+                if torch.sum(class_mask) == 0:
+                    continue
+                
+                class_features = point_features[b][class_mask]
+                class_prototype = class_features.mean(0).unsqueeze(0)
+                
+                feature_memory.append(class_prototype)
+                label_memory.append(torch.tensor([class_idx], device='cuda'))
+    
+    feature_memory = torch.cat(feature_memory, dim=0)
+    feature_memory = F.normalize(feature_memory, dim=-1)
+    feature_memory = feature_memory.t()
+    
+    label_memory = torch.cat(label_memory, dim=0)
+    label_memory = F.one_hot(label_memory, num_classes=NUM_CLASSES).float()
+
+
+
+
 
     # Start training
     for epoch in range(start_epoch, args.epoch):
@@ -223,17 +272,14 @@ def main(args):
             points = points.transpose(2, 1)
 
             seg_pred = classifier(points)
-            seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
-            target = target.view(-1)
-            loss = criterion(seg_pred, target)
-            
-            pred_choice = seg_pred_soft.data.max(1)[1]
+            target = target.view(-1, 1)[:, 0]
+            pred_choice = seg_pred.data.max(1)[1]
 
             correct = pred_choice.eq(target.data).cpu().sum()
             mean_correct.append(correct.item() / (args.batch_size * args.npoint))
 
-            
+            loss = criterion(seg_pred, target)
             loss.backward()
             optimizer.step()
             loss_batch.append(loss.detach().cpu())
@@ -295,10 +341,8 @@ def main(args):
 
                 #forward
                 seg_pred = classifier(points) # [B, N, 2]
-                seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
-
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
-                target = target.view(-1) # [B*N]
+                target = target.view(-1, 1)[:, 0] # [B*N]
 
                 #loss
                 loss = criterion(seg_pred, target)
@@ -307,7 +351,7 @@ def main(args):
                 #accuracy
 
                 ## get max class index        
-                pred_choice = seg_pred_soft.data.max(1)[1] # [B*N, 2] -> [B*N]
+                pred_choice = seg_pred.data.max(1)[1] # [B*N, 2] -> [B*N]
                 ## compare batch accuracy
                 correct = pred_choice.eq(target.data).cpu().sum()   
                 mean_correct.append(correct.item() / (args.batch_size * args.npoint))
