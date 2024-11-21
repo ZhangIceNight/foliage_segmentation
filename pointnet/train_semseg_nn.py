@@ -113,6 +113,7 @@ def main(args):
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
+    MODEL_NN = importlib.import_module('Point_NN_Seg')
     print("model loaded")
     shutil.copy('models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
@@ -256,7 +257,7 @@ def main(args):
     
 
     # load point_nn model
-    point_nn = Point_NN_Seg(input_points=args.npoint, 
+    point_nn = MODEL_NN.Point_NN_Seg(input_points=args.npoint, 
                            num_stages=args.stages,
                            embed_dim=args.dim, 
                            k_neighbors=args.k, 
