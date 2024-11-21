@@ -26,7 +26,7 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 from PCTv3 import PointTransformerV3
 
-
+ 
 class PointTransformerV3Seg(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
