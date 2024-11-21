@@ -153,4 +153,4 @@ python train_semseg_nn.py \
     --log_dir "pctv3_seg_$1" \
     --gpu 0 \
 
-
+ 
