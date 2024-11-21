@@ -734,7 +734,7 @@ class get_model(nn.Module):
 
             G = self.hyperG(knn, l1, sim, self.W)
             H.append(torch.as_tensor(G).unsqueeze(0))
-
+ 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
 
         group_input_tokens = self.HGCN(group_input_tokens, H) # [B, G, 384]
