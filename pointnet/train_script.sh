@@ -128,14 +128,29 @@ fi
 #     --ckpts 'pretrain.pth'
 
 
-# pt_mamba_random   
+# # pt_mamba_random   
+# python train_semseg_nn.py \
+#     --model pt_mamba_random \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_mamba_random_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
+
+
+
+# pctv3_seg
 python train_semseg_nn.py \
-    --model pt_mamba_random \
+    --model pctv3_seg \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pt_mamba_random_$1" \
+    --log_dir "pctv3_seg_$1" \
     --gpu 0 \
-    --ckpts 'pretrain.pth'
+
+
