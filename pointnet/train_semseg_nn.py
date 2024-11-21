@@ -121,6 +121,52 @@ def main(args):
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
     print("model applied")
+
+
+    @torch.no_grad()
+    def build_memory_bank(train_loader, point_nn, args):
+        """构建memory bank (按类别计算原型)"""
+        feature_memory = []
+        label_memory = []
+        
+        point_nn.eval()
+        with torch.no_grad():
+            for points, target in tqdm(train_loader, desc='Building memory bank'):
+                points = points.float().cuda()
+                points = points.transpose(2, 1)  # [B, 3, N]
+
+                # 获取特征
+                point_features = point_nn(points)
+                point_features = point_features.permute(0, 2, 1)  # [B, N, C]
+                
+                # 按batch和类别处理
+                for b in range(points.shape[0]):
+                    for class_idx in range(NUM_CLASSES):
+                        # 获取当前类别的mask
+                        class_mask = (target[b] == class_idx)
+                        if torch.sum(class_mask) == 0:
+                            continue
+                    
+                        # 计算类别原型
+                        class_features = point_features[b][class_mask]  # [N_class, C]
+                        class_prototype = class_features.mean(0).unsqueeze(0)  # [1, C]
+                    
+                        # 保存原型和标签
+                        feature_memory.append(class_prototype)
+                        label_memory.append(torch.tensor([class_idx], device='cuda'))
+    
+        # 合并所有原型和标签
+        feature_memory = torch.cat(feature_memory, dim=0)  # [M, C]
+        feature_memory = F.normalize(feature_memory, dim=-1)
+        feature_memory = feature_memory.t()  # [C, M]
+        
+        # 转换标签为one-hot
+        label_memory = torch.cat(label_memory, dim=0)  # [M]
+        label_memory = F.one_hot(label_memory, num_classes=NUM_CLASSES).float()  # [M, NUM_CLASSES]
+    
+        return feature_memory, label_memory
+
+
     def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
         decay = []
         no_decay = []
@@ -219,35 +265,9 @@ def main(args):
                            beta=args.beta).cuda()
     point_nn.eval()
     
-    feature_memory = []
-    label_memory = []
-    for points, target in tqdm(trainDataLoader):
-        points = points.float().cuda()
-        points = points.transpose(2, 1)
-        target = target.long().cuda()
-        
-        with torch.no_grad():
-            point_features = point_nn(points)
-            point_features = point_features.permute(0, 2, 1)
-        
-        for b in range(points.shape[0]):
-            for class_idx in range(NUM_CLASSES):
-                class_mask = (target[b] == class_idx)
-                if torch.sum(class_mask) == 0:
-                    continue
-                
-                class_features = point_features[b][class_mask]
-                class_prototype = class_features.mean(0).unsqueeze(0)
-                
-                feature_memory.append(class_prototype)
-                label_memory.append(torch.tensor([class_idx], device='cuda'))
-    
-    feature_memory = torch.cat(feature_memory, dim=0)
-    feature_memory = F.normalize(feature_memory, dim=-1)
-    feature_memory = feature_memory.t()
-    
-    label_memory = torch.cat(label_memory, dim=0)
-    label_memory = F.one_hot(label_memory, num_classes=NUM_CLASSES).float()
+    # build memory bank
+    print("building memory bank...")
+    feature_memory, label_memory = build_memory_bank(trainDataLoader, point_nn, NUM_CLASSES)
 
 
 
@@ -271,15 +291,36 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
-            seg_pred = classifier(points)
-            seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
-            target = target.view(-1, 1)[:, 0]
+            # point_nn part
+            with torch.no_grad():
+                point_features = point_nn(points)
+                point_features = point_features.permute(0, 2, 1)  # [B, N, C]
+                point_features = F.normalize(point_features, dim=-1)
+
+                batch_size, num_points = point_features.shape[:2]
+                point_features = point_features.reshape(-1, point_features.shape[-1])
+
+                # 计算相似度
+                similarity = point_features @ feature_memory
+                nn_logits = (-args.gamma * (1 - similarity)).exp() @ label_memory
+                nn_logits = nn_logits.reshape(batch_size, num_points, NUM_CLASSES)
+            
+            # mamba_part
+            seg_logits = classifier(points)
+            seg_logits_fusion = seg_logits + nn_logits
+
+            seg_pred = F.log_softmax(seg_logits_fusion, dim=1).contiguous().view(-1, NUM_CLASSES)
+            
+            seg_logits_fusion = seg_logits_fusion.contiguous().view(-1, NUM_CLASSES)
+            target = target.view(-1)
+            loss = criterion(seg_logits_fusion, target)
+
             pred_choice = seg_pred.data.max(1)[1]
 
             correct = pred_choice.eq(target.data).cpu().sum()
             mean_correct.append(correct.item() / (args.batch_size * args.npoint))
 
-            loss = criterion(seg_pred, target)
+            
             loss.backward()
             optimizer.step()
             loss_batch.append(loss.detach().cpu())
@@ -339,13 +380,29 @@ def main(args):
                 points, target = points.float().cuda(), target.long().cuda() # [B, N, 3]
                 points = points.transpose(2, 1) # [B, 3, N]
 
-                #forward
-                seg_pred = classifier(points) # [B, N, 2]
-                seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
-                target = target.view(-1, 1)[:, 0] # [B*N]
+                # point_nn part
+                point_features = point_nn(points)
+                point_features = point_features.permute(0, 2, 1)  # [B, N, C]
+                point_features = F.normalize(point_features, dim=-1)
+
+                batch_size, num_points = point_features.shape[:2]
+                point_features = point_features.reshape(-1, point_features.shape[-1])
+
+                # 计算相似度
+                similarity = point_features @ feature_memory
+                nn_logits = (-args.gamma * (1 - similarity)).exp() @ label_memory
+                nn_logits = nn_logits.reshape(batch_size, num_points, NUM_CLASSES)                
+                
+                # mamba part
+                seg_logits = classifier(points)
+                seg_logits_fusion = seg_logits + nn_logits
+
+                seg_pred = F.log_softmax(seg_logits_fusion, dim=1).contiguous().view(-1, NUM_CLASSES)
+                seg_logits_fusion = seg_logits_fusion.contiguous().view(-1, NUM_CLASSES)
+                target = target.view(-1) # [B*N]
 
                 #loss
-                loss = criterion(seg_pred, target)
+                loss = criterion(seg_logits_fusion, target)
                 loss_batch.append(loss.detach().cpu())
 
                 #accuracy

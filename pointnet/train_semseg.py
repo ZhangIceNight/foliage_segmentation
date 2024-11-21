@@ -18,6 +18,7 @@ import numpy as np
 import time
 import wandb
 from timm.scheduler import CosineLRScheduler
+import torch.nn.functional as F
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -116,7 +117,7 @@ def main(args):
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
-    print("model applied")
+    print("model applied")  
     def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
         decay = []
         no_decay = []
@@ -223,7 +224,7 @@ def main(args):
             points = points.transpose(2, 1)
 
             seg_pred = classifier(points)
-            seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
+            seg_pred_soft = F.log_softmax(seg_pred, dim=1)
             seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
             target = target.view(-1)
@@ -296,7 +297,7 @@ def main(args):
 
                 #forward
                 seg_pred = classifier(points) # [B, N, 2]
-                seg_pred_soft = torch.nn.functional.log_softmax(seg_pred, dim=1)
+                seg_pred_soft = F.log_softmax(seg_pred, dim=1)
                 seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
                 target = target.view(-1) # [B*N]
