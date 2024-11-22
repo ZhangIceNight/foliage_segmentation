@@ -613,13 +613,13 @@ class get_model(nn.Module):
         B, C, N = pts.shape
         # pts = pts.transpose(-1, -2) # [B, N, 3]
 
-        x, x_max, x_mean = self.pct_backbone(pts) # [B, C=1024]
+        x, x_max, x_mean = self.pct_backbone(pts) # [B, C=1152]
         x_max = x_max.unsqueeze(-1).repeat(1, 1, N)
         x_mean = x_mean.unsqueeze(-1).repeat(1, 1, N)
         global_feature = torch.cat((x_max, x_mean), dim=1) # [B, 2048, N]
         pts = pts.transpose(-1, -2) # [B, N, 3]
 
-        f_level_0 = self.propagation_0(pts, pts, pts, x) # [B, 3328, N]
+        f_level_0 = self.propagation_0(pts.transpose(-1, -2), pts.transpose(-1, -2), pts.transpose(-1, -2), x) # [B, 3328, N]
 
         x = torch.cat((f_level_0, global_feature), 1)  # [B, 3328, N]
         x = self.relu(self.bns1(self.convs1(x)))  # [B, 512, N]
