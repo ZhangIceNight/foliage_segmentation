@@ -143,7 +143,7 @@ fi
 
 
 # pctv3_seg
-python train_semseg_nn.py \
+python train_semseg.py \
     --model pctv3_seg \
     --batch_size 16 \
     --npoint 4096 \
