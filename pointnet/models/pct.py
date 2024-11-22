@@ -68,15 +68,12 @@ class TransformerSA(nn.Module):
         value = self.value_proj(x)
 
         # Rearrange for multi-head attention
-        query = query.view(B, N, self.num_heads, self.head_dim).permute(0, 2, 1, 3)  # [B, num_heads, N, head_dim]
-        key = key.view(B, N, self.num_heads, self.head_dim).permute(0, 2, 3, 1)     # [B, num_heads, head_dim, N]
-        value = value.view(B, N, self.num_heads, self.head_dim).permute(0, 2, 1, 3) # [B, num_heads, N, head_dim]
+        query = query.view(B, N, self.input_dim)
+        key = key.view(B, N, self.input_dim)
+        value = value.view(B, N, self.input_dim)
 
-        # Apply multi-head attention
-        attn_output, _ = self.multihead_attn(query, key, value)
-        
-        # Reshape and combine heads
-        attn_output = attn_output.permute(0, 2, 1, 3).contiguous().view(B, N, -1)  # [B, N, input_dim]
+        # Apply multi-head attention    
+        attn_output, _ = self.multihead_attn(query, key, value) # [B, N, input_dim]
 
         # Apply dropout, residual connection, and layer normalization
         x = self.dropout(attn_output)
