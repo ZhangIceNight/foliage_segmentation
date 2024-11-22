@@ -27,6 +27,8 @@ from serialization import encode
 
 @torch.inference_mode()
 def offset2bincount(offset):
+    if offset.dim() > 1:
+        offset = offset.squeeze()
     return torch.diff(
         offset, prepend=torch.tensor([0], device=offset.device, dtype=torch.long)
     )
