@@ -104,7 +104,7 @@ class NaivePCT(nn.Module):
     
     def forward(self, x):
         x = self.embedding(x)
-        
+        x = x.transpose(-1, -2)
         x1 = self.sa1(x)
         x2 = self.sa2(x1)
         x3 = self.sa3(x2)
