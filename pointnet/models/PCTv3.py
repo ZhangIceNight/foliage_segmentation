@@ -1038,7 +1038,8 @@ class PointTransformerV3(PointModule):
         }
         collector = Collect(
             keys=["coord"],  # 基础键
-            feat_keys=["coord"]  # 将被组合成特征
+            feat_keys=["coord"],
+            grid_size=0.01,    # 将被组合成特征
         )
         data_dict = collector(data_dict)
         
