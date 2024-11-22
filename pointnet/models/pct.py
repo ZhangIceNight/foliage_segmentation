@@ -94,8 +94,8 @@ class NaivePCT(nn.Module):
         self.sa4 = TransformerSA(128, num_heads=8)
 
         self.linear = nn.Sequential(
-            nn.Conv1d(512, 1024, kernel_size=1, bias=False),
-            nn.BatchNorm1d(1024),
+            nn.Conv1d(512, 1152, kernel_size=1, bias=False),
+            nn.BatchNorm1d(1152),
             nn.LeakyReLU(negative_slope=0.2)
         )
     
