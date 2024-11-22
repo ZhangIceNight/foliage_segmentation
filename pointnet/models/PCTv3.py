@@ -1031,6 +1031,7 @@ class PointTransformerV3(PointModule):
             "coord": xyz,  # 原始坐标 [B, N, 3]
             "feat": xyz,   # 使用坐标作为初始特征
             "grid_size": 0.01,  # 网格采样大小
+            "offset": torch.tensor([N * i for i in range(B + 1)], device=xyz.device)
             # "batch": torch.arange(xyz.shape[0], device=xyz.device).repeat_interleave(xyz.shape[1])  # 生成batch索引
         }
         collector = BatchCollect(
