@@ -1028,14 +1028,15 @@ class PointTransformerV3(PointModule):
         2. "grid_coord": discrete coordinate after grid sampling (voxelization) or "coord" + "grid_size"
         3. "offset" or "batch": https://github.com/Pointcept/Pointcept?tab=readme-ov-file#offset
         """
+        pts = xyz.contiguous().view(-1, 3)
       # 构建输入字典
         data_dict = {
-            "coord": xyz,  # 原始坐标 [B, N, 3]
-            "feat": xyz,   # 使用坐标作为初始特征
+            "coord": pts,  # 原始坐标 [B, N, 3]
+            "feat": pts,   # 使用坐标作为初始特征
             "grid_size": 0.01,  # 网格采样大小
             "offset": torch.tensor([xyz.shape[1] * i for i in range(xyz.shape[0] + 1)], device=xyz.device)
         }
-        collector = BatchCollect(
+        collector = Collect(
             keys=["coord"],  # 基础键
             feat_keys=["coord"]  # 将被组合成特征
         )
