@@ -73,10 +73,15 @@ class Collect(object):
 class BatchCollect(Collect):
     def __call__(self, batch_dict):
         # 处理每个batch
-        batch_size = len(batch_dict)
+        batch_size = len(batch_dict["coord"])  # 使用coord的长度来确定batch_size
         results = []
         for b in range(batch_size):
-            single_dict = {k: v[b] for k, v in batch_dict.items()}
+            single_dict = {}
+            for k, v in batch_dict.items():
+                if k == "grid_size":  # 特殊处理grid_size
+                    single_dict[k] = v
+                else:
+                    single_dict[k] = v[b]
             results.append(super().__call__(single_dict))
         
         # 合并结果
