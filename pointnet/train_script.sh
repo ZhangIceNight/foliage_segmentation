@@ -142,15 +142,15 @@ fi
 
 
 
-# pctv3_seg
+# pct_seg
 python train_semseg.py \
-    --model pctv3_seg \
+    --model pct_seg \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pctv3_seg_$1" \
+    --log_dir "pct_seg_$1" \
     --gpu 0 \
 
  
