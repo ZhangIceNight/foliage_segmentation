@@ -106,8 +106,9 @@ class NaivePCT(nn.Module):
         x2 = self.sa2(x1)
         x3 = self.sa3(x2)
         x4 = self.sa4(x3)
-        x = torch.cat([x1, x2, x3, x4], dim=1)
+        x = torch.cat([x1, x2, x3, x4], dim=-1)
 
+        x = x.transpose(-1, -2)
         x = self.linear(x)
 
         # x = F.adaptive_max_pool1d(x, 1).view(batch_size, -1)
