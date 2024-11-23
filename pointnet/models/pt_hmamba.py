@@ -386,7 +386,7 @@ class HGCN_layer(nn.Module):
         return gc3
 
 
-class HGCNNet(nn.Module):
+class HGCNNet_deep(nn.Module):
     def __init__(self, img_len):
         super(HGCNNet, self).__init__()
         self.gc1 = GraphConvolution(384, 384)
@@ -433,6 +433,42 @@ class HGCNNet(nn.Module):
         gc5 = self.relu(gc5)
         return gc5
 
+
+class HGCNNet(nn.Module):
+    def __init__(self, img_len):
+        super(HGCNNet, self).__init__()
+        # 第一层
+        self.gc1 = GraphConvolution(384, 384)
+        self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer1 = HGCN_layer(img_len, 384)
+
+        # 第二层
+        self.gc2 = GraphConvolution(384, 384)
+        self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer2 = HGCN_layer(img_len, 384)
+
+        # 输出层
+        self.gc3 = GraphConvolution(384, 384)
+        self.relu = nn.Softplus()
+
+    def forward(self, feature, H):
+        # 第一层
+        gc1 = self.gc1(feature, H)
+        gc1 = self.bn1(gc1)
+        gc1 = self.relu(gc1)
+        gc1 = self.HGCN_layer1(gc1, H)
+
+        # 第二层
+        gc2 = self.gc2(gc1, H)
+        gc2 = self.bn2(gc2)
+        gc2 = self.relu(gc2)
+        gc2 = self.HGCN_layer2(gc2, H)
+
+        # 输出层
+        gc3 = self.gc3(gc2, H)
+        gc3 = self.relu(gc3)
+        
+        return gc3
 
 class MixerModelForSegmentation(MixerModel):
     def __init__(
