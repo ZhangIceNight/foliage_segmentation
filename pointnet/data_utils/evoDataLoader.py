@@ -45,3 +45,29 @@ class EvoDataset(Dataset):
         pts = torch.FloatTensor(points).transpose(0, 1)  # (3, 4096)
         label = torch.LongTensor(labels)  # (4096,)
         return pts, label
+    
+
+if __name__ == '__main__':
+    # 测试数据加载
+    data_root = 'data'  # 数据根目录
+    
+    # 测试训练集
+    train_dataset = EvoDataset(data_root, split='train')
+    print(f'训练集大小: {len(train_dataset)} blocks')
+    
+    # 测试一个样本
+    pts, label = train_dataset[0]
+    print(f'点云形状: {pts.shape}')  # 应该是(3, 4096)
+    print(f'标签形状: {label.shape}')  # 应该是(4096,)
+    print(f'标签值分布: {torch.unique(label, return_counts=True)}')  # 查看标签分布
+    
+    # 测试测试集
+    test_dataset = EvoDataset(data_root, split='test')
+    print(f'测试集大小: {len(test_dataset)} blocks')
+    
+    # 测试数据加载器
+    from torch.utils.data import DataLoader
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+    batch_pts, batch_labels = next(iter(train_loader))
+    print(f'批次点云形状: {batch_pts.shape}')  # 应该是(4, 3, 4096)
+    print(f'批次标签形状: {batch_labels.shape}')  # 应该是(4, 4096)
