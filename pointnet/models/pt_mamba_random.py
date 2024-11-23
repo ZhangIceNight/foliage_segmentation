@@ -799,3 +799,40 @@ class get_loss(nn.Module):
         # 组合loss
         total_loss = self.alpha * bce_loss + (1 - self.alpha) * dice_loss
         return total_loss
+    
+
+
+
+class get_loss(nn.Module):
+    def __init__(self, alpha=0.5, smooth=1.0, gamma=2.0):
+        super(get_loss, self).__init__()
+        self.alpha = alpha
+        self.smooth = smooth
+        self.gamma = gamma  # focal loss的聚焦参数
+        
+    def focal_loss(self, pred, target):
+        pred = torch.sigmoid(pred)
+        target = F.one_hot(target, 2).float()
+        
+        # focal loss计算
+        pt = target * pred + (1 - target) * (1 - pred)
+        focal_weight = (1 - pt) ** self.gamma
+        
+        loss = -torch.mean(focal_weight * (target * torch.log(pred + 1e-8) + 
+                          (1 - target) * torch.log(1 - pred + 1e-8)))
+        return loss
+    
+    def dice_loss(self, pred, target):
+        # 保持原有的dice loss实现
+        pred = torch.sigmoid(pred)
+        target = F.one_hot(target, 2).float()
+        intersection = (pred * target).sum(dim=0)
+        union = pred.sum(dim=0) + target.sum(dim=0)
+        dice = (2. * intersection + self.smooth) / (union + self.smooth)
+        return 1 - dice.mean()
+    
+    def forward(self, pred, target):
+        focal_loss = self.focal_loss(pred, target)
+        dice_loss = self.dice_loss(pred, target)
+        total_loss = self.alpha * focal_loss + (1 - self.alpha) * dice_loss
+        return total_loss  
