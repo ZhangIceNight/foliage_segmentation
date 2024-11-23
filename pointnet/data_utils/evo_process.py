@@ -25,36 +25,39 @@ def process_ply_to_npy(ply_dir, save_dir):
         data = plydata['vertex'].data
         
         # 只保留标签为4和5的点
-        label_mask = np.logical_or(data['gt_class'] == 4, data['gt_class'] == 5)
+        target_labels = np.array([4, 5])
+        label_mask = np.isin(data['gt_class'], target_labels)
         data_filtered = data[label_mask]
         
+        # 检查标签
+        unique_labels = np.unique(data_filtered['gt_class'])
+        print(f"File {file} filtered labels: {unique_labels}")
+        
         # 分离训练点和测试点
-        train_mask = np.logical_or(data_filtered['data_split'] == 0, data_filtered['data_split'] == 1)
-        test_mask = data_filtered['data_split'] == 2
+        train_data = data_filtered[data_filtered['data_split'] != 2]
+        test_data = data_filtered[data_filtered['data_split'] == 2]
         
         # 处理训练数据
-        if np.any(train_mask):
-            train_data = data_filtered[train_mask]
+        if len(train_data) > 0:
             train_points = np.zeros((len(train_data), 4))
             train_points[:, 0] = train_data['x']
             train_points[:, 1] = train_data['y']
             train_points[:, 2] = train_data['z']
             # 将标签4映射为0,标签5映射为1
-            train_points[:, 3] = np.where(train_data['gt_class'] == 4, 0, 1)
+            train_points[:, 3] = (train_data['gt_class'] == 5).astype(int)
             
             train_save_path = os.path.join(save_dir, 'train', file.replace('.ply', '_train.npy'))
             np.save(train_save_path, train_points)
             print(f"Saved {len(train_points)} train points with labels: {np.unique(train_points[:, 3], return_counts=True)}")
             
         # 处理测试数据
-        if np.any(test_mask):
-            test_data = data_filtered[test_mask]
+        if len(test_data) > 0:
             test_points = np.zeros((len(test_data), 4))
             test_points[:, 0] = test_data['x']
             test_points[:, 1] = test_data['y']
             test_points[:, 2] = test_data['z']
             # 将标签4映射为0,标签5映射为1
-            test_points[:, 3] = np.where(test_data['gt_class'] == 4, 0, 1)
+            test_points[:, 3] = (test_data['gt_class'] == 5).astype(int)
             
             test_save_path = os.path.join(save_dir, 'test', file.replace('.ply', '_test.npy'))
             np.save(test_save_path, test_points)
