@@ -7,6 +7,7 @@ def process_ply_to_npy(ply_dir, save_dir):
     """
     处理PLY文件并保存为NPY格式
     格式: [x, y, z, label]
+    只保留标签4和5的点,并将其映射为0和1
     按照每个点的data_split标志分类
     """
     if not os.path.exists(save_dir):
@@ -23,31 +24,41 @@ def process_ply_to_npy(ply_dir, save_dir):
         plydata = PlyData.read(ply_path)
         data = plydata['vertex'].data
         
+        # 只保留标签为4和5的点
+        label_mask = np.logical_or(data['gt_class'] == 4, data['gt_class'] == 5)
+        data_filtered = data[label_mask]
+        
         # 分离训练点和测试点
-        train_mask = (data['data_split'] == 0) | (data['data_split'] == 1)  # 训练集和验证集
-        test_mask = data['data_split'] == 2  # 测试集
+        train_mask = np.logical_or(data_filtered['data_split'] == 0, data_filtered['data_split'] == 1)
+        test_mask = data_filtered['data_split'] == 2
         
         # 处理训练数据
         if np.any(train_mask):
-            train_points = np.zeros((np.sum(train_mask), 4))
-            train_points[:, 0] = data['x'][train_mask]
-            train_points[:, 1] = data['y'][train_mask]
-            train_points[:, 2] = data['z'][train_mask]
-            train_points[:, 3] = data['gt_class'][train_mask]
+            train_data = data_filtered[train_mask]
+            train_points = np.zeros((len(train_data), 4))
+            train_points[:, 0] = train_data['x']
+            train_points[:, 1] = train_data['y']
+            train_points[:, 2] = train_data['z']
+            # 将标签4映射为0,标签5映射为1
+            train_points[:, 3] = np.where(train_data['gt_class'] == 4, 0, 1)
             
             train_save_path = os.path.join(save_dir, 'train', file.replace('.ply', '_train.npy'))
             np.save(train_save_path, train_points)
+            print(f"Saved {len(train_points)} train points with labels: {np.unique(train_points[:, 3], return_counts=True)}")
             
         # 处理测试数据
         if np.any(test_mask):
-            test_points = np.zeros((np.sum(test_mask), 4))
-            test_points[:, 0] = data['x'][test_mask]
-            test_points[:, 1] = data['y'][test_mask]
-            test_points[:, 2] = data['z'][test_mask]
-            test_points[:, 3] = data['gt_class'][test_mask]
+            test_data = data_filtered[test_mask]
+            test_points = np.zeros((len(test_data), 4))
+            test_points[:, 0] = test_data['x']
+            test_points[:, 1] = test_data['y']
+            test_points[:, 2] = test_data['z']
+            # 将标签4映射为0,标签5映射为1
+            test_points[:, 3] = np.where(test_data['gt_class'] == 4, 0, 1)
             
             test_save_path = os.path.join(save_dir, 'test', file.replace('.ply', '_test.npy'))
             np.save(test_save_path, test_points)
+            print(f"Saved {len(test_points)} test points with labels: {np.unique(test_points[:, 3], return_counts=True)}")
 
 if __name__ == '__main__':
     # 设置路径
