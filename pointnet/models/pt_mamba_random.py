@@ -760,45 +760,45 @@ class get_model(nn.Module):
 
 
 
-class get_loss(nn.Module):
-    def __init__(self, alpha=0.5, smooth=1.0):
-        super(get_loss, self).__init__()
-        self.bce = nn.BCEWithLogitsLoss()
-        self.alpha = alpha
-        self.smooth = smooth
+# class get_loss(nn.Module):
+#     def __init__(self, alpha=0.5, smooth=1.0):
+#         super(get_loss, self).__init__()
+#         self.bce = nn.BCEWithLogitsLoss()
+#         self.alpha = alpha
+#         self.smooth = smooth
         
-    def dice_loss(self, pred, target):
-        """
-        pred: [B*N, 2] (logits)
-        target: [B*N] (class indices)
-        """
-        pred = torch.sigmoid(pred)
-        target = F.one_hot(target, 2).float()
+#     def dice_loss(self, pred, target):
+#         """
+#         pred: [B*N, 2] (logits)
+#         target: [B*N] (class indices)
+#         """
+#         pred = torch.sigmoid(pred)
+#         target = F.one_hot(target, 2).float()
         
-        # 计算每个类别的Dice系数
-        intersection = (pred * target).sum(dim=0)
-        union = pred.sum(dim=0) + target.sum(dim=0)
+#         # 计算每个类别的Dice系数
+#         intersection = (pred * target).sum(dim=0)
+#         union = pred.sum(dim=0) + target.sum(dim=0)
         
-        # 添加平滑项避免除零
-        dice = (2. * intersection + self.smooth) / (union + self.smooth)
-        return 1 - dice.mean()
+#         # 添加平滑项避免除零
+#         dice = (2. * intersection + self.smooth) / (union + self.smooth)
+#         return 1 - dice.mean()
     
-    def forward(self, pred, target):
-        """
-        pred: [-1, num_classes] (logits)
-        target: [-1] (class indices)
-        """
+#     def forward(self, pred, target):
+#         """
+#         pred: [-1, num_classes] (logits)
+#         target: [-1] (class indices)
+#         """
         
-        # 计算BCE loss
-        target_onehot = F.one_hot(target, 2).float()
-        bce_loss = self.bce(pred, target_onehot)
+#         # 计算BCE loss
+#         target_onehot = F.one_hot(target, 2).float()
+#         bce_loss = self.bce(pred, target_onehot)
         
-        # 计算Dice loss
-        dice_loss = self.dice_loss(pred, target)
+#         # 计算Dice loss
+#         dice_loss = self.dice_loss(pred, target)
         
-        # 组合loss
-        total_loss = self.alpha * bce_loss + (1 - self.alpha) * dice_loss
-        return total_loss
+#         # 组合loss
+#         total_loss = self.alpha * bce_loss + (1 - self.alpha) * dice_loss
+#         return total_loss
     
 
 
