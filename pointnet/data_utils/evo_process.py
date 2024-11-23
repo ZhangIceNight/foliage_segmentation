@@ -7,6 +7,7 @@ def process_ply_to_npy(ply_dir, save_dir):
     """
     处理PLY文件并保存为NPY格式
     格式: [x, y, z, label]
+    按照每个点的data_split标志分类
     """
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -22,27 +23,36 @@ def process_ply_to_npy(ply_dir, save_dir):
         plydata = PlyData.read(ply_path)
         data = plydata['vertex'].data
         
-        # 提取xyz坐标和标签
-        points = np.zeros((len(data), 4))  # [x, y, z, label]
-        points[:, 0] = data['x']  # x坐标
-        points[:, 1] = data['y']  # y坐标
-        points[:, 2] = data['z']  # z坐标
-        points[:, 3] = data['gt_class']  # 标签
+        # 分离训练点和测试点
+        train_mask = (data['data_split'] == 0) | (data['data_split'] == 1)  # 训练集和验证集
+        test_mask = data['data_split'] == 2  # 测试集
         
-        # 根据data_split决定保存路径
-        # data_split: 0=train, 1=val, 2=test
-        if data['data_split'][0] == 2:  # 测试集
-            save_path = os.path.join(save_dir, 'test', file.replace('.ply', '.npy'))
-        elif data['data_split'][0] == 0 or data['data_split'][0] == 1:  # 训练集和验证集
-            save_path = os.path.join(save_dir, 'train', file.replace('.ply', '.npy'))
+        # 处理训练数据
+        if np.any(train_mask):
+            train_points = np.zeros((np.sum(train_mask), 4))
+            train_points[:, 0] = data['x'][train_mask]
+            train_points[:, 1] = data['y'][train_mask]
+            train_points[:, 2] = data['z'][train_mask]
+            train_points[:, 3] = data['gt_class'][train_mask]
             
-        # 保存为npy文件
-        np.save(save_path, points)
+            train_save_path = os.path.join(save_dir, 'train', file.replace('.ply', '_train.npy'))
+            np.save(train_save_path, train_points)
+            
+        # 处理测试数据
+        if np.any(test_mask):
+            test_points = np.zeros((np.sum(test_mask), 4))
+            test_points[:, 0] = data['x'][test_mask]
+            test_points[:, 1] = data['y'][test_mask]
+            test_points[:, 2] = data['z'][test_mask]
+            test_points[:, 3] = data['gt_class'][test_mask]
+            
+            test_save_path = os.path.join(save_dir, 'test', file.replace('.ply', '_test.npy'))
+            np.save(test_save_path, test_points)
 
 if __name__ == '__main__':
     # 设置路径
-    ply_dir = 'data/evonpy'  # PLY文件目录
-    save_dir = 'data/evonpy'  # NPY保存目录
+    ply_dir = 'data'  # PLY文件目录
+    save_dir = 'data'  # NPY保存目录
     
     # 处理文件
     process_ply_to_npy(ply_dir, save_dir)
