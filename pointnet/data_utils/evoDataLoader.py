@@ -12,13 +12,13 @@ def pc_normalize(pc):
     return pc
 
 class EvoDataset(Dataset):
-    def __init__(self, data_root, points_per_sample=4096, split='train'):
+    def __init__(self, root, points_per_sample=4096, split='train'):
         self.points_per_sample = points_per_sample
         self.split = split
         
         # 加载数据
         self.scenes = []
-        data_dir = os.path.join(data_root, split)
+        data_dir = os.path.join(root, split)
         for file in os.listdir(data_dir):
             if file.endswith('.npy'):
                 scene = np.load(os.path.join(data_dir, file))
@@ -50,7 +50,7 @@ class EvoDataset(Dataset):
 
 if __name__ == '__main__':
     # 测试数据加载
-    data_root = 'data'  # 数据根目录
+    data_root = 'data_evo'  # 数据根目录
     
     # 测试训练集
     train_dataset = EvoDataset(data_root, split='train')
