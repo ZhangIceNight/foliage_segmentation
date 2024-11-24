@@ -92,9 +92,9 @@ def main(args):
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = EvoDataset(root=root, split='train', block_points=NUM_POINT)
+    TRAIN_DATASET = EvoDataset(root=root, split='train', points_per_sample=NUM_POINT)
     print("start loading test data ...")
-    TEST_DATASET = EvoDataset(root=root, split='test', block_points=NUM_POINT)
+    TEST_DATASET = EvoDataset(root=root, split='test', points_per_sample=NUM_POINT)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, 
                                                 batch_size=BATCH_SIZE, 
