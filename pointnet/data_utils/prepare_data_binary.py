@@ -20,7 +20,7 @@ def convert_txt_to_npy(data_dir, output_dir):
         np.save(output_path, data)
 
 if __name__ == '__main__':
-    input_dir = '/public/wjzhang/datasets/LabelledPC'
-    output_dir = '/public/wjzhang/datasets/LabelledPCnpy'
+    input_dir = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples'
+    output_dir = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples_npy'
     convert_txt_to_npy(input_dir, output_dir)
     
