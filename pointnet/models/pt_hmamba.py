@@ -762,7 +762,7 @@ class get_model(nn.Module):
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 8
+        n_neighbors = 2
         for j in range(B):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
