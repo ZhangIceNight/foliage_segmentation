@@ -13,7 +13,7 @@ def pc_normalize(pc):
 
 class EvoDataset(Dataset):
     def __init__(self, data_root, points_per_sample=4096, split='train'):
-        self.points_per_sample = points_per_sample  # 与Group处理的点数匹配
+        self.points_per_sample = points_per_sample
         self.split = split
         
         # 加载数据
@@ -22,28 +22,29 @@ class EvoDataset(Dataset):
         for file in os.listdir(data_dir):
             if file.endswith('.npy'):
                 scene = np.load(os.path.join(data_dir, file))
-                # 将场景分成多个4096点的块
+                # 直接分块，因为数据已经预处理好了
                 n_blocks = len(scene) // self.points_per_sample
-                blocks = []
                 for i in range(n_blocks):
                     start_idx = i * self.points_per_sample
                     end_idx = start_idx + self.points_per_sample
-                    blocks.append(scene[start_idx:end_idx])
-                self.scenes.extend(blocks)
+                    block = scene[start_idx:end_idx].copy()  # 创建副本避免修改原始数据
+                    self.scenes.append(block)
                 
     def __len__(self):
-        return len(self.scenes)  # 返回总block数
+        return len(self.scenes)
         
     def __getitem__(self, idx):
-        points = self.scenes[idx]  # (4096, 4) - xyz和label
+        points = self.scenes[idx]  # (4096, 4)
         
-        points = points[:, :3]  # XYZ坐标
-        labels = points[:, -1].astype(np.int32)  # 标签
+        coords = points[:, :3]  # XYZ坐标
+        labels = points[:, 3].astype(np.int64)  # 标签已经是0和1
+        
         # 归一化点云
-        points = pc_normalize(points)
-
-        pts = torch.FloatTensor(points).transpose(0, 1)  # (3, 4096)
+        coords = pc_normalize(coords)
+        
+        pts = torch.FloatTensor(coords).transpose(0, 1)  # (3, 4096)
         label = torch.LongTensor(labels)  # (4096,)
+        
         return pts, label
     
 
