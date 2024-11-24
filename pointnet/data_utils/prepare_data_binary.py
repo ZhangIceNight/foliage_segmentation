@@ -14,7 +14,7 @@ def convert_txt_to_npy(data_dir, output_dir):
         output_path = os.path.join(output_dir, file.replace('.txt', '.npy'))
         
         # 读取txt数据
-        data = np.loadtxt(input_path, delimiter=None)
+        data = np.loadtxt(input_path, delimiter=None, skiprows=1)
         
         # 保存为npy格式
         np.save(output_path, data)
