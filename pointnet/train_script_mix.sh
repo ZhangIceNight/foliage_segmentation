@@ -41,32 +41,31 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# pt_hmamba
-python train_mix.py \
-    --model pt_hmamba \
-    --batch_size 16 \
-    --npoint 4096 \
-    --epoch 300 \
-    --learning_rate 0.0002 \
-    --optimizer AdamW \
-    --log_dir "pt_hmamba_$1" \
-    --gpu 0 \
-    --ckpts 'pretrain.pth'
-
-
-
-# #pt_mamba_random   
+# # pt_hmamba
 # python train_mix.py \
-#     --model pt_mamba_random \
+#     --model pt_hmamba \
 #     --batch_size 16 \
 #     --npoint 4096 \
 #     --epoch 300 \
 #     --learning_rate 0.0002 \
 #     --optimizer AdamW \
-#     --log_dir "pt_mamba_random_$1" \
+#     --log_dir "pt_hmamba_$1" \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
+
+
+#pt_mamba_random   
+python train_mix.py \
+    --model pt_mamba_random \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 300 \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
+    --log_dir "pt_mamba_random_$1" \
+    --gpu 0 \
+    --ckpts 'pretrain.pth'
 
 
 # # pct_seg
