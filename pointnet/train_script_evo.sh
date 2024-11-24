@@ -28,7 +28,7 @@ python train_evo.py \
     --optimizer Adam \
     --log_dir "pointnet2_leaf_seg_$1" \
     --gpu 0 \
-
+    --ckpts None
 
 # # pt_mamba
 # python train_evo.py \

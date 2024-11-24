@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
-    parser.add_argument('--ckpts', type=str, default='pretrain.pth', help='ckpts')
+    parser.add_argument('--ckpts', type=str, default=None, help='ckpts')
     
     return parser.parse_args()
 
