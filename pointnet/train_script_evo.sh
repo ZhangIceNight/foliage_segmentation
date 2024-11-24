@@ -18,7 +18,7 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-pointnet2
+# pointnet2
 python train_evo.py \
     --model pointnet2_sem_seg \
     --batch_size 16 \
@@ -28,7 +28,7 @@ python train_evo.py \
     --optimizer Adam \
     --log_dir "pointnet2_leaf_seg_$1" \
     --gpu 0 \
-    --ckpts 'pretrain.pth'
+
 
 # # pt_mamba
 # python train_evo.py \
