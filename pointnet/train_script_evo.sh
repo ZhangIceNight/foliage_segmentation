@@ -7,7 +7,7 @@ if [ -z "$1" ]; then
 fi
 
 # pointnet
-# python train_semseg.py \
+# python train_evo.py \
 #     --model pointnet_sem_seg \
 #     --batch_size 16 \
 #     --npoint 4096 \
@@ -19,7 +19,7 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # pointnet2
-# python train_semseg.py \
+# python train_evo.py \
 #     --model pointnet2_sem_seg \
 #     --batch_size 16 \
 #     --npoint 4096 \
@@ -31,7 +31,7 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # # pt_mamba
-# python train_semseg.py \
+# python train_evo.py \
 #     --model pt_mamba \
 #     --batch_size 16 \
 #     --npoint 4096 \
@@ -56,29 +56,29 @@ fi
 
 
 
-# pt_mamba_random   
-# python train_semseg.py \
-#     --model pt_mamba_random \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 300 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pt_mamba_random_$1" \
-#     --gpu 0 \
-#     --ckpts 'pretrain.pth'
-
-
-
-# pct_seg
-python train_semseg.py \
-    --model pct_seg \
+pt_mamba_random   
+python train_evo.py \
+    --model pt_mamba_random \
     --batch_size 16 \
     --npoint 4096 \
     --epoch 300 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
-    --log_dir "pct_seg_$1" \
+    --log_dir "pt_mamba_random_$1" \
     --gpu 0 \
+    --ckpts 'pretrain.pth'
+
+
+
+# # pct_seg
+# python train_evo.py \
+#     --model pct_seg \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 300 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pct_seg_$1" \
+#     --gpu 0 \
 
  
