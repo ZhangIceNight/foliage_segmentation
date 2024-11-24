@@ -43,7 +43,7 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python train_semseg.py \
+python train_evo.py \
     --model pt_hmamba \
     --batch_size 16 \
     --npoint 4096 \

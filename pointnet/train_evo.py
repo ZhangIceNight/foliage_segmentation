@@ -62,7 +62,7 @@ def main(args):
     timestr = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
     experiment_dir = Path('./log/')
     experiment_dir.mkdir(exist_ok=True)
-    experiment_dir = experiment_dir.joinpath('sem_seg')
+    experiment_dir = experiment_dir.joinpath('sem_seg_evo')
     experiment_dir.mkdir(exist_ok=True)
     if args.log_dir is None:
         experiment_dir = experiment_dir.joinpath(timestr)
@@ -86,15 +86,15 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = 'data/'
+    root = 'data_evo/'
     NUM_CLASSES = 2
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = LeafDatasetWholeScene(root=root, split='train', block_points=NUM_POINT)
+    TRAIN_DATASET = EvoDataset(root=root, split='train', block_points=NUM_POINT)
     print("start loading test data ...")
-    TEST_DATASET = LeafDatasetWholeScene(root=root, split='test', block_points=NUM_POINT)
+    TEST_DATASET = EvoDataset(root=root, split='test', block_points=NUM_POINT)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, 
                                                 batch_size=BATCH_SIZE, 
@@ -316,7 +316,7 @@ def main(args):
 
                 
                 ## pred and target to numpy
-                pred_val = pred_choice.contiguous().cpu().data.numpy() # [B*N, 2]
+                pred_val = pred_choice.contiguous().cpu().data.numpy() # [B*N]
                 target = target.cpu().data.numpy() # [B*N]
                 ## 计算每个类别的指标
                 for l in range(NUM_CLASSES):
@@ -364,6 +364,7 @@ def main(args):
                 }
                 torch.save(state, savepath)
                 # log_string('Saving model....')
+
             log_string('Best accuracy: %.5f' % best_acc)
             log_string('Best mIoU: %.5f' % best_iou)
         global_epoch += 1
