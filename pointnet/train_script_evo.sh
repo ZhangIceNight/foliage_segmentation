@@ -27,8 +27,7 @@ python train_evo.py \
     --learning_rate 0.001 \
     --optimizer Adam \
     --log_dir "pointnet2_leaf_seg_$1" \
-    --gpu 0 \
-    --ckpts None
+    --gpu 0 
 
 # # pt_mamba
 # python train_evo.py \
