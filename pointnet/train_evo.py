@@ -222,7 +222,9 @@ def main(args):
             points = torch.Tensor(points)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
-
+            print(points.shape)
+            print(target.shape)
+            exit(0)
             seg_pred = classifier(points)
             seg_pred_soft = F.log_softmax(seg_pred, dim=1)
             seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
