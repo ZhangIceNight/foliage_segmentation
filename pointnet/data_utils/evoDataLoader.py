@@ -42,7 +42,7 @@ class EvoDataset(Dataset):
         # 归一化点云
         coords = pc_normalize(coords)
         
-        pts = torch.FloatTensor(coords).transpose(0, 1)  # (3, 4096)
+        pts = torch.FloatTensor(coords) # (3, 4096)
         label = torch.LongTensor(labels)  # (4096,)
         
         return pts, label
