@@ -49,39 +49,39 @@ def parse_args():
     
     return parser.parse_args()
 
-def check_data(data_loader):
-    """检查数据集中的异常值"""
-    print("开始检查数据...")
+# def check_data(data_loader):
+#     """检查数据集中的异常值"""
+#     print("开始检查数据...")
     
-    for batch_idx, (points, target) in enumerate(data_loader):
-        # 检查点云数据
-        if torch.isnan(points).any():
-            print(f"在batch {batch_idx} 中发现NaN值")
-            print(f"NaN位置: {torch.where(torch.isnan(points))}")
+#     for batch_idx, (points, target) in enumerate(data_loader):
+#         # 检查点云数据
+#         if torch.isnan(points).any():
+#             print(f"在batch {batch_idx} 中发现NaN值")
+#             print(f"NaN位置: {torch.where(torch.isnan(points))}")
             
-        if torch.isinf(points).any():
-            print(f"在batch {batch_idx} 中发现Inf值")
-            print(f"Inf位置: {torch.where(torch.isinf(points))}")
+#         if torch.isinf(points).any():
+#             print(f"在batch {batch_idx} 中发现Inf值")
+#             print(f"Inf位置: {torch.where(torch.isinf(points))}")
             
-        # 检查数值范围
-        print(f"Batch {batch_idx} 统计信息:")
-        print(f"点云最小值: {points.min().item()}")
-        print(f"点云最大值: {points.max().item()}")
-        print(f"点云均值: {points.mean().item()}")
-        print(f"点云标准差: {points.std().item()}")
+#         # 检查数值范围
+#         print(f"Batch {batch_idx} 统计信息:")
+#         print(f"点云最小值: {points.min().item()}")
+#         print(f"点云最大值: {points.max().item()}")
+#         print(f"点云均值: {points.mean().item()}")
+#         print(f"点云标准差: {points.std().item()}")
         
-        # 检查标签
-        if target is not None:
-            print(f"标签唯一值: {torch.unique(target)}")
-            print(f"标签数量统计: {torch.bincount(target.flatten())}")
+#         # 检查标签
+#         if target is not None:
+#             print(f"标签唯一值: {torch.unique(target)}")
+#             print(f"标签数量统计: {torch.bincount(target.flatten())}")
         
-        # 检查点云的基本属性
-        print(f"点云形状: {points.shape}")
+#         # 检查点云的基本属性
+#         print(f"点云形状: {points.shape}")
         
-        if batch_idx > 10:  # 只检查前几个batch
-            break
+#         if batch_idx > 10:  # 只检查前几个batch
+#             break
             
-    print("数据检查完成")
+#     print("数据检查完成")
 
 def main(args):
     def log_string(str):
@@ -137,9 +137,7 @@ def main(args):
     testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, 
                                                batch_size=BATCH_SIZE, 
                                                shuffle=False)
-    check_data(trainDataLoader)
-    check_data(testDataLoader)
-    exit(0)
+
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
 
