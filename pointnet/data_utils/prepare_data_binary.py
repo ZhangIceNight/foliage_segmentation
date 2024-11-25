@@ -15,11 +15,12 @@ def convert_txt_to_npy(data_dir, output_dir):
         
         # 读取txt数据
         data = np.loadtxt(input_path, delimiter=',')
-        data = data[:, [0,1,2,4]] # 只保留x,y,z,label
-        labels = data[:, 3] # 获取标签
-        if len(labels) < 10000:
+        if data.shape[0] < 10000:
             print("文件：", file, "跳过")
             continue
+        data = data[:, [0,1,2,4]] # 只保留x,y,z,label
+        labels = data[:, 3] # 获取标签
+        
 
         # 筛选出标签为2,3,4,5的点
         valid_mask = np.isin(labels, [2, 3, 4, 5])
