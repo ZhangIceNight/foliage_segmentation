@@ -216,12 +216,48 @@ class Encoder(nn.Module):
         '''
         bs, g, n, _ = point_groups.shape
         point_groups = point_groups.reshape(bs * g, n, 3)
-        # encoder
-        feature = self.first_conv(point_groups.transpose(2, 1))
-        feature_global = torch.max(feature, dim=2, keepdim=True)[0]
-        feature = torch.cat([feature_global.expand(-1, -1, n), feature], dim=1)
-        feature = self.second_conv(feature)
-        feature_global = torch.max(feature, dim=2, keepdim=False)[0]
+        
+        # 检查点1：reshape后的输入
+        if torch.isnan(point_groups).any():
+            print("NaN found after reshape")
+            
+        # first conv
+        feature = self.first_conv(point_groups.transpose(2, 1))  # bs*g, 256, n
+        
+        # 检查点2：第一次卷积后
+        if torch.isnan(feature).any():
+            print("NaN found after first_conv")
+            print(f"feature stats: min={feature.min().item()}, max={feature.max().item()}")
+        
+        # global feature
+        feature_global = torch.max(feature, dim=2, keepdim=True)[0]  # bs*g, 256, 1
+        
+        # 检查点3：全局特征后
+        if torch.isnan(feature_global).any():
+            print("NaN found after global pooling")
+        
+        # feature expansion
+        feature = torch.cat([feature_global.expand(-1, -1, n), feature], dim=1)  # bs*g, 512, n
+        
+        # 检查点4：特征拼接后
+        if torch.isnan(feature).any():
+            print("NaN found after concatenation")
+        
+        # second conv
+        feature = self.second_conv(feature)  # bs*g, encoder_channel, n
+        
+        # 检查点5：第二次卷积后
+        if torch.isnan(feature).any():
+            print("NaN found after second_conv")
+            print(f"feature stats: min={feature.min().item()}, max={feature.max().item()}")
+        
+        # global feature
+        feature_global = torch.max(feature, dim=2, keepdim=False)[0]  # bs*g, encoder_channel
+        
+        # 检查点6：最终全局特征
+        if torch.isnan(feature_global).any():
+            print("NaN found in final global feature")
+        
         return feature_global.reshape(bs, g, self.encoder_channel)
 
 
