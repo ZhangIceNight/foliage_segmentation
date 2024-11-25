@@ -757,8 +757,10 @@ class get_model(nn.Module):
         group_input_tokens = self.encoder(neighborhood)  # [B, G, encoder_dims=384]
 
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
-
-
+        if torch.isnan(group_input_tokens).any():
+            print("group_input_tokens has NaN values")
+            exit(0)
+        
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
