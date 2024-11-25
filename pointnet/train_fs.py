@@ -4,7 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.fsDataLoader import FsDataset
+from data_utils.LeafDataLoader import LeafDatasetWholeScene
 import torch
 import datetime
 import logging
@@ -92,9 +92,9 @@ def main(args):
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = FsDataset(root=root, split='train', points_per_sample=NUM_POINT)
+    TRAIN_DATASET = LeafDatasetWholeScene(root=root, split='train', block_points=NUM_POINT)
     print("start loading test data ...")
-    TEST_DATASET = FsDataset(root=root, split='test', points_per_sample=NUM_POINT)
+    TEST_DATASET = LeafDatasetWholeScene(root=root, split='test', block_points=NUM_POINT)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, 
                                                 batch_size=BATCH_SIZE, 

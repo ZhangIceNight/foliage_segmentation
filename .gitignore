@@ -1,6 +1,8 @@
 # 已有的配置
 /vis_ForestSemantic/datas
-
+/vis_ForestSemantic/data_fs
+/vis_ForestSemantic/data_mix
+/vis_ForestSemantic/data_evo
 # Wandb相关
 wandb/
 *.wandb
