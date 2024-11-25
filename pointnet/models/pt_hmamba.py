@@ -793,12 +793,10 @@ class get_model(nn.Module):
         group_input_tokens = self.encoder(neighborhood)  # [B, G, encoder_dims=384]
 
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
-        if torch.isnan(neighborhood).any():
-            print("neighborhood NaN values")
-            exit(0)
-        if torch.isnan(group_input_tokens).any():
-            print("group_input_tokens NaN values")
-            exit(0)
+        zero_coords = (pts==0).any()
+        if zero_coords:
+            batch_with_zeros = torch.where(zero_coords.any(dim=1).any(dim=1))[0]
+            print(f"警告: 批次 {batch_with_zeros.tolist()} 中存在零坐标")
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
