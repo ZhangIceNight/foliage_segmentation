@@ -91,9 +91,9 @@ def process_and_split_dataset(data_dir, output_dir, train_ratio=0.8, seed=42):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy',
+    parser.add_argument('--data_dir', type=str, default='/public/wjzhang/datasets/Forest_Semantic/Plot_3_npy',
                         help='包含原始npy文件的目录')
-    parser.add_argument('--output_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy_augmented',
+    parser.add_argument('--output_dir', type=str, default='/public/wjzhang/datasets/Forest_Semantic/Plot_3_npy_augmented',
                         help='保存增强后数据的目录')
     parser.add_argument('--train_ratio', type=float, default=0.8,
                         help='训练集比例')
