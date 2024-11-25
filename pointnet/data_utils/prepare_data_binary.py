@@ -29,7 +29,7 @@ def convert_txt_to_npy(data_dir, output_dir):
 
 
 if __name__ == '__main__':
-    input_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_1'
-    output_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_1_npy'
+    input_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_3'
+    output_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_3_npy'
     convert_txt_to_npy(input_dir, output_dir)
     
