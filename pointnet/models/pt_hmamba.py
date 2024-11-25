@@ -704,6 +704,9 @@ class get_model(nn.Module):
             values = np.ones(node_idx.shape[0])
         else:
             avg_dist = np.mean(m_dist)
+            if avg_dist == 0:
+                print("avg_dist is 0")
+                exit(0)
             m_neighbors_val = m_neighbors_val.reshape(-1)
             values = np.exp(-np.power(m_neighbors_val, 2.) / np.power(avg_dist, 2.))
 
