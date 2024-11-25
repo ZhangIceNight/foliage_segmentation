@@ -678,7 +678,7 @@ class get_model(nn.Module):
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
 
-    def KNN(self, X, n_neighbors, pts, neighborhood, center, is_prob=True):
+    def KNN(self, X, n_neighbors, pts, neighborhood, center, file_name, is_prob=True):
         n_nodes = X.shape[0]
         n_edges = n_nodes
 
@@ -711,6 +711,7 @@ class get_model(nn.Module):
                 np.save("/home/wjzhang/pts.npy", pts.cpu().detach().numpy())
                 np.save("/home/wjzhang/neighborhood.npy", neighborhood.cpu().detach().numpy())
                 np.save("/home/wjzhang/center.npy", center.cpu().detach().numpy())
+                print(file_name)
                 exit(0)
             m_neighbors_val = m_neighbors_val.reshape(-1)
             values = np.exp(-np.power(m_neighbors_val, 2.) / np.power(avg_dist, 2.))
@@ -792,7 +793,7 @@ class get_model(nn.Module):
         l1 = sparse.coo_matrix((values, (node_idx, edge_idx)), shape=(n_nodes, n_edges)).toarray()
         return l1
 
-    def forward(self, pts):
+    def forward(self, pts, file_name):
         B, C, N = pts.shape
         pts = pts.transpose(-1, -2) # [B, N, 3]
         # divide the point cloud in the same form. This is important
@@ -807,7 +808,7 @@ class get_model(nn.Module):
         H = []
         n_neighbors = 2
         for j in range(B):
-            knn = self.KNN(X[j, :, :], n_neighbors, pts[j, :, :], neighborhood[j, :, :, :], center[j, :, :])
+            knn = self.KNN(X[j, :, :], n_neighbors, pts[j, :, :], neighborhood[j, :, :, :], center[j, :, :], file_name[j])
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 

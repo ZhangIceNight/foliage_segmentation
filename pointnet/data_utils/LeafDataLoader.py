@@ -29,7 +29,8 @@ class LeafDatasetWholeScene(Dataset):
 
     def __getitem__(self, index):
         # 按需加载数据
-        data = np.load(os.path.join(self.root, self.file_list[index]))
+        data_path = os.path.join(self.root, self.file_list[index])
+        data = np.load(data_path)
         points = data[:, :3]  # XYZ坐标
         labels = data[:, -1].astype(np.int32)  # 标签
         
@@ -45,7 +46,7 @@ class LeafDatasetWholeScene(Dataset):
         points = points[point_idxs]
         labels = labels[point_idxs]
         
-        return torch.FloatTensor(points), torch.LongTensor(labels)
+        return torch.FloatTensor(points), torch.LongTensor(labels), data_path
 
 if __name__ == '__main__':
     # 测试数据路径
