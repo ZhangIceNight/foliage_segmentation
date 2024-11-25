@@ -14,6 +14,7 @@ def convert_txt_to_npy(data_dir, output_dir):
         output_path = os.path.join(output_dir, file.replace('.txt', '.npy'))
         
         # 读取txt数据
+        print("读取文件：", input_path)
         data = np.loadtxt(input_path, delimiter=',')
         data = data[:, [0,1,2,4]] # 只保留x,y,z,label
         labels = data[:, 3] # 获取标签
