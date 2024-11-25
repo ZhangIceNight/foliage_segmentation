@@ -707,6 +707,7 @@ class get_model(nn.Module):
             if avg_dist == 0:
                 print("avg_dist is 0")
                 np.save("/home/wjzhang/m_dist.npy", m_dist)
+                np.save("/home/wjzhang/feature.npy", X)
                 exit(0)
             m_neighbors_val = m_neighbors_val.reshape(-1)
             values = np.exp(-np.power(m_neighbors_val, 2.) / np.power(avg_dist, 2.))
