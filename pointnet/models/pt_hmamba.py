@@ -758,9 +758,11 @@ class get_model(nn.Module):
 
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
         if torch.isnan(neighborhood).any():
-            print("pts neighborhood NaN values")
+            print("neighborhood NaN values")
             exit(0)
-        
+        if torch.isnan(group_input_tokens).any():
+            print("group_input_tokens NaN values")
+            exit(0)
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
