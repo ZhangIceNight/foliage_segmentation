@@ -15,17 +15,21 @@ def convert_txt_to_npy(data_dir, output_dir):
         
         # 读取txt数据
         data = np.loadtxt(input_path, delimiter=None, skiprows=1)
-        data = data[:, [0,1,2,4]]
-        labels = data[:, 3]
-        if not np.all(np.isin(labels, [1, 2, 3])):
-            raise ValueError(f"发现非法标签值，标签值必须是1、2或3")
-            
-        data[:, 3] = np.where(labels == 3, 0, 1)        # 保存为npy格式
+        data = data[:, [0,1,2,4]] # 只保留x,y,z,label
+        labels = data[:, 3] # 获取标签
+
+        # 筛选出标签为2,3,4,5的点
+        valid_mask = np.isin(labels, [2, 3, 4, 5])
+        data = data[valid_mask]
+        labels = labels[valid_mask]
+       
+        # 将标签5映射为0，其他标签(2,3,4)映射为1
+        data[:, 3] = np.where(labels == 5, 0, 1)
         np.save(output_path, data)
 
 
 if __name__ == '__main__':
-    input_dir = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples'
-    output_dir = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples_npy'
+    input_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_1'
+    output_dir = '/public/wjzhang/datasets/Forest_Semantic/Plot_1_npy'
     convert_txt_to_npy(input_dir, output_dir)
     
