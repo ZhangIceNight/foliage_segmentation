@@ -14,7 +14,7 @@ def convert_txt_to_npy(data_dir, output_dir):
         output_path = os.path.join(output_dir, file.replace('.txt', '.npy'))
         
         # 读取txt数据
-        data = np.loadtxt(input_path, delimiter=',')
+        data = np.loadtxt(input_path, delimiter=' ')
         if data.shape[0] < 10000:
             print("文件：", file, "跳过")
             continue
