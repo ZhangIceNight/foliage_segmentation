@@ -46,7 +46,7 @@ class LeafDatasetWholeScene(Dataset):
         points = points[point_idxs]
         labels = labels[point_idxs]
         
-        return torch.FloatTensor(points), torch.LongTensor(labels), data_path
+        return torch.FloatTensor(points), torch.LongTensor(labels)
 
 if __name__ == '__main__':
     # 测试数据路径

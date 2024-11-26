@@ -216,47 +216,22 @@ class Encoder(nn.Module):
         '''
         bs, g, n, _ = point_groups.shape
         point_groups = point_groups.reshape(bs * g, n, 3)
-        
-        # 检查点1：reshape后的输入
-        if torch.isnan(point_groups).any():
-            print("NaN found after reshape")
-            
+
         # first conv
         feature = self.first_conv(point_groups.transpose(2, 1))  # bs*g, 256, n
         
-        # 检查点2：第一次卷积后
-        if torch.isnan(feature).any():
-            print("NaN found after first_conv")
-            print(f"feature stats: min={feature.min().item()}, max={feature.max().item()}")
-        
         # global feature
         feature_global = torch.max(feature, dim=2, keepdim=True)[0]  # bs*g, 256, 1
-        
-        # 检查点3：全局特征后
-        if torch.isnan(feature_global).any():
-            print("NaN found after global pooling")
-        
+
         # feature expansion
         feature = torch.cat([feature_global.expand(-1, -1, n), feature], dim=1)  # bs*g, 512, n
-        
-        # 检查点4：特征拼接后
-        if torch.isnan(feature).any():
-            print("NaN found after concatenation")
-        
+
         # second conv
         feature = self.second_conv(feature)  # bs*g, encoder_channel, n
-        
-        # 检查点5：第二次卷积后
-        if torch.isnan(feature).any():
-            print("NaN found after second_conv")
-            print(f"feature stats: min={feature.min().item()}, max={feature.max().item()}")
-        
+
         # global feature
         feature_global = torch.max(feature, dim=2, keepdim=False)[0]  # bs*g, encoder_channel
-        
-        # 检查点6：最终全局特征
-        if torch.isnan(feature_global).any():
-            print("NaN found in final global feature")
+
         
         return feature_global.reshape(bs, g, self.encoder_channel)
 
@@ -678,7 +653,7 @@ class get_model(nn.Module):
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
 
-    def KNN(self, X, n_neighbors, pts, neighborhood, center, file_name, is_prob=True):
+    def KNN(self, X, n_neighbors, is_prob=True):
         n_nodes = X.shape[0]
         n_edges = n_nodes
 
@@ -704,15 +679,6 @@ class get_model(nn.Module):
             values = np.ones(node_idx.shape[0])
         else:
             avg_dist = np.mean(m_dist)
-            if avg_dist == 0:
-                print("avg_dist is 0")
-                np.save("/home/wjzhang/m_dist.npy", m_dist)
-                np.save("/home/wjzhang/feature.npy", X)
-                np.save("/home/wjzhang/pts.npy", pts.cpu().detach().numpy())
-                np.save("/home/wjzhang/neighborhood.npy", neighborhood.cpu().detach().numpy())
-                np.save("/home/wjzhang/center.npy", center.cpu().detach().numpy())
-                print(file_name)
-                exit(0)
             m_neighbors_val = m_neighbors_val.reshape(-1)
             values = np.exp(-np.power(m_neighbors_val, 2.) / np.power(avg_dist, 2.))
 
@@ -793,7 +759,7 @@ class get_model(nn.Module):
         l1 = sparse.coo_matrix((values, (node_idx, edge_idx)), shape=(n_nodes, n_edges)).toarray()
         return l1
 
-    def forward(self, pts, file_name):
+    def forward(self, pts):
         B, C, N = pts.shape
         pts = pts.transpose(-1, -2) # [B, N, 3]
         # divide the point cloud in the same form. This is important
@@ -808,7 +774,7 @@ class get_model(nn.Module):
         H = []
         n_neighbors = 2
         for j in range(B):
-            knn = self.KNN(X[j, :, :], n_neighbors, pts[j, :, :], neighborhood[j, :, :, :], center[j, :, :], file_name[j])
+            knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 

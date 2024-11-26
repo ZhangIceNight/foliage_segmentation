@@ -248,7 +248,7 @@ def main(args):
         classifier = classifier.train()
         num_iter = 0
         '''learning one epoch'''
-        for i, (points, target, file_name) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
+        for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
             num_iter += 1
             points = points.data.numpy()
             # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
@@ -256,7 +256,7 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
             
-            seg_pred = classifier(points, file_name)
+            seg_pred = classifier(points)
             seg_pred_soft = F.log_softmax(seg_pred, dim=1)
             seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)
@@ -321,7 +321,7 @@ def main(args):
             classifier = classifier.eval()
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
             
-            for i, (points, target, file_name) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
                 #load data
                 points = points.data.numpy() # [B, N, 3]
                 points = torch.Tensor(points) # [B, N, 3]
@@ -329,7 +329,7 @@ def main(args):
                 points = points.transpose(2, 1) # [B, 3, N]
 
                 #forward
-                seg_pred = classifier(points, file_name) # [B, N, 2]
+                seg_pred = classifier(points) # [B, N, 2]
                 seg_pred_soft = F.log_softmax(seg_pred, dim=1)
                 seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
                 seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES) # [B*N, 2]
