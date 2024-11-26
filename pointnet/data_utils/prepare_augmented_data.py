@@ -64,7 +64,7 @@ def process_and_split_dataset(data_dir, output_dir, train_ratio=0.8, seed=42):
         
         # 保存增强数据
         for i, aug_data in enumerate(augmented_data, 1):
-            aug_filename = f"Plot_1_{file[:-4]}_aug_{i}.npy"
+            aug_filename = f"Plot_3_{file[:-4]}_aug_{i}.npy"
             np.save(os.path.join(output_dir, aug_filename), aug_data)
             train_files_with_aug.append(aug_filename)
             
