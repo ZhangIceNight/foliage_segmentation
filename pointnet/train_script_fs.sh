@@ -18,16 +18,16 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# pointnet2
-python train_fs.py \
-    --model pointnet2_sem_seg \
-    --batch_size 16 \
-    --npoint 4096 \
-    --epoch 128 \
-    --learning_rate 0.001 \
-    --optimizer Adam \
-    --log_dir "pointnet2_leaf_seg_$1" \
-    --gpu 0 
+# # pointnet2
+# python train_fs.py \
+#     --model pointnet2_sem_seg \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 128 \
+#     --learning_rate 0.001 \
+#     --optimizer Adam \
+#     --log_dir "pointnet2_leaf_seg_$1" \
+#     --gpu 0 
 
 # # pt_mamba
 # python train_fs.py \
@@ -55,17 +55,17 @@ python train_fs.py \
 
 
 
-# #pt_mamba_random   
-# python train_fs.py \
-#     --model pt_mamba_random \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 300 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pt_mamba_random_$1" \
-#     --gpu 0 \
-#     --ckpts 'pretrain.pth'
+#pt_mamba_random   
+python train_fs.py \
+    --model pt_mamba_random \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 100 \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
+    --log_dir "pt_mamba_random_$1" \
+    --gpu 0 \
+    --ckpts 'pretrain.pth'
 
 
 
@@ -74,7 +74,7 @@ python train_fs.py \
 #     --model pct_seg \
 #     --batch_size 16 \
 #     --npoint 4096 \
-#     --epoch 300 \
+#     --epoch 100 \
 #     --learning_rate 0.0002 \
 #     --optimizer AdamW \
 #     --log_dir "pct_seg_$1" \
