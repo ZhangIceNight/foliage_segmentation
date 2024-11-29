@@ -4,7 +4,7 @@ from pointnet2_utils import PointNetSetAbstraction,PointNetFeaturePropagation
 
 
 class get_model(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, cls_dim):
         super(get_model, self).__init__()
         self.sa1 = PointNetSetAbstraction(512, 0.2, 32, 6, [64, 64, 128], False)
         self.sa2 = PointNetSetAbstraction(128, 0.4, 64, 128 + 3, [128, 128, 256], False)
@@ -16,7 +16,7 @@ class get_model(nn.Module):
         self.conv1 = nn.Conv1d(128, 128, 1)
         self.bn1 = nn.BatchNorm1d(128)
         self.drop1 = nn.Dropout(0.5)
-        self.conv2 = nn.Conv1d(128, num_classes, 1)
+        self.conv2 = nn.Conv1d(128, cls_dim, 1)
 
     def forward(self, xyz):
         # Set Abstraction layers
