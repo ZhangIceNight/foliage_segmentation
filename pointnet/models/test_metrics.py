@@ -100,4 +100,4 @@ def test_model_metrics(model_name):
 
     return metrics
 if __name__ == "__main__":
-   test_model_metrics()
+   test_all_models_metrics("mamba", "hmamba", "pct", "pointnet2")
