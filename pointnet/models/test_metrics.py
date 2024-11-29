@@ -41,15 +41,15 @@ def test_all_models_metrics(*args):
 
 def test_model_metrics(model_name):
     if model_name == "mamba":
-        get_model = get_model_mamba
+        model = get_model_mamba(cls_dim=2)
     elif model_name == "hmamba":
-        get_model = get_model_hmamba
+        model = get_model_hmamba(cls_dim=2)
     elif model_name == "pct":
-        get_model = get_model_pct
+        model = get_model_pct(cls_dim=2)
     elif model_name == "pointnet2":
-        get_model = get_model_pointnet2     
+        model = get_model_pointnet2(cls_dim=2)     
     # 初始化模型
-    model = get_model(cls_dim=2).cuda()  # 假设分类数为50
+    model = model.cuda()  
     model.eval()
     metrics = {}
     # 生成测试数据
