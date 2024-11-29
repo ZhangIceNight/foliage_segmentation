@@ -9,7 +9,7 @@ from pointnet2_sem_seg import get_model as get_model_pointnet2
 def test_all_models_metrics(*args):
    print(f"\n{'='*80}")
    # 12表示字符串最小宽度为12个字符,>表示右对齐
-   print(f"{'Model':12} {'Params(M)':>12} {'FLOPs(G)':>12} {'FPS':>12} {'Memory(MB)':>12} {'Time(s)':>12}")
+   print(f"{'Model':12} {'Params(M)':>12} {'FLOPs(G)':>12} {'FPS':>12} {'Memory(GB)':>12} {'Time(s)':>12}")
    print(f"{'-'*80}")
    
    for model_name in args:
@@ -94,9 +94,9 @@ def test_model_metrics(model_name):
     torch.cuda.reset_peak_memory_stats()
     with torch.no_grad(): 
         _ = model(x)
-    memory_allocated = torch.cuda.max_memory_allocated() / 1024 / 1024
+    memory_allocated = torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024
     metrics['memory'] = memory_allocated
-    # print(f"峰值显存占用: {memory_allocated:.2f}MB")
+    # print(f"峰值显存占用: {memory_allocated:.2f}GB")
 
     return metrics
 if __name__ == "__main__":
