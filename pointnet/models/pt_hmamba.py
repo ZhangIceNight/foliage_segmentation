@@ -787,12 +787,12 @@ class get_model(nn.Module):
 
 
         # final input
-        x = group_input_tokens # [B, 3G, 384]
+        x = group_input_tokens # [B, G, 384]
 
-        feature_list = self.blocks(x, pos) # List of 3 tensors, each [B, 3G, 384]
+        feature_list = self.blocks(x, pos) # List of 3 tensors, each [B, G, 384]
 
-        feature_list = [self.norm(x).transpose(-1, -2).contiguous() for x in feature_list] # List of 3 tensors, each [B, 384, 3G]
-        x = torch.cat((feature_list), dim=1)  # 1152 # [B, 1152, 3G]  (384*3 = 1152)
+        feature_list = [self.norm(x).transpose(-1, -2).contiguous() for x in feature_list] # List of 3 tensors, each [B, 384, G]
+        x = torch.cat((feature_list), dim=1)  # 1152 # [B, 1152, G]  (384*3 = 1152)
         x_max = torch.max(x, 2)[0] # [B, 1152]
         x_avg = torch.mean(x, 2) # [B, 1152]
         x_max_feature = x_max.view(B, -1).unsqueeze(-1).repeat(1, 1, N) # [B, 1152, N]
