@@ -1,8 +1,8 @@
 import torch
 import time
 from thop import profile
-from ptflops import get_model_complexity_info
-from models.pt_hmamba import get_model
+
+from pt_hmamba import get_model
 def test_model_metrics():
    # 初始化模型
    model = get_model(cls_dim=2).cuda()  # 假设分类数为50
