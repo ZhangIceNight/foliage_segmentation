@@ -487,7 +487,7 @@ class get_model(nn.Module):
 
     def forward(self, pts):
         B, C, N = pts.shape
-        pts = pts.transpose(-1, -2)  # B N 3
+        pts = pts.transpose(-1, -2).contiguous()  # B N 3
         # divide the point cloud in the same form. This is important
         neighborhood, center = self.group_divider(pts)
         group_input_tokens = self.encoder(neighborhood)  # B G N
