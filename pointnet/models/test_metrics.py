@@ -9,14 +9,29 @@ from pointnet2_sem_seg import get_model as get_model_pointnet2
 def test_all_models_metrics(*args):
    print(f"\n{'='*80}")
    # 12表示字符串最小宽度为12个字符,>表示右对齐
-   # 例如 'Model' 会占用12个字符的宽度,不足12个字符的部分用空格填充
-   print(f"{'Model':12} {'Params(M)':>12} {'FLOPs(G)':>12} {'FPS':>8} {'Memory(MB)':>12} {'Time(s)':>10}")
+   print(f"{'Model':12} {'Params(M)':>12} {'FLOPs(G)':>12} {'FPS':>12} {'Memory(MB)':>12} {'Time(s)':>12}")
    print(f"{'-'*80}")
    
    for model_name in args:
-      metrics = test_model_metrics(model_name)
-      print(f"{model_name:12} {metrics['params']/1e6:>12.2f} {metrics['flops']/1e9:>12.2f} "
-            f"{metrics['fps']:>8.2f} {metrics['memory']:>12.2f} {metrics['test_time']:>10.2f}")
+      # 进行5次重复实验
+      metrics_list = []
+      for _ in range(5):
+         metrics = test_model_metrics(model_name)
+         metrics_list.append(metrics)
+      
+      # 计算均值和标准差
+      params = torch.tensor([m['params'] for m in metrics_list])
+      flops = torch.tensor([m['flops'] for m in metrics_list]) 
+      fps = torch.tensor([m['fps'] for m in metrics_list])
+      memory = torch.tensor([m['memory'] for m in metrics_list])
+      test_time = torch.tensor([m['test_time'] for m in metrics_list])
+      
+      # 打印结果(均值±标准差)
+      print(f"{model_name:12} {params.mean()/1e6:>8.2f}±{params.std()/1e6:>3.2f} "
+            f"{flops.mean()/1e9:>8.2f}±{flops.std()/1e9:>3.2f} "
+            f"{fps.mean():>8.2f}±{fps.std():>3.2f} "
+            f"{memory.mean():>8.2f}±{memory.std():>3.2f} "
+            f"{test_time.mean():>8.2f}±{test_time.std():>3.2f}")
    
    print(f"{'='*80}\n")
 
