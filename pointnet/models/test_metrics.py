@@ -11,7 +11,7 @@ def test_model_metrics():
    # 生成测试数据
    batch_size = 2
    n_points = 2048
-   x = torch.randn(batch_size, 3, n_points).cuda()
+   x = torch.randn(batch_size, 3, n_points).cuda().contiguous()
    
    # 1. 计算参数量
    total_params = sum(p.numel() for p in model.parameters())
