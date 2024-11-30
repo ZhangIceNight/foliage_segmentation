@@ -54,7 +54,7 @@ def test_model_metrics(model_name):
     metrics = {}
     # 生成测试数据
     batch_size = 2   
-    n_points = 8192
+    n_points = 16384
     x = torch.randn(batch_size, 3, n_points).cuda().contiguous()
     
     # 1. 计算参数量
