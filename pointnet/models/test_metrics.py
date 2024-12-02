@@ -40,64 +40,77 @@ def test_all_models_metrics(*args):
 
 
 def test_model_metrics(model_name):
-    if model_name == "mamba":
-        model = get_model_mamba(cls_dim=2)
-    elif model_name == "hmamba":
-        model = get_model_hmamba(cls_dim=2)
-    elif model_name == "pct":
-        model = get_model_pct(cls_dim=2)
-    elif model_name == "pointnet2":
-        model = get_model_pointnet2(cls_dim=2)     
-    # 初始化模型
-    model = model.cuda()  
-    model.eval()
-    metrics = {}
-    # 生成测试数据
-    batch_size = 2   
-    n_points = 16384
-    x = torch.randn(batch_size, 3, n_points).cuda().contiguous()
-    
-    # 1. 计算参数量
-    total_params = sum(p.numel() for p in model.parameters())
-    metrics['total_params'] = total_params
-    # print(f"模型总参数量: {total_params/1e6:.2f}M")
-    # 2. 计算FLOPs
-    flops, params = profile(model, inputs=(x,))
-    flops *= 2  # 将MACs转换为FLOPs (1 MAC = 2 FLOPs)
-    metrics['flops'] = flops
-    metrics['params'] = params
-    # 3. 测试推理速度
-    warmup = 2
-    test_times = 2
-
-    # 预热
-    with torch.no_grad():
-        for _ in range(warmup):
-            _ = model(x)
-
-    # 计时
-    torch.cuda.synchronize()
-    start = time.time()
-    with torch.no_grad():
-        for _ in range(test_times):
-            _ = model(x)
-        torch.cuda.synchronize()
-        end = time.time()
+    try:
+        # 在模型加载和前向传播之前检查可用显存
+        free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_allocated()
+        free_memory_gb = free_memory / 1024 / 1024 / 1024
         
-        avg_time = (end - start) / test_times
-    fps = batch_size / avg_time
-    metrics['fps'] = fps
-    metrics['test_time'] = avg_time * 1000 
+        # 如果可用显存小于1GB，认为风险较高，抛出异常
+        if free_memory_gb < 1:
+            raise RuntimeError("显存不足")
+            
+        if model_name == "mamba":
+            model = get_model_mamba(cls_dim=2)
+        elif model_name == "hmamba":
+            model = get_model_hmamba(cls_dim=2)
+        elif model_name == "pct":
+            model = get_model_pct(cls_dim=2)
+        elif model_name == "pointnet2":
+            model = get_model_pointnet2(cls_dim=2)     
+        # 初始化模型
+        model = model.cuda()  
+        model.eval()
+        metrics = {}
+        # 生成测试数据
+        batch_size = 2   
+        n_points = 32768
+        x = torch.randn(batch_size, 3, n_points).cuda().contiguous()
+        
+        # 1. 计算参数量
+        total_params = sum(p.numel() for p in model.parameters())
+        metrics['total_params'] = total_params
+        # print(f"模型总参数量: {total_params/1e6:.2f}M")
+        # 2. 计算FLOPs
+        flops, params = profile(model, inputs=(x,))
+        flops *= 2  # 将MACs转换为FLOPs (1 MAC = 2 FLOPs)
+        metrics['flops'] = flops
+        metrics['params'] = params
+        # 3. 测试推理速度
+        warmup = 2
+        test_times = 2
+
+        # 预热
+        with torch.no_grad():
+            for _ in range(warmup):
+                _ = model(x)
+
+        # 计时
+        torch.cuda.synchronize()
+        start = time.time()
+        with torch.no_grad():
+            for _ in range(test_times):
+                _ = model(x)
+            torch.cuda.synchronize()
+            end = time.time()
+            
+            avg_time = (end - start) / test_times
+        fps = batch_size / avg_time
+        metrics['fps'] = fps
+        metrics['test_time'] = avg_time * 1000 
 
 
-    # 4. 显存占用
-    torch.cuda.reset_peak_memory_stats()
-    with torch.no_grad(): 
-        _ = model(x)
-    memory_allocated = torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024
-    metrics['memory'] = memory_allocated
-    # print(f"峰值显存占用: {memory_allocated:.2f}GB")
+        # 4. 显存占用
+        torch.cuda.reset_peak_memory_stats()
+        with torch.no_grad(): 
+            _ = model(x)
+        memory_allocated = torch.cuda.max_memory_allocated() / 1024 / 1024 / 1024
+        metrics['memory'] = memory_allocated
+        # print(f"峰值显存占用: {memory_allocated:.2f}GB")
 
-    return metrics
+        return metrics
+        
+    except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+        print(f"\n警告: {model_name} 模型运行时显存溢出，已跳过测试")
+        return None
 if __name__ == "__main__":
    test_all_models_metrics("mamba", "hmamba", "pct", "pointnet2")
