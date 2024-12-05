@@ -27,7 +27,7 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
     x_steps = int((scene_size[0] - block_size_meters) / stride_meters) + 1
     y_steps = int((scene_size[1] - block_size_meters) / stride_meters) + 1
     
-    least_points = 0
+    least_points = 10000000
     for i in range(x_steps):
         for j in range(y_steps):
             # 计算当前block的边界
@@ -44,7 +44,7 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
             # 只保存包含足够多点的block（比如至少100个点）
             if len(block_points) >= 4096:
                 blocks.append(block_points)
-                if least_points < len(block_points):
+                if least_points > len(block_points):
                     least_points = len(block_points)
     
     return blocks, least_points
@@ -52,8 +52,18 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
 if __name__ == '__main__':
     scene_path = './data/reference_pc_Dahurian_Larch.npy'
     # 每个block 2米，步长1米
-    blocks, least_points = scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0)
+    blocks, least_points = scene2blocks(scene_path, block_size_meters=2.0, stride_meters=2.0)
     print(f"总共分成了 {len(blocks)} 个blocks")
     if len(blocks) > 0:
         print(f"每个block的形状示例: {blocks[0].shape}")
         print(f"最少点数: {least_points}")
+    np.save('./data/blocks_Dahurian_Larch_2m.npy', blocks)
+
+
+    blocks, least_points = scene2blocks(scene_path, block_size_meters=1.0, stride_meters=1.0)
+    print(f"总共分成了 {len(blocks)} 个blocks")
+    if len(blocks) > 0:
+        print(f"每个block的形状示例: {blocks[0].shape}")
+        print(f"最少点数: {least_points}")
+    np.save('./data/blocks_Dahurian_Larch_1m.npy', blocks)
+
