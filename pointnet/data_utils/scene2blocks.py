@@ -42,7 +42,7 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
             block_points = scene[mask]
             
             # 只保存包含足够多点的block（比如至少100个点）
-            if len(block_points) >= 4096:
+            if len(block_points) >= 16384:
                 blocks.append(block_points)
                 if least_points > len(block_points):
                     least_points = len(block_points)
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     if len(blocks) > 0:
         print(f"每个block的形状示例: {blocks[0].shape}")
         print(f"最少点数: {least_points}")
-    np.save('./data/blocks_Dahurian_Larch_2m.npy', blocks)
+    np.save('./data/blocks_Dahurian_Larch_2m_16384.npy', blocks)
 
 
     blocks, least_points = scene2blocks(scene_path, block_size_meters=1.0, stride_meters=1.0)
@@ -65,5 +65,5 @@ if __name__ == '__main__':
     if len(blocks) > 0:
         print(f"每个block的形状示例: {blocks[0].shape}")
         print(f"最少点数: {least_points}")
-    np.save('./data/blocks_Dahurian_Larch_1m.npy', blocks)
+    np.save('./data/blocks_Dahurian_Larch_1m_16384.npy', blocks)
 
