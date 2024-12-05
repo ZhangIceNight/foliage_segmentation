@@ -60,10 +60,26 @@ if __name__ == '__main__':
     np.save('./data/blocks_Dahurian_Larch_2m_16384.npy', blocks)
 
 
-    blocks, least_points = scene2blocks(scene_path, block_size_meters=1.0, stride_meters=1.0)
-    print(f"总共分成了 {len(blocks)} 个blocks")
-    if len(blocks) > 0:
-        print(f"每个block的形状示例: {blocks[0].shape}")
-        print(f"最少点数: {least_points}")
-    np.save('./data/blocks_Dahurian_Larch_1m_16384.npy', blocks)
+    # blocks, least_points = scene2blocks(scene_path, block_size_meters=1.0, stride_meters=1.0)
+    # print(f"总共分成了 {len(blocks)} 个blocks")
+    # if len(blocks) > 0:
+    #     print(f"每个block的形状示例: {blocks[0].shape}")
+    #     print(f"最少点数: {least_points}")
+    # np.save('./data/blocks_Dahurian_Larch_1m_16384.npy', blocks)
 
+    train_idx = np.random.choice(len(blocks), int(len(blocks) * 0.8), replace=False)
+    test_idx = np.setdiff1d(np.arange(len(blocks)), train_idx)
+    with open('./data/trainval.txt', 'w') as f:
+        for idx in train_idx:
+            block_name = f'Dahurian_Larch_2m_16384_{idx:06d}.npy'
+            np.save(f'./data/train/{block_name}', blocks[idx])
+            f.write(f"{block_name}\n")
+    
+    with open('./data/test.txt', 'w') as f:
+        for idx in test_idx:
+            block_name = f'Dahurian_Larch_2m_16384_{idx:06d}.npy'
+            np.save(f'./data/test/{block_name}', blocks[idx])
+            f.write(f"{block_name}\n")
+    print("数据集划分完成")
+    print(f"训练集数量: {len(train_idx)}")
+    print(f"测试集数量: {len(test_idx)}")
