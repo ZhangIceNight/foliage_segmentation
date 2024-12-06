@@ -35,6 +35,9 @@ class ChineseWoodDataset(Dataset):
             self.file_list = [line.strip() for line in f.readlines()]
         
         print(f"Loading {split} data...")
+
+        self.points = []
+        self.labels = []
         for path in self.file_list:
             data_path = os.path.join(self.root, path)
             data = np.load(data_path)
