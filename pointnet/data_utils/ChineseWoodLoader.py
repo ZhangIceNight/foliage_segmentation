@@ -13,6 +13,7 @@ def pc_normalize(pc):
 
 def transform_data(points):
     probability = np.random.random()
+    print(points.shape)
     if probability > 0.5:
         points = rotate_point_cloud(points)
     if probability > 0.5:
