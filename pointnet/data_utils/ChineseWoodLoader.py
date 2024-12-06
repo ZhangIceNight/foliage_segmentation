@@ -13,20 +13,16 @@ def pc_normalize(pc):
 
 def transform_data(points):
     probability = np.random.random()
-    print(points.shape)
+    points = points.unsqueeze(0)
     if probability > 0.5:
         points = rotate_point_cloud(points)
-    print(points.shape)
     if probability > 0.5:
         points = jitter_point_cloud(points)
-    print(points.shape)
     if probability > 0.5:
         points = shift_point_cloud(points)
-    print(points.shape)
     if probability > 0.5:
         points = random_scale_point_cloud(points)
-    print(points.shape)
-    return points
+    return points.squeeze(0)
 
 class ChineseWoodDataset(Dataset):
     def __init__(self, root, split='train', block_points=4096):
