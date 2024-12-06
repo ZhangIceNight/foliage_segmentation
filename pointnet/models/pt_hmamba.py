@@ -584,7 +584,7 @@ class get_model(nn.Module):
 
         self.group_size = 32
         # 1024==64 2048==128 4096==256
-        self.num_group = 256
+        self.num_group = 128
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
@@ -799,7 +799,7 @@ class get_model(nn.Module):
         x_max_feature = x_max.view(B, -1).unsqueeze(-1).repeat(1, 1, N) # [B, 1152, N]
         x_avg_feature = x_avg.view(B, -1).unsqueeze(-1).repeat(1, 1, N) # [B, 1152, N]
         # cls_label_one_hot = cls_label.view(B, 16, 1)
-        # cls_label_feature = self.label_conv(cls_label_one_hot).repeat(1, 1, N)
+        # cls_label_featue = self.label_conv(cls_label_one_hot).repeat(1, 1, N)
         # x_global_feature = torch.cat((x_max_feature, x_avg_feature, cls_label_feature), 1)
         x_global_feature = torch.cat((x_max_feature, x_avg_feature), 1)
 
