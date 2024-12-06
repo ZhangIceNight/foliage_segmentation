@@ -16,12 +16,16 @@ def transform_data(points):
     print(points.shape)
     if probability > 0.5:
         points = rotate_point_cloud(points)
+    print(points.shape)
     if probability > 0.5:
         points = jitter_point_cloud(points)
+    print(points.shape)
     if probability > 0.5:
         points = shift_point_cloud(points)
+    print(points.shape)
     if probability > 0.5:
         points = random_scale_point_cloud(points)
+    print(points.shape)
     return points
 
 class ChineseWoodDataset(Dataset):
