@@ -3,7 +3,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
 import torch  
-from provider import rotate_point_cloud, jitter_point_cloud, shift_point_cloud, random_scale_point_cloud
+from .provider import rotate_point_cloud, jitter_point_cloud, shift_point_cloud, random_scale_point_cloud
 def pc_normalize(pc):
     centroid = np.mean(pc, axis=0)
     pc = pc - centroid
