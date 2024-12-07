@@ -45,7 +45,7 @@ fi
 python train_chinesewood.py \
     --model pt_hmamba \
     --batch_size 16 \
-    --npoint 16384 \
+    --npoint 8192 \
     --epoch 100 \
     --learning_rate 0.0002 \
     --optimizer AdamW \
