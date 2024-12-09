@@ -834,5 +834,6 @@ class get_loss(nn.Module):
 
     def forward(self, pred, target):
         # total_loss = F.nll_loss(pred, target)
+        print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
         total_loss = F.nll_loss(pred, label_smooth(target))
         return total_loss
