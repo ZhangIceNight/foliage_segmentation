@@ -818,14 +818,15 @@ class get_model(nn.Module):
 class get_loss(nn.Module):
     def __init__(self):
         super(get_loss, self).__init__()
+        self.num_classes = 2
+        self.epsilon = 0.1
 
     def forward(self, pred, target):
         # total_loss = F.nll_loss(pred, target)
         #torch.Size([65536, 2]) torch.Size([65536]) torch.Size([65536, 2])
         #print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
-        n = pred.size()[-1]
-        log_pred = F.log_softmax(pred, dim=-1)
-        loss = -log_pred.sum(dim=-1)
-        nll = F.nll_loss(log_pred, target, reduction='none')
-        total_loss = 0.1 * loss / n + 0.9 * nll
-        return total_loss
+        log_probs = F.log_softmax(pred, dim=-1)
+        target = torch.zeros_like(log_probs).scatter_(1, target.unsqueeze(1).to(torch.int64), 1)
+        target = (1 - self.epsilon) * target + self.epsilon / self.num_classes
+        loss = (-target * log_probs).mean(0).sum()
+        return loss
