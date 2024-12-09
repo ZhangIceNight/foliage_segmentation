@@ -584,7 +584,7 @@ class get_model(nn.Module):
 
         self.group_size = 32
         # 1024==64 2048==128 4096==256
-        self.num_group = 256
+        self.num_group = 64
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
@@ -815,18 +815,26 @@ class get_model(nn.Module):
         return x
 
 
+# class get_loss(nn.Module):
+#     def __init__(self):
+#         super(get_loss, self).__init__()
+#         self.num_classes = 2
+#         self.epsilon = 0.1
+
+#     def forward(self, pred, target):
+#         # total_loss = F.nll_loss(pred, target)
+#         #torch.Size([65536, 2]) torch.Size([65536]) torch.Size([65536, 2])
+#         #print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
+#         log_probs = F.log_softmax(pred, dim=-1)
+#         target = torch.zeros_like(log_probs).scatter_(1, target.unsqueeze(1).to(torch.int64), 1)
+#         target = (1 - self.epsilon) * target + self.epsilon / self.num_classes
+#         loss = (-target * log_probs).mean(0).sum()
+#         return loss
+    
 class get_loss(nn.Module):
     def __init__(self):
         super(get_loss, self).__init__()
-        self.num_classes = 2
-        self.epsilon = 0.1
 
     def forward(self, pred, target):
-        # total_loss = F.nll_loss(pred, target)
-        #torch.Size([65536, 2]) torch.Size([65536]) torch.Size([65536, 2])
-        #print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
-        log_probs = F.log_softmax(pred, dim=-1)
-        target = torch.zeros_like(log_probs).scatter_(1, target.unsqueeze(1).to(torch.int64), 1)
-        target = (1 - self.epsilon) * target + self.epsilon / self.num_classes
-        loss = (-target * log_probs).mean(0).sum()
-        return loss
+        total_loss = F.nll_loss(pred, target)
+        return total_loss
