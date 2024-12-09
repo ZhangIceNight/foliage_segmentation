@@ -814,26 +814,18 @@ class get_model(nn.Module):
         x = x.permute(0, 2, 1)  # [B, N, cls_dim]
         return x
 
-def label_smooth(label, n_class=2,alpha=0.1):
-    """
-    标签平滑
-    :param label: 真实lable
-    :param n_class: 类别数目
-    :param alpha: 平滑系数
-    :return:
-    """
-    k = alpha / (n_class - 1)
-    # temp [batch_size,n_class]
-    temp = torch.full((label.shape[0], n_class), k).cuda()
-    # scatter_.(int dim, Tensor index, Tensor src),这个函数比较难理解——用src张量根据dim和index来修改temp中的元素
-    temp = temp.scatter_(1, label.unsqueeze(1), (1-alpha))
-    return temp
+
 class get_loss(nn.Module):
     def __init__(self):
         super(get_loss, self).__init__()
 
     def forward(self, pred, target):
         # total_loss = F.nll_loss(pred, target)
-        print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
-        total_loss = F.nll_loss(pred, label_smooth(target))
+        #torch.Size([65536, 2]) torch.Size([65536]) torch.Size([65536, 2])
+        #print('\033[31m' + str(pred.shape), str(target.shape), str(label_smooth(target).shape) + '\033[0m')
+        n = pred.size()[-1]
+        log_pred = F.log_softmax(pred, dim=-1)
+        loss = -log_pred.sum(dim=-1)
+        nll = F.nll_loss(log_pred, target, reduction='none')
+        total_loss = 0.1 * loss / n + 0.9 * nll
         return total_loss
