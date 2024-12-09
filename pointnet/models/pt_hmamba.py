@@ -824,7 +824,7 @@ def label_smooth(label, n_class=2,alpha=0.1):
     """
     k = alpha / (n_class - 1)
     # temp [batch_size,n_class]
-    temp = torch.full((label.shape[0], n_class), k)
+    temp = torch.full((label.shape[0], n_class), k).cuda()
     # scatter_.(int dim, Tensor index, Tensor src),这个函数比较难理解——用src张量根据dim和index来修改temp中的元素
     temp = temp.scatter_(1, label.unsqueeze(1), (1-alpha))
     return temp
