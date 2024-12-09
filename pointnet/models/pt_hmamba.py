@@ -584,7 +584,7 @@ class get_model(nn.Module):
 
         self.group_size = 32
         # 1024==64 2048==128 4096==256
-        self.num_group = 512
+        self.num_group = 256
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
@@ -773,7 +773,7 @@ class get_model(nn.Module):
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 2
+        n_neighbors = 1
         for j in range(B):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
