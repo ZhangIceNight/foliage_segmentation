@@ -584,7 +584,7 @@ class get_model(nn.Module):
 
         self.group_size = 32
         # 1024==64 2048==128 4096==256
-        self.num_group = 128
+        self.num_group = 64
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
