@@ -658,13 +658,18 @@ class get_model(nn.Module):
         n_nodes = X.shape[0]
         n_edges = n_nodes
 
-        try:
-            m_dist = pairwise_distances(X)
-        except:
-            print(X.shape)
-            print(X)
-            print(filename)
+        # try:
+        #     m_dist = pairwise_distances(X)
+        # except:
+        #     print(X.shape)
+        #     print(X)
+        #     print(filename)
 
+        m_dist = pairwise_distances(X)
+        if np.iszero(m_dist).any():
+            print(filename)
+            print(m_dist)
+            exit(0)
         # top n_neighbors+1
         m_neighbors = np.argpartition(m_dist, kth=n_neighbors + 1, axis=1)
         m_neighbors_val = np.take_along_axis(m_dist, m_neighbors, axis=1)
