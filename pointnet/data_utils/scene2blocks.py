@@ -50,7 +50,7 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
     return blocks, least_points
 
 if __name__ == '__main__':
-    scene_path = './data/reference_pc_Dahurian_Larch.npy'
+    scene_path = './data/reference_pc_White_Birch.npy'
     # 每个block 2米，步长1米
     blocks, least_points = scene2blocks(scene_path, block_size_meters=2.0, stride_meters=2.0)
     print(f"总共分成了 {len(blocks)} 个blocks")
@@ -72,13 +72,13 @@ if __name__ == '__main__':
     with open('./data/trainval.txt', 'w') as f:
         for idx in train_idx:
             block_name = f'Dahurian_Larch_2m_16384_{idx:06d}.npy'
-            np.save(f'./data/train/{block_name}', blocks[idx])
+            np.save(f'./data/5fold-1/{block_name}', blocks[idx])
             f.write(f"{block_name}\n")
     
     with open('./data/test.txt', 'w') as f:
         for idx in test_idx:
             block_name = f'Dahurian_Larch_2m_16384_{idx:06d}.npy'
-            np.save(f'./data/test/{block_name}', blocks[idx])
+            np.save(f'./data/5fold-1/{block_name}', blocks[idx])
             f.write(f"{block_name}\n")
     print("数据集划分完成")
     print(f"训练集数量: {len(train_idx)}")
