@@ -582,7 +582,7 @@ class get_model(nn.Module):
         self.depth = 12
         self.cls_dim = cls_dim
 
-        self.group_size = 64
+        self.group_size = 32
         # 1024==64 2048==128 4096==256
         self.num_group = 256
         # grouper
@@ -773,7 +773,7 @@ class get_model(nn.Module):
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 4
+        n_neighbors = 2
         for j in range(B):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
