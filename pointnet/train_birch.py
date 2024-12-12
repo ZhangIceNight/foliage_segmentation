@@ -215,7 +215,7 @@ def main(args):
         classifier = classifier.train()
         num_iter = 0
         '''learning one epoch'''
-        for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
+        for i, (points, target, filename) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
             num_iter += 1
             points = points.data.numpy()
             # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
@@ -223,7 +223,7 @@ def main(args):
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
             
-            seg_pred = classifier(points)
+            seg_pred = classifier(points, filename)
             seg_pred_soft = F.log_softmax(seg_pred, dim=1)
             seg_pred_soft = seg_pred_soft.contiguous().view(-1, NUM_CLASSES)
             seg_pred = seg_pred.contiguous().view(-1, NUM_CLASSES)

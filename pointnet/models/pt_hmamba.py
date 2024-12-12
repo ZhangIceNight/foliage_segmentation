@@ -654,11 +654,16 @@ class get_model(nn.Module):
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
 
-    def KNN(self, X, n_neighbors, is_prob=True):
+    def KNN(self, X, n_neighbors, filename, is_prob=True):
         n_nodes = X.shape[0]
         n_edges = n_nodes
 
-        m_dist = pairwise_distances(X)
+        try:
+            m_dist = pairwise_distances(X)
+        except:
+            print(X.shape)
+            print(X)
+            print(filename)
 
         # top n_neighbors+1
         m_neighbors = np.argpartition(m_dist, kth=n_neighbors + 1, axis=1)
@@ -760,7 +765,7 @@ class get_model(nn.Module):
         l1 = sparse.coo_matrix((values, (node_idx, edge_idx)), shape=(n_nodes, n_edges)).toarray()
         return l1
 
-    def forward(self, pts):
+    def forward(self, pts, filename):
         B, C, N = pts.shape
         pts = pts.transpose(-1, -2).contiguous() # [B, N, 3]
         # divide the point cloud in the same form. This is important
@@ -775,7 +780,7 @@ class get_model(nn.Module):
         H = []
         n_neighbors = 2
         for j in range(B):
-            knn = self.KNN(X[j, :, :], n_neighbors)
+            knn = self.KNN(X[j, :, :], n_neighbors, filename)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 
