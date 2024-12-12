@@ -780,7 +780,7 @@ class get_model(nn.Module):
         H = []
         n_neighbors = 2
         for j in range(B):
-            knn = self.KNN(X[j, :, :], n_neighbors, filename)
+            knn = self.KNN(X[j, :, :], n_neighbors, filename[j])
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 
