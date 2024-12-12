@@ -666,7 +666,7 @@ class get_model(nn.Module):
         #     print(filename)
 
         m_dist = pairwise_distances(X)
-        if np.iszero(m_dist).any():
+        if np.all(m_dist == 0):
             print(filename)
             print(m_dist)
             exit(0)
