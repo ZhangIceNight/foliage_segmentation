@@ -63,8 +63,7 @@ class ChineseWoodDataset(Dataset):
         # 按需加载数据
         points = self.points[index]
         labels = self.labels[index]
-        filename = self.file_list[index]
-        return torch.FloatTensor(points), torch.LongTensor(labels), filename
+        return torch.FloatTensor(points), torch.LongTensor(labels)
 
 if __name__ == '__main__':
     # 测试数据路径

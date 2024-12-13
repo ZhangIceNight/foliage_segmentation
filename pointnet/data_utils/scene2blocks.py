@@ -51,7 +51,7 @@ def scene2blocks(scene_path, block_size_meters=2.0, stride_meters=1.0):
 
 if __name__ == '__main__':
     scene_path = './data/reference_pc_Chinese_scholar_tree.npy'
-    # 每个block 2米，步长1米
+    # 每个block 2米，步长2米
     blocks, least_points = scene2blocks(scene_path, block_size_meters=2.0, stride_meters=2.0)
     print(f"总共分成了 {len(blocks)} 个blocks")
     if len(blocks) > 0:
