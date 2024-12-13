@@ -666,10 +666,10 @@ class get_model(nn.Module):
         #     print(filename)
 
         m_dist = pairwise_distances(X)
-        if np.all(m_dist == 0):
-            print(filename)
-            print(m_dist)
-            exit(0)
+        # if np.all(m_dist == 0):
+        #     print(filename)
+        #     print(m_dist)
+        #     exit(0)
         # top n_neighbors+1
         m_neighbors = np.argpartition(m_dist, kth=n_neighbors + 1, axis=1)
         m_neighbors_val = np.take_along_axis(m_dist, m_neighbors, axis=1)
@@ -771,6 +771,7 @@ class get_model(nn.Module):
         return l1
 
     def forward(self, pts, filename):
+        print(filename)
         B, C, N = pts.shape
         pts = pts.transpose(-1, -2).contiguous() # [B, N, 3]
         # divide the point cloud in the same form. This is important
