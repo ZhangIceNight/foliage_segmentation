@@ -6,8 +6,8 @@
 #     exit 1
 # fi
 
-log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesescholartree_n4096_g256_k2_0"
-# log_dir="log/sem_seg_chinesescholartree/pct_seg_chinesescholartree_0"
+# log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesescholartree_n4096_g256_k2_0"
+log_dir="log/sem_seg_chinesescholartree/pct_seg_chinesescholartree_0"
 
 # pointnet
 # python train_fs.py \
@@ -45,21 +45,21 @@ log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesescholartree_n4096_g256_k2_0"
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python test_chinesescholartree.py \
-    --model pt_hmamba \
-    --batch_size 1 \
-    --npoint 4096 \
-    --log_dir $log_dir \
-    --gpu 0 \
-    --ckpts "$log_dir/checkpoints/best_model.pth" 
-
-
-
-# pct_seg
 # python test_chinesescholartree.py \
-#     --model pct_seg \
+#     --model pt_hmamba \
 #     --batch_size 1 \
 #     --npoint 4096 \
 #     --log_dir $log_dir \
 #     --gpu 0 \
 #     --ckpts "$log_dir/checkpoints/best_model.pth" 
+
+
+
+# pct_seg
+python test_chinesescholartree.py \
+    --model pct_seg \
+    --batch_size 1 \
+    --npoint 4096 \
+    --log_dir $log_dir \
+    --gpu 0 \
+    --ckpts "$log_dir/checkpoints/best_model.pth" 
