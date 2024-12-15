@@ -42,16 +42,16 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python train_birch.py \
-    --model pt_hmamba \
-    --batch_size 16 \
-    --npoint 4096 \
-    --epoch 100 \
-    --learning_rate 0.0002 \
-    --optimizer AdamW \
-    --log_dir "pt_hmamba_$1" \
-    --gpu 0 \
-    --ckpts 'pretrain.pth'
+# python train_birch.py \
+#     --model pt_hmamba \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 100 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
 
 
 
