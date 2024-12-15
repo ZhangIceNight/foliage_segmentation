@@ -59,9 +59,11 @@ def save_single_visual_result(pred_label, target, save_path):
     with open(pred_path, 'w') as f:
         for i in range(len(pred_label)):
             f.write(f"{pred_label[i]}\n")
+        print(f"save pred to {pred_path} ...")
     with open(gt_path, 'w') as f:
         for i in range(len(target)):
             f.write(f"{target[i]}\n")
+        print(f"save gt to {gt_path} ...")
 
 def save_batch_visual_result(pred_labels, targets, save_paths):
     # 保存预测结果和真实标签到文件 filename_pred.txt 和 filename_gt.txt
@@ -151,8 +153,8 @@ def main(args):
             # filename example: [tree1.npy tree2.npy ...]
             # visual_dir example: ./log/sem_seg_chinesewood/visual/
             log_string(f"Saving visual result to {visual_dir} ...")
-            save_path = os.path.join(visual_dir, file_list[batch_idx])
-            print(f"current save path: {save_path} ...")
+            save_path = [os.path.join(visual_dir, file) for file in file_list[batch_idx*BATCH_SIZE:(batch_idx+1)*BATCH_SIZE]]
+            # print(f"current save path: {save_path} ...")
             save_batch_visual_result(pred_choice, labels, save_path)
             break
 
