@@ -130,7 +130,8 @@ def main(args):
     print("model applied")
     # load checkpoint # example: log/sem_seg_chinesewood/pt_hmamba_2024-12-13_16-11/checkpoints/model_best.pth
     if args.ckpts is not None:
-        classifier.load_model_from_ckpt(args.ckpts)
+        ckpt = torch.load(args.ckpts)
+        classifier.load_state_dict(ckpt['model_state_dict'], strict=False)
         log_string('Load model from %s' % args.ckpts)
     else:
         raise ValueError("ckpts is required")
