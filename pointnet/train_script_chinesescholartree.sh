@@ -42,16 +42,16 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python train_chinesescholartree.py \
-    --model pt_hmamba \
-    --batch_size 16 \
-    --npoint 4096 \
-    --epoch 100 \
-    --learning_rate 0.0002 \
-    --optimizer AdamW \
-    --log_dir "pt_hmamba_$1" \
-    --gpu 0 \
-    --ckpts 'pretrain.pth'
+# python train_chinesescholartree.py \
+#     --model pt_hmamba \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 100 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_hmamba_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
 
 
 
@@ -70,14 +70,13 @@ python train_chinesescholartree.py \
 
 
 # # pct_seg
-# python train_fs.py \
-#     --model pct_seg \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 100 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pct_seg_$1" \
-#     --gpu 0 \
-
+python train_chinesescholartree.py \
+    --model pct_seg \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 100 \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
+    --log_dir "pct_seg_$1" \
+    --gpu 0 
  
