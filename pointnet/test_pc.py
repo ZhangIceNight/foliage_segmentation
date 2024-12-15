@@ -110,7 +110,7 @@ def main(args):
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.npoint
 
-    root = 'data_birch/'
+    root = 'data/'
 
     print("start loading test data ...")
     TEST_DATASET = LeafDatasetWholeScene(root=root, 
