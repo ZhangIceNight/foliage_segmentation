@@ -6,8 +6,8 @@
 #     exit 1
 # fi
 
-# log_dir="log/sem_seg_chinesewood/pt_hmamba_birch_n4096_g256_k2_0"
-log_dir="log/sem_seg_birch/pct_seg_birch_0"
+log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesescholartree_n4096_g256_k2_0"
+
 
 # pointnet
 # python train_fs.py \
@@ -45,18 +45,25 @@ log_dir="log/sem_seg_birch/pct_seg_birch_0"
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-# python test_birch.py \
-#     --model pt_hmamba \
-#     --batch_size 1 \
-#     --npoint 4096 \
-#     --log_dir $log_dir \
-#     --gpu 0 \
-#     --ckpts "$log_dir/checkpoints/best_model.pth" 
-
-# pct_seg
-python test_birch.py \
-    --model pct_seg \
+python test_chinesescholartree.py \
+    --model pt_hmamba \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
-    --gpu 0 
+    --gpu 0 \
+    --ckpts "$log_dir/checkpoints/best_model.pth" 
+
+
+
+# #pt_mamba_random   
+# python train_fs.py \
+#     --model pt_mamba_random \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 100 \
+#     --learning_rate 0.0002 \
+#     --optimizer AdamW \
+#     --log_dir "pt_mamba_random_$1" \
+#     --gpu 0 \
+#     --ckpts 'pretrain.pth'
+
