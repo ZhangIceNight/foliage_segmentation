@@ -65,7 +65,7 @@ def save_single_visual_result(pred_label, target, save_path):
             f.write(f"{target[i]}\n")
         # print(f"save gt to {gt_path} ...")
 
-def save_batch_visual_result(pred_labels, targets, save_paths):
+def save_batch_visual_result(points, pred_labels, targets, save_paths):
     # 保存预测结果和真实标签到文件 filename_pred.txt 和 filename_gt.txt
     """
     Usage:
@@ -76,7 +76,7 @@ def save_batch_visual_result(pred_labels, targets, save_paths):
     """
     B = len(pred_labels)
     for i in range(B):
-        save_single_visual_result(pred_labels[i], targets[i], save_paths[i])
+        save_single_visual_result(points[i], pred_labels[i], targets[i], save_paths[i])
 
 
 
@@ -146,18 +146,16 @@ def main(args):
             points, labels = points.cuda(), labels.cuda() # [B, N, 3] [B, N]
             points = points.transpose(2, 1) # [B, 3, N]
             seg_pred = classifier(points) # [B, N, NUM_CLASSES]
-
+            points = points.transpose(2, 1) # [B, N, 3]
             seg_pred_soft = F.log_softmax(seg_pred, dim=1) # [B, N, NUM_CLASSES]
-            pred_choice = seg_pred_soft.data.max(1)[1] # [B, N]
-            print(seg_pred_soft.shape)
-            print(pred_choice.shape)
-            break
+            pred_choice = seg_pred_soft.data.max(-1)[1] # [B, N]
+      
             # filename example: [tree1.npy tree2.npy ...]
             # visual_dir example: ./log/sem_seg_chinesewood/visual/
             log_string(f"Saving visual result to {visual_dir} ...")
             save_path = [os.path.join(visual_dir, file) for file in file_list[batch_idx*BATCH_SIZE:(batch_idx+1)*BATCH_SIZE]]
             # print(f"current save path: {save_path} ...")
-            save_batch_visual_result(pred_choice, labels, save_path)
+            save_batch_visual_result(points, pred_choice, labels, save_path)
 
 if __name__ == '__main__':
     args = parse_args()
