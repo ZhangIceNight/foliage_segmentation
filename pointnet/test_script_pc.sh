@@ -45,21 +45,21 @@ log_dir="log/sem_seg/pt_hmamba_N2_0"
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python test_pc.py \
-    --model pt_hmamba \
-    --batch_size 1 \
-    --npoint 4096 \
-    --log_dir $log_dir \
-    --gpu 0 \
-    --ckpts "$log_dir/checkpoints/best_model.pth" 
-
-
-
-# pct_seg
 # python test_pc.py \
-#     --model pct_seg \
+#     --model pt_hmamba \
 #     --batch_size 1 \
 #     --npoint 4096 \
 #     --log_dir $log_dir \
 #     --gpu 0 \
 #     --ckpts "$log_dir/checkpoints/best_model.pth" 
+
+
+
+# pct_seg
+python test_pc.py \
+    --model pct_seg \
+    --batch_size 1 \
+    --npoint 4096 \
+    --log_dir $log_dir \
+    --gpu 0 \
+    --ckpts "$log_dir/checkpoints/best_model.pth" 
