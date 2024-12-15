@@ -109,7 +109,7 @@ def main(args):
 
     NUM_CLASSES = 2
     BATCH_SIZE = args.batch_size
-    NUM_POINT = args.num_point
+    NUM_POINT = args.npoint
 
     root = 'data_chinesewood/'
 
