@@ -52,17 +52,20 @@ def add_vote(vote_label_pool, point_idx, pred_label, weight):
     return vote_label_pool
 
 
-def save_single_visual_result(pred_label, target, save_path):
+def save_single_visual_result(points, pred_label, target, save_path):
     # 保存预测结果和真实标签到文件 filename_pred.txt 和 filename_gt.txt
     pred_path = save_path.replace('.npy', '_pred.txt')
     gt_path = save_path.replace('.npy', '_gt.txt')
+
+    pred_data = np.concatenate([points, pred_label.reshape(-1, 1)], axis=1)
+    gt_data = np.concatenate([points, target.reshape(-1, 1)], axis=1)
     with open(pred_path, 'w') as f:
-        for i in range(len(pred_label)):
-            f.write(f"{pred_label[i]}\n")
+        for i in range(len(pred_data)):
+            f.write(f"{pred_data[i]}\n")
         # print(f"save pred to {pred_path} ...")
     with open(gt_path, 'w') as f:
-        for i in range(len(target)):
-            f.write(f"{target[i]}\n")
+        for i in range(len(gt_data)):
+            f.write(f"{gt_data[i]}\n")
         # print(f"save gt to {gt_path} ...")
 
 def save_batch_visual_result(points, pred_labels, targets, save_paths):
@@ -149,7 +152,10 @@ def main(args):
             points = points.transpose(2, 1) # [B, N, 3]
             seg_pred_soft = F.log_softmax(seg_pred, dim=1) # [B, N, NUM_CLASSES]
             pred_choice = seg_pred_soft.data.max(-1)[1] # [B, N]
-      
+            
+            points = points.cpu().numpy()
+            pred_choice = pred_choice.cpu().numpy()
+            labels = labels.cpu().numpy()
             # filename example: [tree1.npy tree2.npy ...]
             # visual_dir example: ./log/sem_seg_chinesewood/visual/
             log_string(f"Saving visual result to {visual_dir} ...")
