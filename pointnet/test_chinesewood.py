@@ -156,7 +156,6 @@ def main(args):
             save_path = [os.path.join(visual_dir, file) for file in file_list[batch_idx*BATCH_SIZE:(batch_idx+1)*BATCH_SIZE]]
             # print(f"current save path: {save_path} ...")
             save_batch_visual_result(pred_choice, labels, save_path)
-            break
 
 if __name__ == '__main__':
     args = parse_args()
