@@ -60,4 +60,4 @@ python test_birch.py \
     --npoint 4096 \
     --log_dir $log_dir \
     --gpu 0 \
-    --ckpts "$log_dir/checkpoints/best_model.pth
+    --ckpts "$log_dir/checkpoints/best_model.pth"
