@@ -7,7 +7,7 @@
 # fi
 
 log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesescholartree_n4096_g256_k2_0"
-
+# log_dir="log/sem_seg_chinesescholartree/pct_seg_chinesescholartree_0"
 
 # pointnet
 # python train_fs.py \
@@ -55,15 +55,11 @@ python test_chinesescholartree.py \
 
 
 
-# #pt_mamba_random   
-# python train_fs.py \
-#     --model pt_mamba_random \
-#     --batch_size 16 \
+# pct_seg
+# python test_chinesescholartree.py \
+#     --model pct_seg \
+#     --batch_size 1 \
 #     --npoint 4096 \
-#     --epoch 100 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pt_mamba_random_$1" \
+#     --log_dir $log_dir \
 #     --gpu 0 \
-#     --ckpts 'pretrain.pth'
-
+#     --ckpts "$log_dir/checkpoints/best_model.pth" 
