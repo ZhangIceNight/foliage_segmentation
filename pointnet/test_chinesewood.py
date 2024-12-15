@@ -149,7 +149,8 @@ def main(args):
 
             seg_pred_soft = F.log_softmax(seg_pred, dim=1) # [B, N, NUM_CLASSES]
             pred_choice = seg_pred_soft.data.max(1)[1] # [B, N]
-            print(pred_choice)
+            print(pred_choice.shape)
+            break
             # filename example: [tree1.npy tree2.npy ...]
             # visual_dir example: ./log/sem_seg_chinesewood/visual/
             log_string(f"Saving visual result to {visual_dir} ...")
