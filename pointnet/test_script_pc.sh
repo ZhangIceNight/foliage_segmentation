@@ -6,8 +6,8 @@
 #     exit 1
 # fi
 
-log_dir="log/sem_seg/pt_hmamba_N2_0"
-# log_dir="log/sem_seg/pct_seg_0"
+# log_dir="log/sem_seg/pt_hmamba_N2_0"
+log_dir="log/sem_seg/pct_seg_0"
 
 # pointnet
 # python train_fs.py \
