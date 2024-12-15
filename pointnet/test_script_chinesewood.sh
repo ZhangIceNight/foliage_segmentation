@@ -6,7 +6,7 @@
 #     exit 1
 # fi
 
-log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesewood_n4096_g256_k2_0"
+log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesewood_n4096_g64_k4_0"
 
 
 # pointnet
@@ -67,17 +67,3 @@ python test_chinesewood.py \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-
-
-# # pct_seg
-# python train_fs.py \
-#     --model pct_seg \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 100 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pct_seg_$1" \
-#     --gpu 0 \
-
- 
