@@ -110,7 +110,7 @@ def main(args):
     BATCH_SIZE = args.batch_size
     NUM_POINT = args.npoint
 
-    root = 'data_chinesewood/'
+    root = 'data_birch/'
 
     print("start loading test data ...")
     TEST_DATASET = ChineseWoodDataset(root=root, 
