@@ -69,15 +69,13 @@ python train_birch.py \
 
 
 
-# # pct_seg
-# python train_fs.py \
-#     --model pct_seg \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 100 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pct_seg_$1" \
-#     --gpu 0 \
-
- 
+ # pct_seg
+python train_birch.py \
+    --model pct_seg \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 100 \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
+    --log_dir "pct_seg_$1" \
+    --gpu 0 
