@@ -45,7 +45,7 @@ log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesewood_n4096_g256_k2_0"
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-python test_birch.py \
+python test_chinesewood.py \
     --model pt_hmamba \
     --batch_size 2 \
     --npoint 4096 \
