@@ -59,14 +59,8 @@ def save_single_visual_result(points, pred_label, target, save_path):
 
     pred_data = np.concatenate([points, pred_label.reshape(-1, 1)], axis=1)
     gt_data = np.concatenate([points, target.reshape(-1, 1)], axis=1)
-    with open(pred_path, 'w') as f:
-        for i in range(len(pred_data)):
-            f.write(f"{pred_data[i]}\n")
-        # print(f"save pred to {pred_path} ...")
-    with open(gt_path, 'w') as f:
-        for i in range(len(gt_data)):
-            f.write(f"{gt_data[i]}\n")
-        # print(f"save gt to {gt_path} ...")
+    np.savetxt(pred_path, pred_data, fmt='%.6f', delimiter=',', newline='\n')
+    np.savetxt(gt_path, gt_data, fmt='%.6f', delimiter=',', newline='\n')
 
 def save_batch_visual_result(points, pred_labels, targets, save_paths):
     # 保存预测结果和真实标签到文件 filename_pred.txt 和 filename_gt.txt
