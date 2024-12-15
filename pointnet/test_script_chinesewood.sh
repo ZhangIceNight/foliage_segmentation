@@ -47,7 +47,7 @@ log_dir="log/sem_seg_chinesewood/pt_hmamba_chinesewood_n4096_g256_k2_0"
 # pt_hmamba
 python test_chinesewood.py \
     --model pt_hmamba \
-    --batch_size 2 \
+    --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
     --gpu 0 \

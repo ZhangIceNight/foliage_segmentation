@@ -152,6 +152,7 @@ def main(args):
             # visual_dir example: ./log/sem_seg_chinesewood/visual/
             log_string(f"Saving visual result to {visual_dir} ...")
             save_path = os.path.join(visual_dir, file_list[batch_idx])
+            print(f"current save path: {save_path} ...")
             save_batch_visual_result(pred_choice, labels, save_path)
 
 if __name__ == '__main__':
