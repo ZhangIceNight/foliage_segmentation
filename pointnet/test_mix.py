@@ -114,7 +114,7 @@ def main(args):
 
     print("start loading test data ...")
     TEST_DATASET = LeafDatasetWholeScene(root=root, 
-                                    split='test',
+                                    split='train',
                                     block_points=NUM_POINT)
     testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, 
                                                batch_size=BATCH_SIZE, 
