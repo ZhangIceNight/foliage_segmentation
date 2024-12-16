@@ -6,8 +6,8 @@
 #     exit 1
 # fi
 
-# log_dir="log/sem_seg/pt_hmamba_N2_0"
-log_dir="log/sem_seg/pct_seg_0"
+# log_dir="log/sem_seg_fs/pt_hmamba_fs_0"
+log_dir="log/sem_seg_fs/pct_seg_fs_0"
 
 
 
@@ -58,7 +58,7 @@ log_dir="log/sem_seg/pct_seg_0"
 
 
 # pct_seg
-python test_pc.py \
+python test_fs.py \
     --model pct_seg \
     --batch_size 1 \
     --npoint 4096 \
