@@ -6,8 +6,8 @@
 #     exit 1
 # fi
 
-# log_dir="log/sem_seg_mix/pt_hmamba_mix_0"
-log_dir="log/sem_seg_mix/pct_seg_mix_0"
+log_dir="log/sem_seg_mix/pt_hmamba_mix_0"
+# log_dir="log/sem_seg_mix/pct_seg_mix_0"
 
 
 
@@ -47,21 +47,21 @@ log_dir="log/sem_seg_mix/pct_seg_mix_0"
 #     --ckpts 'pretrain.pth'
 
 # pt_hmamba
-# python test_mix.py \
-#     --model pt_hmamba \
-#     --batch_size 1 \
-#     --npoint 4096 \
-#     --log_dir $log_dir \
-#     --gpu 0 \
-#     --ckpts "$log_dir/checkpoints/best_model.pth" 
-
-
-
-# pct_seg
 python test_mix.py \
-    --model pct_seg \
+    --model pt_hmamba \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
     --gpu 0 \
     --ckpts "$log_dir/checkpoints/best_model.pth" 
+
+
+
+# pct_seg
+# python test_mix.py \
+#     --model pct_seg \
+#     --batch_size 1 \
+#     --npoint 4096 \
+#     --log_dir $log_dir \
+#     --gpu 0 \
+#     --ckpts "$log_dir/checkpoints/best_model.pth" 
