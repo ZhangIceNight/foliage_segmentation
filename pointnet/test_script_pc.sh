@@ -9,6 +9,8 @@
 # log_dir="log/sem_seg/pt_hmamba_N2_0"
 log_dir="log/sem_seg/pct_seg_0"
 
+
+
 # pointnet
 # python train_fs.py \
 #     --model pointnet_sem_seg \
@@ -59,7 +61,7 @@ log_dir="log/sem_seg/pct_seg_0"
 python test_pc.py \
     --model pct_seg \
     --batch_size 1 \
-    --npoint 4096 \
+    --npoint 40960 \
     --log_dir $log_dir \
     --gpu 0 \
     --ckpts "$log_dir/checkpoints/best_model.pth" 
