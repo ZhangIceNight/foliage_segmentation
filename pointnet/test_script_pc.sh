@@ -6,8 +6,9 @@
 #     exit 1
 # fi
 
+log_dir="log/sem_seg/pointnet2_leaf_seg_0"
 # log_dir="log/sem_seg/pt_hmamba_N2_0"
-log_dir="log/sem_seg/pct_seg_0"
+# log_dir="log/sem_seg/pct_seg_0"
 
 
 
@@ -59,7 +60,7 @@ log_dir="log/sem_seg/pct_seg_0"
 
 # pct_seg
 python test_pc.py \
-    --model pct_seg \
+    --model pointnet2_sem_seg \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
