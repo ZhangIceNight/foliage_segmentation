@@ -5,8 +5,8 @@
 #     echo "使用方法: sh train_script.sh <编号>"
 #     exit 1
 # fi
-
-log_dir="log/sem_seg_fs/pt_hmamba_fs_0"
+log_dir="log/sem_seg_fs/pointnet2_leaf_seg_fs_0"
+# log_dir="log/sem_seg_fs/pt_hmamba_fs_0"
 # log_dir="log/sem_seg_fs/pct_seg_fs_0"
 
 
@@ -48,7 +48,7 @@ log_dir="log/sem_seg_fs/pt_hmamba_fs_0"
 
 # pt_hmamba
 python test_fs.py \
-    --model pt_hmamba \
+    --model pointnet2_sem_seg \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
