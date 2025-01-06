@@ -7,8 +7,8 @@
 # fi
 
 # log_dir="log/sem_seg_chinesewood/pt_hmamba_birch_n4096_g256_k2_0"
-log_dir="log/sem_seg_birch/pct_seg_birch_0"
-
+# log_dir="log/sem_seg_birch/pct_seg_birch_0"
+log_dir="log/sem_seg_birch/pointnet2_leaf_seg_birch_0"
 # pointnet
 # python train_fs.py \
 #     --model pointnet_sem_seg \
@@ -55,7 +55,7 @@ log_dir="log/sem_seg_birch/pct_seg_birch_0"
 
 # pct_seg
 python test_birch.py \
-    --model pct_seg \
+    --model pointnet2_sem_seg \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
