@@ -81,7 +81,7 @@ def main(args):
     def log_string(str):
         logger.info(str)
         print(str)
-
+    
     '''HYPER PARAMETER'''
     # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     

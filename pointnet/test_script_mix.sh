@@ -6,7 +6,7 @@
 #     exit 1
 # fi
 
-log_dir="log/sem_seg_mix/pt_hmamba_mix_0"
+log_dir="log/sem_seg_mix/pointnet2_leaf_seg_mix_0"
 # log_dir="log/sem_seg_mix/pct_seg_mix_0"
 
 
@@ -48,7 +48,7 @@ log_dir="log/sem_seg_mix/pt_hmamba_mix_0"
 
 # pt_hmamba
 python test_mix.py \
-    --model pt_hmamba \
+    --model pointnet2_sem_seg \
     --batch_size 1 \
     --npoint 4096 \
     --log_dir $log_dir \
