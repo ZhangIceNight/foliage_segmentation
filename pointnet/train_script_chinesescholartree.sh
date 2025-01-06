@@ -18,16 +18,16 @@ fi
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# # pointnet2
-# python train_fs.py \
-#     --model pointnet2_sem_seg \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 128 \
-#     --learning_rate 0.001 \
-#     --optimizer Adam \
-#     --log_dir "pointnet2_leaf_seg_$1" \
-#     --gpu 0 
+# pointnet2
+python train_chinesescholartree.py \
+    --model pointnet2_sem_seg \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 40 \
+    --learning_rate 0.001 \
+    --optimizer Adam \
+    --log_dir "pointnet2_leaf_seg_$1" \
+    --gpu 0 
 
 # # pt_mamba
 # python train_fs.py \
