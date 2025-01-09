@@ -732,7 +732,26 @@ class get_model(nn.Module):
         G = torch.mm(w, invDE_HT_DV2)
         G = torch.mm(DV2_H, G)
         return G
+    def abhyperG(self, hyp, W):
+        H = hyp
+        # H = knn
+        # the degree of the node
+        DV = np.sum(H, axis=1)
+        # the degree of the hyperedge
+        DE = np.sum(H, axis=0)
+        invDE = np.mat(np.diag(np.power(DE, -1)))
+        DV2 = np.mat(np.diag(np.power(DV, -0.5)))
 
+        HT = H.T
+        DV2_H = DV2 * H
+        invDE_HT_DV2 = invDE * HT * DV2
+        DV2_H = torch.as_tensor(DV2_H).cuda().float()
+        invDE_HT_DV2 = torch.as_tensor(invDE_HT_DV2).cuda().float()
+
+        w = torch.diag(W)
+        G = torch.mm(w, invDE_HT_DV2)
+        G = torch.mm(DV2_H, G)
+        return G
     def l1_representation(self, X, n_neighbors, gamma=1):
         n_nodes = X.shape[0]
         n_edges = n_nodes
@@ -790,7 +809,7 @@ class get_model(nn.Module):
             # sim = self.similarity(X[j, :, :], n_neighbors)
 
             # G = self.hyperG(knn, l1, sim, self.W)
-            G = self.hyperG(knn, self.W)
+            G = self.abhyperG(knn, self.W)
             H.append(torch.as_tensor(G).unsqueeze(0))
 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
