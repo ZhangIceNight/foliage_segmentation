@@ -804,12 +804,12 @@ class get_model(nn.Module):
         H = []
         n_neighbors = 2
         for j in range(B):
-            knn = self.KNN(X[j, :, :], n_neighbors)
-            # l1 = self.l1_representation(X[j, :, :], n_neighbors)
+            # knn = self.KNN(X[j, :, :], n_neighbors)
+            l1 = self.l1_representation(X[j, :, :], n_neighbors)
             # sim = self.similarity(X[j, :, :], n_neighbors)
 
             # G = self.hyperG(knn, l1, sim, self.W)
-            G = self.abhyperG(knn, self.W)
+            G = self.abhyperG(l1, self.W)
             H.append(torch.as_tensor(G).unsqueeze(0))
 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
