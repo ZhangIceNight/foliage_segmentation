@@ -19,15 +19,15 @@ fi
 #     --ckpts 'pretrain.pth'
 
 # pointnet2
-python train_mix.py \
-    --model pointnet2_sem_seg \
-    --batch_size 16 \
-    --npoint 4096 \
-    --epoch 128 \
-    --learning_rate 0.001 \
-    --optimizer Adam \
-    --log_dir "pointnet2_leaf_seg_$1" \
-    --gpu 0 
+# python train_mix.py \
+#     --model pointnet2_sem_seg \
+#     --batch_size 16 \
+#     --npoint 4096 \
+#     --epoch 128 \
+#     --learning_rate 0.001 \
+#     --optimizer Adam \
+#     --log_dir "pointnet2_leaf_seg_$1" \
+#     --gpu 0 
 
 # # pt_mamba
 # python train_mix.py \
@@ -41,17 +41,17 @@ python train_mix.py \
 #     --gpu 0 \
 #     --ckpts 'pretrain.pth'
 
-# # pt_hmamba
-# python train_mix.py \
-#     --model pt_hmamba \
-#     --batch_size 16 \
-#     --npoint 4096 \
-#     --epoch 300 \
-#     --learning_rate 0.0002 \
-#     --optimizer AdamW \
-#     --log_dir "pt_hmamba_$1" \
-#     --gpu 0 \
-#     --ckpts 'pretrain.pth'
+# pt_hmamba
+python train_mix.py \
+    --model pt_hmamba \
+    --batch_size 16 \
+    --npoint 4096 \
+    --epoch 300 \
+    --learning_rate 0.0002 \
+    --optimizer AdamW \
+    --log_dir "pt_hmamba_$1" \
+    --gpu 0 \
+    --ckpts 'pretrain.pth'
 
 
 
