@@ -11,7 +11,7 @@ Effective foliage-wood separation plays a crucial role in forestry applications 
 
 ## Overview
 
-[overall-architecture](figures/overall-architecture.pdf)
+![overall-architecture](figures/overall-architecture.png)
 
 ---
 
@@ -50,6 +50,20 @@ Effective foliage-wood separation plays a crucial role in forestry applications 
 ---
 
 ## Usage
+### Dataset preparation
+
+All the datasets used in this study are publicly accessible:
+
+Tropical dataset is available at: [Download Link](https://datadryad.org/dataset/doi:10.5061/dryad.np5hqbzp6)
+
+ForestSemantic dataset is available at: [Download Link](https://zenodo.org/records/15193973)
+
+Birch, Larch, and CST dataset is available at: [Download Link](https://datadryad.org/dataset/doi:10.5061/dryad.rfj6q5799)
+
+Evo dataset is available at: [Download Link](https://etsin.fairdata.fi/dataset/81e2f3ad-ed88-4dd5-9f59-401d30fac7de)
+
+
+
 ### Environment
 This code was tested on Ubuntu 20.04, PyTorch 1.13.1 + cu117 and Python 3.9. It may work with other versions.
 
