@@ -216,12 +216,23 @@ class Encoder(nn.Module):
         '''
         bs, g, n, _ = point_groups.shape
         point_groups = point_groups.reshape(bs * g, n, 3)
-        # encoder
-        feature = self.first_conv(point_groups.transpose(2, 1))
-        feature_global = torch.max(feature, dim=2, keepdim=True)[0]
-        feature = torch.cat([feature_global.expand(-1, -1, n), feature], dim=1)
-        feature = self.second_conv(feature)
-        feature_global = torch.max(feature, dim=2, keepdim=False)[0]
+
+        # first conv
+        feature = self.first_conv(point_groups.transpose(2, 1))  # bs*g, 256, n
+        
+        # global feature
+        feature_global = torch.max(feature, dim=2, keepdim=True)[0]  # bs*g, 256, 1
+
+        # feature expansion
+        feature = torch.cat([feature_global.expand(-1, -1, n), feature], dim=1)  # bs*g, 512, n
+
+        # second conv
+        feature = self.second_conv(feature)  # bs*g, encoder_channel, n
+
+        # global feature
+        feature_global = torch.max(feature, dim=2, keepdim=False)[0]  # bs*g, encoder_channel
+
+        
         return feature_global.reshape(bs, g, self.encoder_channel)
 
 
@@ -386,47 +397,28 @@ class HGCN_layer(nn.Module):
         return gc3
 
 
-class HGCNNet(nn.Module):
+class HGCNNet_deep(nn.Module):
     def __init__(self, img_len):
         super(HGCNNet, self).__init__()
-        self.gc1 = GraphConvolution(img_len, img_len)
+        self.gc1 = GraphConvolution(384, 384)
         self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer1 = HGCN_layer(img_len, img_len)
+        self.HGCN_layer1 = HGCN_layer(img_len, 384)
 
-        self.gc2 = GraphConvolution(img_len, img_len)
+        self.gc2 = GraphConvolution(384, 384)
         self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer2 = HGCN_layer(img_len, img_len)
+        self.HGCN_layer2 = HGCN_layer(img_len, 384)
 
-        self.gc3 = GraphConvolution(img_len, img_len)
+        self.gc3 = GraphConvolution(384, 384)
         self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer3 = HGCN_layer(img_len, img_len)
+        self.HGCN_layer3 = HGCN_layer(img_len, 384)
 
-        self.gc4 = GraphConvolution(img_len, img_len)
+        self.gc4 = GraphConvolution(384, 384)
         self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer4 = HGCN_layer(img_len, img_len)
+        self.HGCN_layer4 = HGCN_layer(img_len, 384)
 
-        self.gc5 = GraphConvolution(img_len, img_len)
+        self.gc5 = GraphConvolution(384, 384)
         self.relu = nn.Softplus()
 
-
-        # self.gc1 = GraphConvolution(384, 384)
-        # self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        # self.HGCN_layer1 = HGCN_layer(img_len, 384)
-
-        # self.gc2 = GraphConvolution(384, 384)
-        # self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        # self.HGCN_layer2 = HGCN_layer(img_len, 384)
-
-        # self.gc3 = GraphConvolution(384, 384)
-        # self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        # self.HGCN_layer3 = HGCN_layer(img_len, 384)
-
-        # self.gc4 = GraphConvolution(384, 384)
-        # self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        # self.HGCN_layer4 = HGCN_layer(img_len, 384)
-
-        # self.gc5 = GraphConvolution(384, 384)
-        # self.relu = nn.Softplus()
     def forward(self, feature, H):
         gc1 = self.gc1(feature, H)
         gc1 = self.bn1(gc1)
@@ -452,6 +444,42 @@ class HGCNNet(nn.Module):
         gc5 = self.relu(gc5)
         return gc5
 
+
+class HGCNNet(nn.Module):
+    def __init__(self, img_len):
+        super(HGCNNet, self).__init__()
+        # 第一层
+        self.gc1 = GraphConvolution(384, 384)
+        self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer1 = HGCN_layer(img_len, 384)
+
+        # 第二层
+        self.gc2 = GraphConvolution(384, 384)
+        self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
+        self.HGCN_layer2 = HGCN_layer(img_len, 384)
+
+        # 输出层
+        self.gc3 = GraphConvolution(384, 384)
+        self.relu = nn.Softplus()
+
+    def forward(self, feature, H):
+        # 第一层
+        gc1 = self.gc1(feature, H)
+        gc1 = self.bn1(gc1)
+        gc1 = self.relu(gc1)
+        gc1 = self.HGCN_layer1(gc1, H)
+
+        # 第二层
+        gc2 = self.gc2(gc1, H)
+        gc2 = self.bn2(gc2)
+        gc2 = self.relu(gc2)
+        gc2 = self.HGCN_layer2(gc2, H)
+
+        # 输出层
+        gc3 = self.gc3(gc2, H)
+        gc3 = self.relu(gc3)
+        
+        return gc3
 
 class MixerModelForSegmentation(MixerModel):
     def __init__(
@@ -559,13 +587,11 @@ class get_model(nn.Module):
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
-        self.W = Parameter(torch.ones(self.num_group * 3))
-        
+        self.W = Parameter(torch.ones(self.num_group * 1))
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        self.HGCN_group = HGCNNet(img_len=self.num_group)
-        self.HGCN_point = HGCNNet(img_len=self.trans_dim)
+        self.HGCN = HGCNNet(img_len=self.num_group)
         self.pos_embed = nn.Sequential(
             nn.Linear(3, 128),
             nn.GELU(),
@@ -619,10 +645,8 @@ class get_model(nn.Module):
             incompatible = self.load_state_dict(base_ckpt, strict=False)
             if incompatible.missing_keys:
                 print('missing_keys')
-                # print(get_missing_parameters_message(incompatible.missing_keys))
             if incompatible.unexpected_keys:
                 print('unexpected_keys')
-                # print(get_unexpected_parameters_message(incompatible.unexpected_keys))
             print(f'[Mamba] Successful Loading the ckpt from {bert_ckpt_path}')
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
@@ -630,13 +654,9 @@ class get_model(nn.Module):
     def KNN(self, X, n_neighbors, is_prob=True):
         n_nodes = X.shape[0]
         n_edges = n_nodes
-
         m_dist = pairwise_distances(X)
-
-        # top n_neighbors+1
         m_neighbors = np.argpartition(m_dist, kth=n_neighbors + 1, axis=1)
         m_neighbors_val = np.take_along_axis(m_dist, m_neighbors, axis=1)
-
         m_neighbors = m_neighbors[:, :n_neighbors + 1]
         m_neighbors_val = m_neighbors_val[:, :n_neighbors + 1]
 
@@ -695,7 +715,26 @@ class get_model(nn.Module):
         G = torch.mm(w, invDE_HT_DV2)
         G = torch.mm(DV2_H, G)
         return G
+    def abhyperG(self, hyp, W):
+        H = hyp
+        # H = knn
+        # the degree of the node
+        DV = np.sum(H, axis=1)
+        # the degree of the hyperedge
+        DE = np.sum(H, axis=0)
+        invDE = np.mat(np.diag(np.power(DE, -1)))
+        DV2 = np.mat(np.diag(np.power(DV, -0.5)))
 
+        HT = H.T
+        DV2_H = DV2 * H
+        invDE_HT_DV2 = invDE * HT * DV2
+        DV2_H = torch.as_tensor(DV2_H).cuda().float()
+        invDE_HT_DV2 = torch.as_tensor(invDE_HT_DV2).cuda().float()
+
+        w = torch.diag(W)
+        G = torch.mm(w, invDE_HT_DV2)
+        G = torch.mm(DV2_H, G)
+        return G
     def l1_representation(self, X, n_neighbors, gamma=1):
         n_nodes = X.shape[0]
         n_edges = n_nodes
@@ -732,37 +771,10 @@ class get_model(nn.Module):
         values = np.array(values)
         l1 = sparse.coo_matrix((values, (node_idx, edge_idx)), shape=(n_nodes, n_edges)).toarray()
         return l1
-    def get_transform_matrix(self, H):
-        """
-        使用超图H和固定对角矩阵生成变换矩阵
-        Args:
-            H: 超图矩阵 [B, 3G, 3G]
-        Returns:
-            transform: 变换矩阵 [B, G, G]
-        """
-
-        B, _, _ = H.shape
-        G = self.num_group
-        # # 对H进行归一化
-        # H = F.normalize(H, p=2, dim=-1)
-        base_rotation_matrix = torch.eye(self.num_group)
-        # 使用HGCN得到分数矩阵
-        scores = self.HGCN_group(base_rotation_matrix.to(H.device), H)  # [B, G, G]
-        
-        # 对每一行找到最大值的位置
-        _, indices = torch.max(scores, dim=-1)  # [B, G]
-        
-        # 构建置换矩阵（每行只有一个1，其余为0）
-        transform = torch.zeros_like(scores)  # [B, G, G]
-        batch_indices = torch.arange(B, device=scores.device).unsqueeze(1).expand(-1, G)
-        row_indices = torch.arange(G, device=scores.device).unsqueeze(0).expand(B, -1)
-        transform[batch_indices, row_indices, indices] = 1
-        transform = transform.transpose(-1, -2)    
-        return transform
 
     def forward(self, pts):
         B, C, N = pts.shape
-        pts = pts.transpose(-1, -2) # [B, N, 3]
+        pts = pts.transpose(-1, -2).contiguous() # [B, N, 3]
         # divide the point cloud in the same form. This is important
         neighborhood, center = self.group_divider(pts)    # neighborhood: [B, G, M, 3] (G: num_group=128, M: group_size=32)
                                                         # center: [B, G, 3]
@@ -770,40 +782,37 @@ class get_model(nn.Module):
 
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
 
-
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 1
+        n_neighbors = 2
         for j in range(B):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
 
             G = self.hyperG(knn, l1, sim, self.W)
+            # G = self.abhyperG(l1, self.W)
             H.append(torch.as_tensor(G).unsqueeze(0))
 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]
 
-        
-        transform_matrix = self.get_transform_matrix(H) # [B, G, G]
-        group_input_tokens = torch.bmm(transform_matrix, group_input_tokens)  # [B, G, 384]
+        group_input_tokens = self.HGCN(group_input_tokens, H) # [B, G, 384]
 
 
         # final input
         x = group_input_tokens # [B, G, 384]
 
-        feature_list = self.blocks(x, pos) # List of 3 tensors, each [B, 3G, 384]
+        feature_list = self.blocks(x, pos) # List of 3 tensors, each [B, G, 384]
 
-        feature_list = [self.norm(x).transpose(-1, -2).contiguous() for x in feature_list] # List of 3 tensors, each [B, 384, 3G]
-        x = torch.cat((feature_list), dim=1)  # 1152 # [B, 1152, 3G]  (384*3 = 1152)
+        feature_list = [self.norm(x).transpose(-1, -2).contiguous() for x in feature_list] # List of 3 tensors, each [B, 384, G]
+        x = torch.cat((feature_list), dim=1)  # 1152 # [B, 1152, G]  (384*3 = 1152)
         x_max = torch.max(x, 2)[0] # [B, 1152]
         x_avg = torch.mean(x, 2) # [B, 1152]
         x_max_feature = x_max.view(B, -1).unsqueeze(-1).repeat(1, 1, N) # [B, 1152, N]
         x_avg_feature = x_avg.view(B, -1).unsqueeze(-1).repeat(1, 1, N) # [B, 1152, N]
-        # cls_label_one_hot = cls_label.view(B, 16, 1)
-        # cls_label_feature = self.label_conv(cls_label_one_hot).repeat(1, 1, N)
-        # x_global_feature = torch.cat((x_max_feature, x_avg_feature, cls_label_feature), 1)
+
+
         x_global_feature = torch.cat((x_max_feature, x_avg_feature), 1)
 
         f_level_0 = self.propagation_0(pts.transpose(-1, -2), center.transpose(-1, -2), pts.transpose(-1, -2), x) # [B, 3328, N]
@@ -817,7 +826,7 @@ class get_model(nn.Module):
         x = x.permute(0, 2, 1)  # [B, N, cls_dim]
         return x
 
-
+    
 class get_loss(nn.Module):
     def __init__(self):
         super(get_loss, self).__init__()

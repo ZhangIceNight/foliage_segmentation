@@ -32,8 +32,8 @@ def create_data_lists(data_dir, output_dir, train_ratio=0.8, seed=42):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy')
-    parser.add_argument('--output_dir', type=str, default='/public/wjzhang/datasets/LabelledPCnpy')
+    parser.add_argument('--data_dir', type=str, default='$HOME/datasets/LabelledPCnpy')
+    parser.add_argument('--output_dir', type=str, default='$HOME/datasets/LabelledPCnpy')
     parser.add_argument('--train_ratio', type=float, default=0.8)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
