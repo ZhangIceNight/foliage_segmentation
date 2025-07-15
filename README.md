@@ -1,7 +1,4 @@
 # Dynamic Hypergraph-guided Mamba for TLS Point Cloud Foliage Separation (TGRS-2025)
-
-Brief introduction about the project background, research goals, and significance.
-
 ---
 
 ## Abstract
