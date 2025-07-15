@@ -68,6 +68,5 @@ Thumbs.db
 
 # 可视化输出
 visual/
-*.png
 *.jpg
 *.jpeg
