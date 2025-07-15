@@ -4,8 +4,12 @@ Brief introduction about the project background, research goals, and significanc
 
 ---
 
+## Abstract
+Effective foliage-wood separation plays a crucial role in forestry applications such as Leaf Area Index (LAI) estimation and Quantitative Structure Models (QSM). Point clouds provide valuable support for this task. However, large-scale scenes, uneven density, and occlusions hinder the use of general 3D vision methods. Existing Transformer-based methods typically partition point clouds into local patches, but the high computational complexity restricts the feasible patch size, often fragmenting tree structures and causing semantic information loss. Moreover, the geometric similarity of fine-scale foliage, coupled with limited context in small patches, makes feature discrimination more difficult. These two issues severely limit the performance of existing methods on foliage segmentation tasks. To address these challenges, we propose the Dynamic Hypergraph-guided Mamba (DHMamba) model with two key innovations. First, we leverage a lightweight Mamba-based architecture whose linear complexity enables processing of larger patches, thereby expanding the receptive field and reducing erroneous segmentation of branches and leaves. Second, we introduce a dynamic hypergraph-based serialization strategy to capture higher-order topological dependencies within local regions, enhancing the model’s ability to extract discriminative features. Moreover, by designing two geometric feature descriptors—planarity and linearity, our framework further enhances the discrimination of subtle differences in canopy. Extensive experiments on individual-tree and plot-scale datasets demonstrate that DHMamba substantially advances segmentation accuracy and robustness, highlighting its strong potential for practical large-scale forest point-cloud analysis and sustainable forest-resource management.
 
-## Model Architecture
+
+
+## Overview
 
 [overall-architecture](figures/overall-architecture.pdf)
 
@@ -45,17 +49,40 @@ Brief introduction about the project background, research goals, and significanc
 
 ---
 
-## Installation
+## Usage
+### Environment
+This code was tested on Ubuntu 20.04, PyTorch 1.13.1 + cu117 and Python 3.9. It may work with other versions.
+
+### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/yourproject.git
-cd yourproject
+git clone https://github.com/ZhangIceNight/foliage_segmentation.git
+cd foliage_segmentation
 
-# (Optional) Create a virtual environment
-python -m venv venv
-source venv/bin/activate   # Linux/macOS
-venv\Scripts\activate      # Windows
+# Create a virtual conda environment
+conda create -n DHMamba -y python=3.10
+conda activate
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
 
 # Install dependencies
 pip install -r requirements.txt
+
+# (Optional) Install PointNet++.
+pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+# Install mamba
+pip install causal-conv1d==1.1.1
+pip install mamba-ssm==1.1.1
+```
+### Training
+```bash
+cd scripts/train_scripts/
+bash ./train_script_{$DATASET_NAME}.sh
+```
+
+### Testing
+```bash
+cd scripts/train_scripts/
+bash ./train_script_{$DATASET_NAME}.sh
+```

@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from torch import Tensor
 from timm.models.layers import DropPath, trunc_normal_
-# from logger import get_missing_parameters_message, get_unexpected_parameters_message
+
 
 from pointnet2_ops import pointnet2_utils
 from knn_cuda import KNN
