@@ -87,6 +87,8 @@ pip install causal-conv1d==1.1.1
 pip install mamba-ssm==1.1.1
 ```
 ### Training
+#### pretrain.pth could be download [here](https://pan.baidu.com/s/1EPuKfV9J_bKp1KPqpOt62w?pwd=stjh)
+
 ```bash
 cd scripts/train_scripts/
 bash ./train_script_{$DATASET_NAME}.sh
