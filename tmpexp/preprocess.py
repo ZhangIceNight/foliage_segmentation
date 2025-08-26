@@ -112,12 +112,20 @@ def _load_points(file_path):
         points = np.vstack((las.x, las.y, las.z)).T
         scale, offset = las.header.scales, las.header.offsets
     elif ext == ".txt":
+        with open(file_path, 'r') as f:
+            first_line = f.readline()
+        
+        # 判断首行是否包含非数字字符（简单判断）
+        has_header = any(c.isalpha() for c in first_line)
+        
+        # 根据是否有标题行决定是否跳过首行
+        skiprows = 1 if has_header else 0
         try:
             # 先尝试空格/Tab
-            points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
+            points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2), skiprows=skiprows)
         except ValueError:
             # 如果失败，尝试逗号分隔
-            points = np.loadtxt(file_path, delimiter=",", usecols=(0, 1, 2))
+            points = np.loadtxt(file_path, delimiter=",", usecols=(0, 1, 2), skiprows=skiprows)
         scale, offset = None, None
     elif ext == ".ply":
         if PlyData is None:
