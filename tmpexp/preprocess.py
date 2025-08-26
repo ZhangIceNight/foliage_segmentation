@@ -162,6 +162,9 @@ def check_coordinate_unit(file_path, verbose=True):
             print(f"  x: {dx:.2f}")
             print(f"  y: {dy:.2f}")
             print(f"  z: {dz:.2f}")
+            print(f" x.min: {x.min():.2f}, x.max: {x.max():.2f}")
+            print(f"  点数: {points.shape[0]}")
+            print(f"  density: {points.shape[0] / (dx * dy):.2f} points/m²")
 
         # 推测单位
         unit_guess = "unknown"
