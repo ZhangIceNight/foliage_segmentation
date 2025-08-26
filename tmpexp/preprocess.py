@@ -112,8 +112,12 @@ def _load_points(file_path):
         points = np.vstack((las.x, las.y, las.z)).T
         scale, offset = las.header.scales, las.header.offsets
     elif ext == ".txt":
-        points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
-        scale, offset = None, None
+        try:
+            # 先尝试空格/Tab
+            points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
+        except ValueError:
+            # 如果失败，尝试逗号分隔
+            points = np.loadtxt(file_path, delimiter=",", usecols=(0, 1, 2))
     elif ext == ".ply":
         if PlyData is None:
             raise ImportError("请先安装 plyfile: pip install plyfile")
