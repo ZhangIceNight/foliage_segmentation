@@ -95,63 +95,103 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
 
 
 
-import os
-import numpy as np
 
-try:
-    import laspy
-except ImportError:
-    laspy = None
 
 try:
     from plyfile import PlyData
 except ImportError:
     PlyData = None
 
-
-def check_coordinate_unit(file_path, verbose=True):
-    """
-    检查点云文件坐标单位是否为“米”，支持 las/laz, txt, ply, npy。
-    推测结果： "meter", "centimeter", "millimeter", "unknown"
-    """
+def _load_points(file_path):
+    """内部函数：读取单个点云文件"""
     ext = os.path.splitext(file_path)[-1].lower()
+    if ext in [".las", ".laz"]:
+        if laspy is None:
+            raise ImportError("请先安装 laspy: pip install laspy")
+        las = laspy.read(file_path)
+        points = np.vstack((las.x, las.y, las.z)).T
+        scale, offset = las.header.scales, las.header.offsets
+    elif ext == ".txt":
+        points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
+        scale, offset = None, None
+    elif ext == ".ply":
+        if PlyData is None:
+            raise ImportError("请先安装 plyfile: pip install plyfile")
+        ply = PlyData.read(file_path)
+        vertex = ply["vertex"]
+        points = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
+        scale, offset = None, None
+    elif ext == ".npy":
+        points = np.load(file_path)
+        if points.ndim > 2:
+            points = points.reshape(-1, points.shape[-1])
+        if points.shape[1] > 3:
+            points = points[:, :3]
+        scale, offset = None, None
+    else:
+        raise ValueError(f"不支持的文件格式: {ext}")
+    return points, scale, offset
 
-    points = None
-    scale = None
-    offset = None
 
-    try:
-        if ext in [".las", ".laz"]:
-            if laspy is None:
-                raise ImportError("请先安装 laspy: pip install laspy")
-            las = laspy.read(file_path)
-            scale = las.header.scales
-            offset = las.header.offsets
-            points = np.vstack((las.x, las.y, las.z)).T
+def check_coordinate_unit(path, verbose=True):
+    """
+    检查点云文件或目录的坐标单位和点密度
+    - 单个文件: 返回单位推测
+    - 目录: 汇总所有文件，返回平均密度和总点数
+    """
+    # 如果是目录，收集文件列表
+    if os.path.isdir(path):
+        files = [os.path.join(path, f) for f in os.listdir(path)
+                 if os.path.splitext(f)[-1].lower() in [".las", ".laz", ".txt", ".ply", ".npy"]]
+        if not files:
+            raise ValueError("目录中没有可识别的点云文件")
 
-        elif ext == ".txt":
-            points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
+        total_points = 0
+        density_list = []
+        dx_list, dy_list = [], []
 
-        elif ext == ".ply":
-            if PlyData is None:
-                raise ImportError("请先安装 plyfile: pip install plyfile")
-            ply = PlyData.read(file_path)
-            vertex = ply["vertex"]
-            points = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
+        for f in files:
+            points, scale, offset = _load_points(f)
+            x, y, z = points[:, 0], points[:, 1], points[:, 2]
+            dx, dy = x.max() - x.min(), y.max() - y.min()
+            area = dx * dy if dx > 0 and dy > 0 else 1.0
 
-        elif ext == ".npy":
-            points = np.load(file_path)
-            if points.ndim > 2:
-                points = points.reshape(-1, points.shape[-1])
-            if points.shape[1] > 3:
-                points = points[:, :3]
+            density = points.shape[0] / area
+            density_list.append(density)
+            total_points += points.shape[0]
+            dx_list.append(dx)
+            dy_list.append(dy)
 
-        else:
-            raise ValueError(f"不支持的文件格式: {ext}")
+            if verbose:
+                print(f"📂 {os.path.basename(f)}: {points.shape[0]} points, "
+                      f"density={density:.2f} pts/m², dx={dx:.2f}, dy={dy:.2f}")
 
-        # 坐标范围
+        avg_density = np.mean(density_list)
+        max_dx, max_dy = max(dx_list), max(dy_list)
+
+        unit_guess = "unknown"
+        if max(max_dx, max_dy) > 10:
+            unit_guess = "meter"
+        elif max(max_dx, max_dy) > 100:
+            unit_guess = "centimeter"
+        elif max(max_dx, max_dy) > 1000:
+            unit_guess = "millimeter"
+
+        if verbose:
+            print("====== 目录统计结果 ======")
+            print(f"📊 总点数: {total_points}")
+            print(f"📏 平均密度: {avg_density:.2f} pts/m²")
+            print(f"🧠 推测单位: {unit_guess}")
+
+        return unit_guess
+
+    else:
+        # 单个文件情况
+        points, scale, offset = _load_points(path)
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        dx, dy, dz = x.max() - x.min(), y.max() - y.min(), z.max() - z.min()
+        dx, dy = x.max() - x.min(), y.max() - y.min()
+        area = dx * dy if dx > 0 and dy > 0 else 1.0
+        density = points.shape[0] / area
 
         if verbose:
             print("📦 File Info:")
@@ -159,14 +199,10 @@ def check_coordinate_unit(file_path, verbose=True):
                 print(f"  Scale:  {scale}")
                 print(f"  Offset: {offset}")
             print("📏 坐标范围差值:")
-            print(f"  x: {dx:.2f}")
-            print(f"  y: {dy:.2f}")
-            print(f"  z: {dz:.2f}")
-            print(f" x.min: {x.min():.2f}, x.max: {x.max():.2f}")
+            print(f"  x: {dx:.2f}, y: {dy:.2f}, z: {z.max()-z.min():.2f}")
             print(f"  点数: {points.shape[0]}")
-            print(f"  density: {points.shape[0] / (dx * dy):.2f} points/m²")
+            print(f"  density: {density:.2f} pts/m²")
 
-        # 推测单位
         unit_guess = "unknown"
         if (scale is not None and scale[0] >= 1.0) or max(dx, dy) > 10:
             unit_guess = "meter"
@@ -180,9 +216,6 @@ def check_coordinate_unit(file_path, verbose=True):
 
         return unit_guess
 
-    except Exception as e:
-        print(f"读取失败: {e}")
-        return "error"
 
 
 def generate_kfold_splits(tile_dir, k=5, output_dir="splits_kfold", seed=42, suffix=".npz"):
