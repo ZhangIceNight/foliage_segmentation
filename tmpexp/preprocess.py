@@ -118,6 +118,7 @@ def _load_points(file_path):
         except ValueError:
             # 如果失败，尝试逗号分隔
             points = np.loadtxt(file_path, delimiter=",", usecols=(0, 1, 2))
+        scale, offset = None, None
     elif ext == ".ply":
         if PlyData is None:
             raise ImportError("请先安装 plyfile: pip install plyfile")
