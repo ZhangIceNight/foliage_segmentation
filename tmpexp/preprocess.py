@@ -95,44 +95,90 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
 
 
 
-def check_las_coordinate_unit(file_path, verbose=True):
+import os
+import numpy as np
+
+try:
+    import laspy
+except ImportError:
+    laspy = None
+
+try:
+    from plyfile import PlyData
+except ImportError:
+    PlyData = None
+
+
+def check_coordinate_unit(file_path, verbose=True):
     """
-    检查 .las 文件坐标单位是否为“米”，并打印坐标范围与推测单位。
-    :param file_path: str
-    :param verbose: bool
-    :return: str, 单位猜测结果（"meter", "centimeter", "millimeter", "unknown"）
+    检查点云文件坐标单位是否为“米”，支持 las/laz, txt, ply, npy。
+    推测结果： "meter", "centimeter", "millimeter", "unknown"
     """
+    ext = os.path.splitext(file_path)[-1].lower()
+
+    points = None
+    scale = None
+    offset = None
+
     try:
-        las = laspy.read(file_path)
-        scale = las.header.scales
-        offset = las.header.offsets
-        x, y, z = las.x, las.y, las.z
+        if ext in [".las", ".laz"]:
+            if laspy is None:
+                raise ImportError("请先安装 laspy: pip install laspy")
+            las = laspy.read(file_path)
+            scale = las.header.scales
+            offset = las.header.offsets
+            points = np.vstack((las.x, las.y, las.z)).T
+
+        elif ext == ".txt":
+            points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2))
+
+        elif ext == ".ply":
+            if PlyData is None:
+                raise ImportError("请先安装 plyfile: pip install plyfile")
+            ply = PlyData.read(file_path)
+            vertex = ply["vertex"]
+            points = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
+
+        elif ext == ".npy":
+            points = np.load(file_path)
+            if points.ndim > 2:
+                points = points.reshape(-1, points.shape[-1])
+            if points.shape[1] > 3:
+                points = points[:, :3]
+
+        else:
+            raise ValueError(f"不支持的文件格式: {ext}")
+
+        # 坐标范围
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
         dx, dy, dz = x.max() - x.min(), y.max() - y.min(), z.max() - z.min()
 
         if verbose:
-            print("📦 Header Info:")
-            print(f"  Scale:  {scale}")
-            print(f"  Offset: {offset}")
+            print("📦 File Info:")
+            if scale is not None:
+                print(f"  Scale:  {scale}")
+                print(f"  Offset: {offset}")
             print("📏 坐标范围差值:")
-            print(f"  x: {dx:.2f} m")
-            print(f"  y: {dy:.2f} m")
-            print(f"  z: {dz:.2f} m")
+            print(f"  x: {dx:.2f}")
+            print(f"  y: {dy:.2f}")
+            print(f"  z: {dz:.2f}")
 
+        # 推测单位
         unit_guess = "unknown"
-        if scale[0] >= 1.0 or max(dx, dy) > 10:
+        if (scale is not None and scale[0] >= 1.0) or max(dx, dy) > 10:
             unit_guess = "meter"
-        elif scale[0] >= 0.01 and max(dx, dy) > 100:
+        elif (scale is not None and scale[0] >= 0.01) or max(dx, dy) > 100:
             unit_guess = "centimeter"
-        elif scale[0] >= 0.001 and max(dx, dy) > 1000:
+        elif (scale is not None and scale[0] >= 0.001) or max(dx, dy) > 1000:
             unit_guess = "millimeter"
 
         if verbose:
-            print(f"🧠 推测单位：{unit_guess}")
+            print(f"🧠 推测单位: {unit_guess}")
 
         return unit_guess
 
     except Exception as e:
-        print(f"读取失败：{e}")
+        print(f"读取失败: {e}")
         return "error"
 
 
