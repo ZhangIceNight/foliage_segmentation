@@ -77,5 +77,5 @@ if __name__ == "__main__":
     points, _, _ = _load_points(pcd_path)  # [N, 3] np.array
     points = torch.from_numpy(points).float()  # [N, 3] torch.Tensor
     K = 32
-    r = estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, method="fps", batch_size=50, show_avg=True)
+    r = estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, method="random", batch_size=50, show_avg=True)
     print("Final estimated radius:", r)
