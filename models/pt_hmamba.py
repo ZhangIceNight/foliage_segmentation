@@ -160,11 +160,24 @@ def fps(data, number):
     return fps_data
 
 
+def get_density(xyz, avg_density):
+    """
+    计算点云的密度
+    :param xyz: 点云坐标，形状为 (B, N, 3)
+    :param avg_density: 平均密度，形状为 (B, 1)
+    :return: 点云密度，形状为 (B, N, 1)
+    """
+    # 计算每个点的体积
+    volume = torch.ones_like(xyz[..., :1])  # (B, N, 1)
+    density = avg_density / volume  # (B, N, 1)
+    return density
+
 class Group(nn.Module):
-    def __init__(self, num_group, group_size):
+    def __init__(self, num_group, group_size, avg_density):
         super().__init__()
-        self.num_group = num_group
-        self.group_size = group_size
+        self.num_group = num_group # G
+        self.group_size = group_size # M
+        self.avg_density = avg_density # D
         self.knn = KNN(k=self.group_size, transpose_mode=True)
 
     def forward(self, xyz):
@@ -177,6 +190,11 @@ class Group(nn.Module):
         batch_size, num_points, _ = xyz.shape
         # fps the centers out
         center = fps(xyz, self.num_group)  # B G 3
+        ##-------------------------------##
+        den_center = get_density(center, self.avg_density)  # B G 1
+
+
+        ##-------------------------------##
         # knn to get the neighborhood
         _, idx = self.knn(xyz, center)  # B G M
         assert idx.size(1) == self.num_group
