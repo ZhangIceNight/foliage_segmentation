@@ -34,11 +34,13 @@ def estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, 
     N = points.shape[0]
     pts_np = points.cpu().numpy()
 
+    print("Building KDTree...")
     # Open3D 点云
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pts_np)
     kdtree = o3d.geometry.KDTreeFlann(pcd)
 
+    print("Sampling points...")
     # 采样
     if N > sample_size:
         if method == "random":
@@ -71,6 +73,7 @@ def estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, 
 
 if __name__ == "__main__":
     pcd_path = '/public/wjzhang/datasets/Chinese_wood/Birch/reference_pc_White_Birch.npy'
+    print("Loading point cloud...")
     points, _, _ = _load_points(pcd_path)  # [N, 3] np.array
     points = torch.from_numpy(points).float()  # [N, 3] torch.Tensor
     K = 32
