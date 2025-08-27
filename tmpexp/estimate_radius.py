@@ -3,6 +3,7 @@ from preprocess import _load_points
 import open3d as o3d
 import numpy as np
 import torch
+from tqdm import tqdm
 
 def farthest_point_sampling(points, M):
     N = points.shape[0]
@@ -18,13 +19,17 @@ def farthest_point_sampling(points, M):
         farthest = torch.argmax(distances).item()
     return points[centroids]
 
-def estimate_radius_kdtree(points, K=32, sample_size=500, multiplier=2.0, method="random"):
+
+def estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, method="fps", batch_size=50, show_avg=False):
     """
-    FPS/Random + KDTree
+    分批计算 KNN 半径 + 进度条 + 可选实时平均半径显示
     points: torch.Tensor [N,3]
-    K: int, KNN
-    sample_size: int
+    K: KNN
+    sample_size: 采样点数量
+    multiplier: 放大系数
     method: "random" or "fps"
+    batch_size: 每批处理多少采样点
+    show_avg: bool, 是否每批显示当前平均半径
     """
     N = points.shape[0]
     pts_np = points.cpu().numpy()
@@ -47,12 +52,21 @@ def estimate_radius_kdtree(points, K=32, sample_size=500, multiplier=2.0, method
         sample_pts = pts_np
 
     kth_distances = []
-    for pt in sample_pts:
-        [_, idx_knn, dist_knn] = kdtree.search_knn_vector_3d(pt, K+1)
-        kth_distances.append(np.sqrt(dist_knn[-1]))  # 第 K+1 个点距离（排除自己）
+    num_batches = int(np.ceil(sample_pts.shape[0] / batch_size))
+    
+    for i in tqdm(range(num_batches), desc="Estimating radius"):
+        batch = sample_pts[i*batch_size : (i+1)*batch_size]
+        for pt in batch:
+            [_, idx_knn, dist_knn] = kdtree.search_knn_vector_3d(pt, K+1)
+            kth_distances.append(np.sqrt(dist_knn[-1]))
+        # 可选显示当前平均半径
+        if show_avg:
+            current_avg = np.mean(kth_distances)
+            tqdm.write(f"Current average radius: {current_avg:.5f}")
 
     avg_dist = np.mean(kth_distances)
     return avg_dist * multiplier
+
 
 
 if __name__ == "__main__":
@@ -60,5 +74,5 @@ if __name__ == "__main__":
     points, _, _ = _load_points(pcd_path)  # [N, 3] np.array
     points = torch.from_numpy(points).float()  # [N, 3] torch.Tensor
     K = 32
-    r = estimate_radius_kdtree(points, K=K, sample_size=2000, multiplier=2.0, method="fps")
-    print("Estimated radius:", r)
+    r = estimate_radius_kdtree_batch(points, K=32, sample_size=500, multiplier=2.0, method="fps", batch_size=50, show_avg=True)
+    print("Final estimated radius:", r)
