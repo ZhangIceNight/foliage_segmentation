@@ -33,7 +33,8 @@ def estimate_radius(points, K=32, sample_size=1024, multiplier=2.0):
 
 if __name__ == "__main__":
     pcd_path = '/public/wjzhang/datasets/Chinese_wood/Birch/reference_pc_White_Birch.npy'
-    points, _, _ = _load_points(pcd_path)  # [N, 3] torch.Tensor
+    points, _, _ = _load_points(pcd_path)  # [N, 3] np.array
+    points = torch.from_numpy(points).float()  # [N, 3] torch.Tensor
     K = 32
     r = estimate_radius(points, K=K, sample_size=2000, multiplier=2.0)
     print("Estimated radius:", r)
