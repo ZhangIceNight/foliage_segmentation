@@ -67,7 +67,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
 
-    for i in range(xyz.shape[0]):
+    for i, _ in enumerate(range(xyz.shape[0])):
         point = xyz[i]
         label = labels[i]
 
@@ -81,6 +81,8 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
         tiles[key]["label"].append(label)
 
     # Step 3: 保存每个 tile（包含标签）
+    print(f"✅ 切割完成，共生成 {len(tiles)} 个格子")
+    print("正在保存每个 tile...")
     count = 0
     for key, tile_data in tiles.items():
         if len(tile_data["xyz"]) < min_points:
