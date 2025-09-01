@@ -2,7 +2,7 @@ import os
 import laspy
 import open3d as o3d
 import numpy as np
-
+from tqdm import tqdm
 def read_single_las(file_path):
     """读取单个 LAS 文件为 Open3D 点云对象"""
     if not os.path.exists(file_path):
@@ -96,7 +96,51 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     print(f"✅ 切割完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
 
 
-
+def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
+    """
+    遍历 npz tile 文件，重标 label，并过滤点数不足的文件
+    :param input_dir: 输入的 tiles 文件夹路径
+    :param output_dir: 输出保存路径
+    :param min_points: 最小点数，低于则丢弃该 tile
+    """
+    os.makedirs(output_dir, exist_ok=True)
+ 
+    # 获取所有 .npz 文件
+    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
+    print(f"开始处理 {len(npz_files)} 个 tile 文件...")
+ 
+    for filename in tqdm(npz_files, desc="Processing Tiles"):
+        file_path = os.path.join(input_dir, filename)
+ 
+        try:
+            data = np.load(file_path)
+            xyz = data['xyz']
+            label = data['label'].astype(np.uint8)
+ 
+            # 选择有效标签的点
+            valid_mask = np.isin(label, [2, 3, 4, 5])
+            if not np.any(valid_mask):
+                # 没有有效点，跳过
+                continue
+ 
+            xyz_valid = xyz[valid_mask]
+            label_valid = label[valid_mask]
+ 
+            # 标签重新映射
+            label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0)
+ 
+            # 判断点数是否满足
+            if len(xyz_valid) < min_points:
+                continue
+ 
+            # 保存文件
+            out_path = os.path.join(output_dir, filename)
+            np.savez(out_path, xyz=xyz_valid, label=label_valid)
+ 
+        except Exception as e:
+            tqdm.write(f"处理失败: {filename}, 错误: {e}")
+ 
+    print(f"处理完成，过滤后的 tile 保存在: {output_dir}")
 
 
 try:

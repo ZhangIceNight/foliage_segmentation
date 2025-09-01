@@ -1,4 +1,4 @@
-from preprocess import check_coordinate_unit, split_and_save_tiles_with_labels
+from preprocess import check_coordinate_unit, split_and_save_tiles_with_labels, filter_and_relabel_tiles
 
 def detail_dataset_info(path, name="dataset"):
     print(f"\n===== {name} =====")
@@ -15,7 +15,8 @@ def main():
     # detail_dataset_info(Chinese_scholar_tree_path, name="Chinese_scholar_tree")
     # detail_dataset_info(Evo_mls_path, name="Evo_mls")
     # detail_dataset_info(ForestSemantic_Difficult_path, name="ForestSemantic_Difficult")
-    split_and_save_tiles_with_labels(ForestSemantic_Difficult_path, output_dir="./data/ForestSemantic_Difficult/tiles", tile_size=1, min_points=4096)
+    # split_and_save_tiles_with_labels(ForestSemantic_Difficult_path, output_dir="./data/ForestSemantic_Difficult/tiles", tile_size=1, min_points=4096)
+    filter_and_relabel_tiles(input_dir="./data/ForestSemantic_Difficult/tiles", output_dir="./data/ForestSemantic_Difficult/tiles_filtered", min_points=4096)
 
 if __name__ == "__main__":
     Tropical_path = '/public/wjzhang/datasets/LabelledPC'  
