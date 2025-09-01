@@ -1,0 +1,32 @@
+defaults:
+  - base_dhmamba
+  - _self_
+data:
+  batch_size: 16
+  num_workers: 4
+  num_points: 4096
+  data_dir: "./data/"
+  augmentations_list: ['rotate', 'scale', 'shift']
+  fold_idx: 0
+  dataset_type: ForestSemantic_Difficult
+  
+model:
+  num_classes: 2
+
+  
+
+optimizer:
+  learning_rate: 0.0002
+  weight_decay: 0.00005
+  max_epochs: 200
+  eta_min: 0.000001
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 200
+  accelerator: "gpu"
+  devices: [1]
+
+comet:
+  project: "foliage-segmentation"
+  name: "ForestSemantic_Difficult_dhmamba_lr2e-4_bs16"

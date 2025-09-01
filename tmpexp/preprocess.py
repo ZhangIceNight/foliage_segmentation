@@ -1,9 +1,15 @@
 import os
+import random
 import laspy
 import open3d as o3d
 import numpy as np
 from tqdm import tqdm
 import torch
+import json
+try:
+    from plyfile import PlyData
+except ImportError:
+    PlyData = None
 
 def read_single_las(file_path):
     """读取单个 LAS 文件为 Open3D 点云对象"""
@@ -150,51 +156,6 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
     print(f"共处理 {total_files} 个 tile，保留 {saved_files} 个。")
 
 
- 
-def fps_downsample_tiles(input_dir, output_dir, target_points=16384):
-    os.makedirs(output_dir, exist_ok=True)
- 
-    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
-    total_files = len(npz_files)
-    print(f"开始对 {total_files} 个 tile 进行 FPS 下采样...")
- 
-    for filename in tqdm(npz_files, desc="FPS Downsample"):
-        file_path = os.path.join(input_dir, filename)
- 
-        try:
-            data = np.load(file_path)
-            xyz = data['xyz']
-            label = data['label']
- 
-            num_points = len(xyz)
- 
-            if num_points <= target_points:
-                # 点数不足，不采样，直接保留
-                out_path = os.path.join(output_dir, filename)
-                np.savez(out_path, xyz=xyz, label=label)
-                continue
- 
-            # 转为 Open3D PointCloud
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(xyz)
- 
-            # 使用 Open3D 的 FPS（最远点采样）
-            idxs = np.asarray(pcd.farthest_point_down_sample(target_points).colors[:, 0], dtype=int)
- 
-            # 采样点和标签
-            xyz_sampled = xyz[idxs]
-            label_sampled = label[idxs]
- 
-            # 保存
-            out_path = os.path.join(output_dir, filename)
-            np.savez(out_path, xyz=xyz_sampled, label=label_sampled)
- 
-        except Exception as e:
-            tqdm.write(f"下采样失败: {filename}, 错误: {e}")
- 
-    print(f"FPS 下采样完成，结果保存至: {output_dir}")
-
-
 def farthest_point_sampling_torch(xyz, npoint, device="cuda"):
     """
     使用 PyTorch 实现的最远点采样 (FPS)，支持 GPU 加速
@@ -257,15 +218,6 @@ def fps_downsample_tiles(input_dir, output_dir, target_points=16384, device="cud
 
     print(f"FPS 下采样完成，结果保存至: {output_dir}")
 
-
-
-
-
-
-try:
-    from plyfile import PlyData
-except ImportError:
-    PlyData = None
 
 def _load_points(file_path):
     """内部函数：读取单个点云文件"""
@@ -435,3 +387,37 @@ def generate_kfold_splits(tile_dir, k=5, output_dir="splits_kfold", seed=42, suf
                 f.write(str(Path(tile_dir) / name) + "\n")
 
         print(f"✅ fold_{i}: 训练集 {len(train_files)}，测试集 {len(test_files)}")
+
+
+
+def kfold_split_dataset(input_dir, output_json, k=5, seed=42):
+    """
+    对点云数据 (.npz) 做 k 折交叉验证划分
+    - 不复制文件，只生成 splits.json
+    - splits.json 格式: { "fold_0": {"train": [...], "val": [...]}, ... }
+    """
+    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
+    npz_files.sort()  # 确保一致性
+
+    random.seed(seed)
+    random.shuffle(npz_files)
+
+    total = len(npz_files)
+    fold_size = total // k
+    print(f"总文件数: {total}, 每折大小: {fold_size}")
+
+    splits = {}
+
+    for i in range(k):
+        val_files = npz_files[i * fold_size : (i + 1) * fold_size]
+        train_files = [f for f in npz_files if f not in val_files]
+
+        splits[f"fold_{i}"] = {
+            "train": train_files,
+            "val": val_files
+        }
+
+    with open(output_json, "w") as f:
+        json.dump(splits, f, indent=4)
+
+    print(f"{k}-折交叉验证划分完成，结果保存至: {output_json}")

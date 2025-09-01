@@ -592,13 +592,13 @@ class MixerModelForSegmentation(MixerModel):
         return feature_list
 
 
-class get_model(nn.Module):
-    def __init__(self, cls_dim):
+class DHMamba(nn.Module):
+    def __init__(self, num_classes):
         super().__init__()
 
         self.trans_dim = 384
         self.depth = 12
-        self.cls_dim = cls_dim
+        self.cls_dim = num_classes
 
         self.group_size = 32
         self.num_group = 128
