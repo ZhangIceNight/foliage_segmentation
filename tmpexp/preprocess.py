@@ -3,7 +3,7 @@ import laspy
 import open3d as o3d
 import numpy as np
 from tqdm import tqdm
-
+import torch
 
 def read_single_las(file_path):
     """读取单个 LAS 文件为 Open3D 点云对象"""
@@ -195,7 +195,67 @@ def fps_downsample_tiles(input_dir, output_dir, target_points=16384):
     print(f"FPS 下采样完成，结果保存至: {output_dir}")
 
 
+def farthest_point_sampling_torch(xyz, npoint, device="cuda"):
+    """
+    使用 PyTorch 实现的最远点采样 (FPS)，支持 GPU 加速
+    xyz: [N, 3] 点云 (numpy array)
+    npoint: 目标点数
+    return: [npoint] 采样点索引 (numpy array)
+    """
+    xyz = torch.tensor(xyz, dtype=torch.float32, device=device)
+    N, _ = xyz.shape
+    centroids = torch.zeros(npoint, dtype=torch.long, device=device)
+    distance = torch.ones(N, device=device) * 1e10
+    farthest = torch.randint(0, N, (1,), device=device)
 
+    for i in range(npoint):
+        centroids[i] = farthest
+        centroid = xyz[farthest, :].view(1, 3)
+        dist = torch.sum((xyz - centroid) ** 2, -1)
+        distance = torch.minimum(distance, dist)
+        farthest = torch.argmax(distance)
+
+    return centroids.cpu().numpy()
+
+
+def fps_downsample_tiles(input_dir, output_dir, target_points=16384, device="cuda"):
+    os.makedirs(output_dir, exist_ok=True)
+
+    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
+    total_files = len(npz_files)
+    print(f"开始对 {total_files} 个 tile 进行 FPS 下采样...")
+
+    for filename in tqdm(npz_files, desc="FPS Downsample"):
+        file_path = os.path.join(input_dir, filename)
+
+        try:
+            data = np.load(file_path)
+            xyz = data['xyz']
+            label = data['label']
+
+            num_points = len(xyz)
+
+            if num_points <= target_points:
+                # 点数不足，不采样，直接保留
+                out_path = os.path.join(output_dir, filename)
+                np.savez(out_path, xyz=xyz, label=label)
+                continue
+
+            # FPS 下采样（GPU 优先）
+            idxs = farthest_point_sampling_torch(xyz, target_points, device=device)
+
+            # 采样点和标签
+            xyz_sampled = xyz[idxs]
+            label_sampled = label[idxs]
+
+            # 保存
+            out_path = os.path.join(output_dir, filename)
+            np.savez(out_path, xyz=xyz_sampled, label=label_sampled)
+
+        except Exception as e:
+            tqdm.write(f"下采样失败: {filename}, 错误: {e}")
+
+    print(f"FPS 下采样完成，结果保存至: {output_dir}")
 
 
 
