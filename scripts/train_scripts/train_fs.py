@@ -12,7 +12,7 @@ from tqdm import tqdm
 # import provider
 import numpy as np
 import time
-import wandb
+from comet_ml import Experiment
 from timm.scheduler import CosineLRScheduler
 import torch.nn.functional as F
 
@@ -115,7 +115,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = 'data_fs/'
+    root = 'data/ForestSemantic_Simple/'
     NUM_CLASSES = 2
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
@@ -186,16 +186,6 @@ def main(args):
     else:
         log_string('No existing model, starting training from scratch...')
 
-    # try:
-    #     checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
-    #     start_epoch = checkpoint['epoch']
-    #     classifier.load_state_dict(checkpoint['model_state_dict'])
-    #     log_string('Use pretrain model')
-    # except:
-    #     log_string('No existing model, starting training from scratch...')
-    #     start_epoch = 0
-
-
     param_groups = add_weight_decay(classifier, weight_decay=0.05)
 
     optimizer = torch.optim.AdamW(param_groups, lr=args.learning_rate, weight_decay=args.decay_rate)
@@ -218,20 +208,16 @@ def main(args):
     best_acc = 0
   
 
-    # 初始化wandb
-    wandb.init(
-        project="pointnet-leaf-seg",
-        name=args.log_dir,
-        config={
-            "model": args.model,
-            "batch_size": args.batch_size,
-            "num_point": args.npoint,
-            "learning_rate": args.learning_rate,
-            "epochs": args.epoch,
-            "optimizer": args.optimizer
-        }
+    # 初始化comet
+    experiment = Experiment(
+        api_key="Vi7wFvlcyIijMDTnI81JTNBCm",     # 在 Comet 账号中获取
+        project_name="foliage_segmentation"
     )
-    print("wandb initialized")
+    experiment.set_name("Exp-ForestSemantic")
+    experiment.log_parameters(vars(args))
+    print("comet initialized")
+    #-------------------------#
+    
     classifier.zero_grad()
 
     # Start training
@@ -288,11 +274,10 @@ def main(args):
         log_string('Training accuracy: %.5f' % train_acc)
 
         # 记录训练指标
-        wandb.log({
-            "train/loss": train_loss,
-            "train/accuracy": train_acc,
-            "learning_rate": optimizer.param_groups[0]['lr']
-        }, step=global_epoch)
+        experiment.log_metric("train/loss", train_loss, step=global_epoch)
+        experiment.log_metric("train/accuracy", train_acc, step=global_epoch)
+        experiment.log_metric("learning_rate", optimizer.param_groups[0]['lr'], step=global_epoch)
+
 
         if epoch % 5 == 0:
             logger.info('Save model...')
@@ -361,18 +346,14 @@ def main(args):
             mean_iou = np.mean(class_iou)
             
             # 记录评估指标
-            wandb.log({
-                "eval/loss": eval_loss,
-                "eval/accuracy": test_overall_accuracy,
-                "eval/mean_iou": mean_iou,
-            }, step=global_epoch)
+            experiment.log_metric("eval/loss", eval_loss, step=global_epoch)
+            experiment.log_metric("eval/accuracy", test_overall_accuracy, step=global_epoch)
+            experiment.log_metric("eval/mean_iou", mean_iou, step=global_epoch)
 
             # 记录每个类别的指标
             for i in range(NUM_CLASSES):
-                wandb.log({
-                    f"eval/class_{classes[i]}_iou": class_iou[i],
-                    f"eval/class_{classes[i]}_acc": class_acc[i]
-                }, step=global_epoch)
+                experiment.log_metric(f"eval/class_{classes[i]}_iou", class_iou[i], step=global_epoch)
+                experiment.log_metric(f"eval/class_{classes[i]}_acc", class_acc[i], step=global_epoch)
 
             log_string('test mean loss: %.5f' % eval_loss)
             log_string('test accuracy: %.5f' % test_overall_accuracy)
@@ -398,7 +379,7 @@ def main(args):
             log_string('Best mIoU: %.5f' % best_iou)
         global_epoch += 1
 
-    wandb.finish()
+    experiment.end()
 
 
 if __name__ == '__main__':
