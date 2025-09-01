@@ -3,6 +3,11 @@ import laspy
 import open3d as o3d
 import numpy as np
 from tqdm import tqdm
+from pytorch3d.ops import sample_farthest_points  # 使用 PyTorch3D 的 FPS
+import torch
+
+
+
 def read_single_las(file_path):
     """读取单个 LAS 文件为 Open3D 点云对象"""
     if not os.path.exists(file_path):
@@ -146,6 +151,60 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
 
     print(f"处理完成，过滤后的 tile 保存在: {output_dir}")
     print(f"共处理 {total_files} 个 tile，保留 {saved_files} 个。")
+
+
+ 
+def fps_downsample_tiles(input_dir, output_dir, target_points=16384):
+    os.makedirs(output_dir, exist_ok=True)
+ 
+    # 获取所有 .npz 文件
+    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
+    total_files = len(npz_files)
+    print(f"开始对 {total_files} 个 tile 进行 FPS 下采样...")
+ 
+    for filename in tqdm(npz_files, desc="FPS Downsample"):
+        file_path = os.path.join(input_dir, filename)
+ 
+        try:
+            data = np.load(file_path)
+            xyz = data['xyz']
+            label = data['label']
+ 
+            num_points = len(xyz)
+ 
+            if num_points <= target_points:
+                # 点数不足，不采样，直接保留
+                out_path = os.path.join(output_dir, filename)
+                np.savez(out_path, xyz=xyz, label=label)
+                continue
+ 
+            # 转为 torch tensor
+            xyz_tensor = torch.from_numpy(xyz).float().unsqueeze(0)  # (1, N, 3)
+ 
+            # FPS 采样
+            sampled_xyz, sampled_idx = sample_farthest_points(xyz_tensor, K=target_points)
+ 
+            # 转回 numpy
+            xyz_sampled = sampled_xyz[0].numpy()
+            label_sampled = label[torch.squeeze(sampled_idx).numpy()]
+ 
+            # 保存
+            out_path = os.path.join(output_dir, filename)
+            np.savez(out_path, xyz=xyz_sampled, label=label_sampled)
+ 
+        except Exception as e:
+            tqdm.write(f"下采样失败: {filename}, 错误: {e}")
+ 
+    print(f"FPS 下采样完成，结果保存至: {output_dir}")
+
+
+
+
+
+
+
+
+
 
 
 
