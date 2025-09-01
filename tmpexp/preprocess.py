@@ -104,43 +104,49 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
     :param min_points: 最小点数，低于则丢弃该 tile
     """
     os.makedirs(output_dir, exist_ok=True)
- 
+
     # 获取所有 .npz 文件
     npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
-    print(f"开始处理 {len(npz_files)} 个 tile 文件...")
- 
+    total_files = len(npz_files)
+    saved_files = 0
+
+    print(f"开始处理 {total_files} 个 tile 文件...")
+
     for filename in tqdm(npz_files, desc="Processing Tiles"):
         file_path = os.path.join(input_dir, filename)
- 
+
         try:
             data = np.load(file_path)
             xyz = data['xyz']
             label = data['label'].astype(np.uint8)
- 
+
             # 选择有效标签的点
             valid_mask = np.isin(label, [2, 3, 4, 5])
             if not np.any(valid_mask):
                 # 没有有效点，跳过
                 continue
- 
+
             xyz_valid = xyz[valid_mask]
             label_valid = label[valid_mask]
- 
+
             # 标签重新映射
             label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0)
- 
+
             # 判断点数是否满足
             if len(xyz_valid) < min_points:
                 continue
- 
+
             # 保存文件
             out_path = os.path.join(output_dir, filename)
             np.savez(out_path, xyz=xyz_valid, label=label_valid)
- 
+            saved_files += 1
+
         except Exception as e:
             tqdm.write(f"处理失败: {filename}, 错误: {e}")
- 
+
     print(f"处理完成，过滤后的 tile 保存在: {output_dir}")
+    print(f"共处理 {total_files} 个 tile，保留 {saved_files} 个。")
+
 
 
 try:
