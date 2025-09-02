@@ -36,7 +36,7 @@ def train(config: DictConfig):
     print(OmegaConf.to_yaml(config))
 
     comet_logger = CometLogger(
-        project="foliage-segmentation",
+        project_name=config.comet.get("project"),
         name=config.comet.get("name"), 
         # offline_directory=comet_dir,
         workspace="zwjnefu"
