@@ -9,7 +9,7 @@ class DHMamba_pl(pl.LightningModule):
         super().__init__()
         self.model_hparams = config.model
         self.opt_hparams = config.optimizer
-        self.model = DHMamba(num_classes=self.model_hparams['num_classes'])
+        self.model = DHMamba(num_classes=int(self.model_hparams['num_classes']))
         self.loss_fn = nn.CrossEntropyLoss()
 
         self.save_hyperparameters()
