@@ -793,8 +793,7 @@ class DHMamba(nn.Module):
         return l1
 
     def forward(self, pts):
-        B, C, N = pts.shape
-        pts = pts.transpose(-1, -2).contiguous() # [B, N, 3]
+        B, N, C = pts.shape
         # divide the point cloud in the same form. This is important
         neighborhood, center = self.group_divider(pts)    # neighborhood: [B, G, M, 3] (G: num_group=128, M: group_size=32)
                                                         # center: [B, G, 3]
