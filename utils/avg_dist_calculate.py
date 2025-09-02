@@ -5,8 +5,10 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 
 def read_point_cloud(file_path):
-    """简单读取点云txt/csv，每行3个坐标"""
-    return np.loadtxt(file_path, delimiter=None, usecols=(0,1,2))
+    """简单读取点云npz，返回xyz坐标"""
+    data = np.load(file_path)
+    point_cloud = data["xyz"].astype(np.float32)
+    return point_cloud
 
 def downsample(points, max_points=4096):
     """随机下采样到 max_points"""
@@ -67,7 +69,7 @@ def process_folder_mean(folder_path, max_points=4096):
     return avg_vol, avg_chamfer
 
 # 示例
-folder = './data/pointclouds'
+folder = './data/ForestSemantic_Difficult/tiles_filtered_fps'
 avg_vol, avg_chamfer = process_folder_mean(folder)
 print(f"Average volume-based distance: {avg_vol:.6f}")
 print(f"Average chamfer nearest-neighbor distance: {avg_chamfer:.6f}")
