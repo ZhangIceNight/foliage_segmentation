@@ -37,7 +37,7 @@ def train(config: DictConfig):
 
     comet_logger = CometLogger(
         project_name=config.comet.get("project"),
-        name=config.comet.get("name"), 
+        experiment_name=config.comet.get("name"), 
         # offline_directory=comet_dir,
         workspace="zwjnefu"
     )
