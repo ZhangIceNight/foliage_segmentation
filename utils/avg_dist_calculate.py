@@ -30,8 +30,9 @@ def avg_distance_volume(points):
     """体积估算的平均点间距"""
     if points.shape[0] < 4:
         return 0.0
-    hull = ConvexHull(points)
-    volume = hull.volume
+    min_xyz = points.min(axis=0)
+    max_xyz = points.max(axis=0)
+    volume = np.prod(max_xyz - min_xyz)
     avg_dist = (volume / points.shape[0]) ** (1/3)
     return avg_dist
 
