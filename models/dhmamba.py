@@ -188,7 +188,6 @@ class Group(nn.Module):
             center : B G 3
         '''
         batch_size, num_points, _ = xyz.shape
-        print(f"\033[91m[DEBUG] batch_size = {batch_size}, num_points = {num_points}\033[0m")
         # fps the centers out
         center = fps(xyz, self.num_group)  # B G 3
         ##-------------------------------##
@@ -841,8 +840,7 @@ class DHMamba(nn.Module):
         x = self.dp1(x)  # [B, 512, N]
         x = self.relu(self.bns2(self.convs2(x)))  # [B, 256, N]
         x = self.convs3(x)  # [B, cls_dim, N]
-        x = F.log_softmax(x, dim=1)  # [B, cls_dim, N]
-        x = x.permute(0, 2, 1)  # [B, N, cls_dim]
+
         return x
 
     
