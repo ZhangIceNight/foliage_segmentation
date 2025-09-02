@@ -605,7 +605,7 @@ class DHMamba(nn.Module):
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
-        self.W = Parameter(torch.ones(self.num_group * 1))
+        self.W = Parameter(torch.ones(self.num_group * 3))
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
