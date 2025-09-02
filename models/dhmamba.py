@@ -16,7 +16,7 @@ from timm.models.layers import DropPath, trunc_normal_
 
 from pointnet2_ops import pointnet2_utils
 from knn_cuda import KNN
-from pointnet2_utils import PointNetFeaturePropagation
+from .pointnet2_utils import PointNetFeaturePropagation
 
 from mamba_ssm.modules.mamba_simple import Mamba
 
