@@ -3,7 +3,7 @@ defaults:
   - _self_
 data:
   batch_size: 16
-  num_workers: 4
+  num_workers: 0
   num_points: 4096
   data_dir: "./data/ForestSemantic_Difficult/tiles_filtered_fps"
   augmentations_list: ['rotate', 'scale', 'shift']
