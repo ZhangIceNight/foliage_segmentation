@@ -188,6 +188,7 @@ class Group(nn.Module):
             center : B G 3
         '''
         batch_size, num_points, _ = xyz.shape
+        print(f"\033[91m[DEBUG] batch_size = {batch_size}, num_points = {num_points}\033[0m")
         # fps the centers out
         center = fps(xyz, self.num_group)  # B G 3
         ##-------------------------------##
