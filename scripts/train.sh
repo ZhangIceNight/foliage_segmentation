@@ -38,6 +38,6 @@ export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 cd "$PROJECT_ROOT"
 
 for fold in $(seq 0 $((FOLD_NUM-1)) ); do
-    HYDRA_ARGS+=" data.fold_idx=$fold"
+    CMD_HYDRA_ARGS="$HYDRA_ARGS data.fold_idx=$fold"
     python train.py --config-name $CONFIG_NAME $HYDRA_ARGS
 done
