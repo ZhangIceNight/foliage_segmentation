@@ -599,7 +599,11 @@ class DHMamba(nn.Module):
         self.trans_dim = 384
         self.depth = 12
         self.cls_dim = num_classes
+        #
+        # 红色输出值，黄色输出类型
+        print(f"\033[91m[DEBUG] self.cls_dim = {self.cls_dim}\033[0m | \033[93mtype = {type(self.cls_dim)}\033[0m")
 
+        #
         self.group_size = 32
         self.num_group = 128
         # grouper
