@@ -1,8 +1,7 @@
 import os
 import numpy as np
 import torch
-from scipy.spatial import ConvexHull
-from sklearn.metrics import pairwise_distances
+
 
 def read_point_cloud(file_path):
     """简单读取点云npz，返回xyz坐标"""
