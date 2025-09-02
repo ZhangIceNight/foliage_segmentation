@@ -31,6 +31,9 @@ class ForestSemantic_Difficult_Dataset(Dataset):
             idxs = np.random.choice(N, self.num_points, replace=False)
         else:
             idxs = np.random.choice(N, self.num_points, replace=True)
+        
+        point_cloud = point_cloud[idxs]
+        label = label[idxs]
 
         # 数据增强（仅对训练集）
         if self.split == 'train':
