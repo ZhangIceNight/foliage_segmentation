@@ -17,14 +17,17 @@ class DHMamba_pl(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         points, labels = batch
         logits = self.model(points)
-        loss = self.loss_fn(logits, labels.squeeze())
+        with torch.use_deterministic_algorithms(False):
+            loss = self.loss_fn(logits, labels.squeeze())
+
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         points, labels = batch
         logits = self.model(points)
-        loss = self.loss_fn(logits, labels.squeeze())
+        with torch.use_deterministic_algorithms(False):
+            loss = self.loss_fn(logits, labels.squeeze())
         preds = torch.argmax(logits, dim=1)
         accuracy = (preds == labels).float().mean()
         iou = self.calculate_iou(preds, labels, self.model_hparams['num_classes'])
