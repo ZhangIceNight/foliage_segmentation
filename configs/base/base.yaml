@@ -11,5 +11,5 @@ trainer:
   default_root_dir: "Results/"
 
 comet:
-  project: "treespecies-cls"
+  project: "foliage-segmentation"
   offline_directory: "Results/comet_logs"

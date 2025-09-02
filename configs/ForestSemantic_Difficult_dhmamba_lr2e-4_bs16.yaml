@@ -16,7 +16,6 @@ data:
 model:
   num_classes: 2
 
-  
 
 optimizer:
   learning_rate: 0.0002
@@ -31,5 +30,4 @@ trainer:
   devices: [1]
 
 comet:
-  project: "foliage-segmentation"
   name: "ForestSemantic_Difficult_dhmamba_lr2e-4_bs16"
