@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import CometLogger
 
 from models import build_model
-from datasets.tree_dataset import TreeDataModule
+from datasets.ForestSemantic_Difficult_Dataset import ForestSemantic_Difficult_DataModule
 from utils.logger_utils import setup_logger, create_experiment_dir
 from utils.seed_utils import seed_everything
 
@@ -45,7 +45,7 @@ def train(config: DictConfig):
     
     # Setup Dataset Module
     config.data.fold_idx = fold
-    data_module = TreeDataModule(**config.data)
+    data_module = ForestSemantic_Difficult_DataModule(**config.data)
     data_module.setup()
 
     # Setup Model
