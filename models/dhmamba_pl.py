@@ -17,8 +17,11 @@ class DHMamba_pl(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         points, labels = batch
         logits = self.model(points)
-        with torch.use_deterministic_algorithms(False):
-            loss = self.loss_fn(logits, labels.squeeze())
+        # 保存原状态
+        orig = torch.are_deterministic_algorithms_enabled()
+        torch.use_deterministic_algorithms(False)  # 关闭 deterministic
+        loss = self.loss_fn(logits, labels.squeeze())
+        torch.use_deterministic_algorithms(orig)  # 恢复原状态
 
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
@@ -26,8 +29,11 @@ class DHMamba_pl(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         points, labels = batch
         logits = self.model(points)
-        with torch.use_deterministic_algorithms(False):
-            loss = self.loss_fn(logits, labels.squeeze())
+        # 保存原状态
+        orig = torch.are_deterministic_algorithms_enabled()
+        torch.use_deterministic_algorithms(False)  # 关闭 deterministic
+        loss = self.loss_fn(logits, labels.squeeze())
+        torch.use_deterministic_algorithms(orig)  # 恢复原状态
         preds = torch.argmax(logits, dim=1)
         accuracy = (preds == labels).float().mean()
         iou = self.calculate_iou(preds, labels, self.model_hparams['num_classes'])
