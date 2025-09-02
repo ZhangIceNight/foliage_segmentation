@@ -36,17 +36,17 @@ class DHMamba_pl(pl.LightningModule):
         torch.use_deterministic_algorithms(orig)  # 恢复原状态
         preds = torch.argmax(logits, dim=1)
         accuracy = (preds == labels).float().mean()
-        iou = self.calculate_iou(preds, labels, self.model_hparams['num_classes'])
+        miou = self.calculate_iou(preds, labels, self.model_hparams['num_classes'])
 
         # 记录验证损失 & 准确率
         self.log("val_loss", loss, prog_bar=True, logger=True)
         self.log("val_acc", accuracy, prog_bar=True, logger=True)
-        self.log("val_iou", iou, prog_bar=True, logger=True)
+        self.log("val_mIoU", miou, prog_bar=True, logger=True)
 
         return {
             "val_loss": loss,
             "val_acc": accuracy,
-            "val_iou": iou
+            "val_mIoU": miou
         }
 
     @staticmethod
