@@ -173,7 +173,7 @@ def get_density(xyz, avg_density):
     return density
 
 class Group(nn.Module):
-    def __init__(self, num_group, group_size, avg_density):
+    def __init__(self, num_group, group_size, avg_density=None):
         super().__init__()
         self.num_group = num_group # G
         self.group_size = group_size # M
@@ -191,7 +191,7 @@ class Group(nn.Module):
         # fps the centers out
         center = fps(xyz, self.num_group)  # B G 3
         ##-------------------------------##
-        den_center = get_density(center, self.avg_density)  # B G 1
+        # den_center = get_density(center, self.avg_density)  # B G 1
 
 
         ##-------------------------------##
@@ -733,6 +733,7 @@ class DHMamba(nn.Module):
         G = torch.mm(w, invDE_HT_DV2)
         G = torch.mm(DV2_H, G)
         return G
+    
     def abhyperG(self, hyp, W):
         H = hyp
         # H = knn
@@ -753,6 +754,7 @@ class DHMamba(nn.Module):
         G = torch.mm(w, invDE_HT_DV2)
         G = torch.mm(DV2_H, G)
         return G
+    
     def l1_representation(self, X, n_neighbors, gamma=1):
         n_nodes = X.shape[0]
         n_edges = n_nodes
