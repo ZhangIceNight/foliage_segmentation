@@ -36,9 +36,10 @@ def train(config: DictConfig):
     print(OmegaConf.to_yaml(config))
 
     comet_logger = CometLogger(
-        project=config.comet.project,
+        project="foliage-segmentation",
         name=config.comet.get("name"), 
-        offline_directory=comet_dir
+        offline_directory=comet_dir,
+        workspace=config.comet.get("workspace"),
     )
     comet_logger.experiment.add_tag(f"fold_{fold}")
     comet_logger.experiment.log_parameters({"fold_idx": fold})
