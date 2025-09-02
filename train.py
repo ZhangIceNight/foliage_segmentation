@@ -43,7 +43,11 @@ def train(config: DictConfig):
     )
     comet_logger.experiment.add_tag(f"fold_{fold}")
     comet_logger.experiment.log_parameters({"fold_idx": fold})
-    
+    print("CometLogger project:", comet_logger.experiment.project_name)
+    print("CometLogger workspace:", comet_logger.experiment.workspace)
+    print("CometLogger experiment name:", comet_logger.experiment.get_name())
+
+    exit(0)
     # Setup Dataset Module
     config.data.fold_idx = fold
     data_module = ForestSemantic_Difficult_DataModule(**config.data)
