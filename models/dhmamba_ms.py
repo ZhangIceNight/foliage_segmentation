@@ -162,11 +162,12 @@ def fps(data, number):
 
 
 class Group(nn.Module):
-    def __init__(self, num_group, group_size, avg_dist=None):
+    def __init__(self, num_group, group_size, avg_dist=None, dist="chamfer"):
         super().__init__()
         self.num_group = num_group # G
         self.group_size = group_size # M
         self.avg_dist = avg_dist # radius 
+        self.dist = dist # "chamfer" or "volume"
         self.knn_large = KNN(k=2*group_size, transpose_mode=True)
         self.knn_mid = KNN(k=group_size, transpose_mode=True)
         self.knn_small = KNN(k=max(1, group_size // 2), transpose_mode=True)
@@ -202,10 +203,24 @@ class Group(nn.Module):
 
         # 3. 计算密度
         radius = self.avg_dist
-        mask = (dist < radius).float()  # [B, G, N]
-        counts = mask.sum(-1)  # [B, G]
-        volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
-        density = counts / volume  # [B, G]
+        mask = (dist < radius * 2).float()  # [B, G, N]
+        if self.dist == "volume":
+            counts = mask.sum(-1)               # [B, G]
+            volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
+            avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)  # [B, G]
+
+        elif self.dist == "chamfer":
+            masked_dist = dist.clone()
+            masked_dist[mask == 0] = float("inf")   # 半径外的点无效
+            masked_dist[masked_dist == 0] = float("inf")  # 自己到自己无效
+            min_dist, _ = torch.min(masked_dist, dim=-1)  # [B, G]
+            min_dist[counts < 2] = 0.0
+            avg_dist = min_dist
+
+        else:
+            raise ValueError(f"Unknown dist mode: {self.dist}")
+
+        density = avg_dist  # [B, G]
 
         # 4. 根据密度排序并四分位划分
         sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)  # 小→大
@@ -620,15 +635,16 @@ class MixerModelForSegmentation(MixerModel):
 
 
 class DHMamba(nn.Module):
-    def __init__(self, num_classes=2, avg_dist=0.5):
+    def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5):
         super().__init__()
 
-        self.trans_dim = 384
+        self.trans_dim = trans_dim
         self.depth = 12
         self.cls_dim = num_classes
         self.avg_dist = avg_dist
-        self.group_size = 32
-        self.num_group = 128
+        self.group_size = group_size
+        self.num_group = num_group
+
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size, avg_dist=self.avg_dist)
         # Weight for hypergraph merging
