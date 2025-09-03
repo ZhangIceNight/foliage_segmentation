@@ -17,8 +17,8 @@ model:
   num_classes: 2
   avg_volume_dist: 0.015171
   avg_chamfer_dist: 0.002446
-  dist: "chamfer"  # "volume" or "chamfer"
-  # dist: "volume"  # "volume" or "chamfer"
+  # dist: "chamfer"  # "volume" or "chamfer"
+  dist: "volume"  # "volume" or "chamfer"
   num_group: 128
   group_size: 32
   trans_dim: 384
@@ -37,5 +37,5 @@ trainer:
   devices: [1]
 
 comet:
-  name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
-  # name: "ForestSemantic_Difficult_dhmamba_ms_volume_lr2e-4_bs16"
+  # name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
+  name: "ForestSemantic_Difficult_dhmamba_ms_volume_lr2e-4_bs16"
