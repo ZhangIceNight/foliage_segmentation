@@ -27,12 +27,12 @@ model:
 optimizer:
   learning_rate: 0.0002
   weight_decay: 0.00005
-  max_epochs: 200
+  max_epochs: 100
   eta_min: 0.000001
   warmup_epochs: 5
 
 trainer:
-  max_epochs: 200
+  max_epochs: 100
   accelerator: "gpu"
   devices: [1]
 
