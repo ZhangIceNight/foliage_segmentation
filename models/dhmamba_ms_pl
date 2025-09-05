@@ -11,7 +11,9 @@ class DHMamba_pl(pl.LightningModule):
         self.opt_hparams = config.optimizer
         if config.model.get('dist') == 'volume':
             self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_volume_dist']), dist=self.model_hparams['dist'])
-        else:
+        elif config.model.get('dist') == 'chamfer':
+            self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_chamfer_dist']), dist=self.model_hparams['dist'])
+        elif config.model.get('dist') == 'interpolate':
             self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_chamfer_dist']), dist=self.model_hparams['dist'])
         self.loss_fn = nn.CrossEntropyLoss()
 
