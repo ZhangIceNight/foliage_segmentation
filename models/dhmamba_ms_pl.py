@@ -4,7 +4,7 @@ from torch import optim, nn
 from .dhmamba_ms import DHMamba_ms
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
-class DHMamba_pl(pl.LightningModule):
+class DHMamba_ms_pl(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.model_hparams = config.model
