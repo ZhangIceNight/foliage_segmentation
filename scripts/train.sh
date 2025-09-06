@@ -39,5 +39,6 @@ cd "$PROJECT_ROOT"
 
 for fold in $(seq 0 $((FOLD_NUM-1)) ); do
     CMD_HYDRA_ARGS="$HYDRA_ARGS data.fold_idx=$fold"
-    python train.py --config-name $CONFIG_NAME $HYDRA_ARGS
+    python train.py --config-name $CONFIG_NAME $CMD_HYDRA_ARGS # fold 0-4
+    # python train.py --config-name $CONFIG_NAME $HYDRA_ARGS # fold 0 for 5 times used for repeat exps
 done

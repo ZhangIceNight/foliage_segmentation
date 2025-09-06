@@ -1003,6 +1003,7 @@ class DHMamba(nn.Module):
 
         x_global_feature = torch.cat((x_max_feature, x_avg_feature), 1)
 
+        center = torch.cat(center_list, dim=1)  # [B, sum(G_i), 3]
         f_level_0 = self.propagation_0(pts.transpose(-1, -2), center.transpose(-1, -2), pts.transpose(-1, -2), x) # [B, 3328, N]
 
         x = torch.cat((f_level_0, x_global_feature), 1)  # [B, 3328, N]

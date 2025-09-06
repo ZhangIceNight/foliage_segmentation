@@ -1,5 +1,5 @@
 defaults:
-  - base_dhmamba
+  - base_dhmamba_ms
   - _self_
 data:
   batch_size: 16
