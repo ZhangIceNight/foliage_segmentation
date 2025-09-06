@@ -23,11 +23,12 @@
 # from .pointnet2_pl import PointNet2_pl
 # from .pointnet_pl import PointNet_pl
 from .dhmamba_pl import DHMamba_pl
-
+from .dhmamba_ms_pl import DHMamba_ms_pl
 model_dict = {
     # 'pointnet2': PointNet2_pl,
     # 'pointnet': PointNet_pl,
     'dhmamba': DHMamba_pl,
+    'dhmamba_ms': DHMamba_ms_pl,
 }
 
 def build_model(config):
