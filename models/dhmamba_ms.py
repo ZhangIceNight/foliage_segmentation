@@ -178,6 +178,13 @@ class Group(nn.Module):
             return centers.new_zeros((xyz.size(0), 0, k, 3))
         B, N, _ = xyz.shape
         _, idx = torch.topk(dist, k, dim=-1, largest=False, sorted=False)  # [B, G, k]
+
+        # --- 保证每个中心点至少包含自己 ---
+        for b in range(B):
+            for g in range(centers.size(1)):
+                if not (idx[b, g] == g).any():   # 如果没选到自己
+                    idx[b, g, -1] = g            # 强制最后一个位置替换为自己
+
         idx_base = torch.arange(0, B, device=xyz.device).view(-1, 1, 1) * N
         idx = (idx + idx_base).view(-1)
         neigh = xyz.view(B*N, 3)[idx].view(B, centers.size(1), k, 3)
