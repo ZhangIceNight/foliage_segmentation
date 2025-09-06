@@ -18,8 +18,8 @@ model:
   avg_volume_dist: 0.015171
   avg_chamfer_dist: 0.002446
   # dist: "chamfer"  # "volume" or "chamfer" or "interpolate"
-  # dist: "volume"  # "volume" or "chamfer" or "interpolate"
-  dist: "interpolate" # "volume" or "chamfer" or "interpolate"
+  dist: "volume"  # "volume" or "chamfer" or "interpolate"
+  # dist: "interpolate" # "volume" or "chamfer" or "interpolate"
   num_group: 128
   group_size: 32
   trans_dim: 384
@@ -39,5 +39,5 @@ trainer:
 
 comet:
   # name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
-  # name: "ForestSemantic_Difficult_dhmamba_ms_volume_lr2e-4_bs16"
-  name: "ForestSemantic_Difficult_dhmamba_ms_interpolate_lr2e-4_bs16"
+  name: "ForestSemantic_Difficult_dhmamba_ms_volume_lr2e-4_bs16"
+  # name: "ForestSemantic_Difficult_dhmamba_ms_interpolate_lr2e-4_bs16"
