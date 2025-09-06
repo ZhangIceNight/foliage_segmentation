@@ -751,7 +751,7 @@ class MixerModelForSegmentation(MixerModel):
         return feature_list
 
 
-class DHMamba(nn.Module):
+class DHMamba_ms(nn.Module):
     def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5, dist="chamfer"):
         super().__init__()
 
