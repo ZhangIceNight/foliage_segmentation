@@ -898,9 +898,9 @@ class DHMamba_ms(nn.Module):
     def hyperG(self, knn, l1, sim, W):
         H = np.concatenate((knn, l1, sim), axis=1)
         # H = knn
-        knn = torch.from_numpy(knn).cuda().float()
-        l1 = torch.from_numpy(l1).cuda().float()
-        sim = torch.from_numpy(sim).cuda().float()
+        # knn = torch.from_numpy(knn).cuda().float()
+        # l1 = torch.from_numpy(l1).cuda().float()
+        # sim = torch.from_numpy(sim).cuda().float()
         # print("knn shape:", knn.shape)  # 应该是 [B, half_num]
         # print("knn sample:", knn[0, :])
         # print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
