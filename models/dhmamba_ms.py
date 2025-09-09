@@ -880,19 +880,60 @@ class DHMamba_ms(nn.Module):
         return knn
 
     def similarity(self, X, n_neighbors):
+        # """
+        # X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
+        # n_neighbors: int, top-k相似节点数量
+        # 返回:
+        #     sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
+        # """
+        # # L2归一化
+        # X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
+        
+        # # 相似度矩阵 (余弦相似度)
+        # sim_mat = X_norm @ X_norm.T  # [N, N]
+        
+        # # 取每行 top-k 索引 (包含自己)
+        # topk_vals, topk_idx = torch.topk(sim_mat, k=n_neighbors+1, dim=1, largest=True)
+        
+        # # 构建 sim 矩阵
+        # N = X.shape[0]
+        # sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
+        # row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, n_neighbors+1)  # [N, k+1]
+        # sim[row_idx, topk_idx] = 1.0
+        
+        # # 强制对角线为1，保证每个节点自己被选上
+        # sim.fill_diagonal_(1.0)
+        
+        # return sim
+
         n_nodes = X.shape[0]
         n_edges = n_nodes
         sim = np.zeros((n_nodes, n_edges))
 
+        # 计算相似度矩阵
+        norm_X = X / np.linalg.norm(X, axis=1, keepdims=True)
+        sim_mat = norm_X @ norm_X.T  # shape [n_nodes, n_nodes]
+
+        # 对每行取 top-k
+        topk_idx = np.argsort(-sim_mat, axis=1)[:, :n_neighbors+1]  # 包括自己
+
         for i in range(n_nodes):
-            dist = []
-            for j in range(n_edges):
-                s = X[i].dot(X[j]) / (np.linalg.norm(X[i]) * np.linalg.norm(X[j]))
-                dist.append(s)
-            m_neighbors = sorted(dist, reverse=True)[0:n_neighbors + 1]
-            for n in m_neighbors:
-                ind = dist.index(n)
-                sim[i][ind] = 1.0
+            sim[i, topk_idx[i]] = 1.0
+
+        # 强制对角线为1，保证自己被选上
+        np.fill_diagonal(sim, 1.0)
+        
+
+
+        # for i in range(n_nodes):
+        #     dist = []
+        #     for j in range(n_edges):
+        #         s = X[i].dot(X[j]) / (np.linalg.norm(X[i]) * np.linalg.norm(X[j]))
+        #         dist.append(s)
+        #     m_neighbors = sorted(dist, reverse=True)[0:n_neighbors + 1]
+        #     for n in m_neighbors:
+        #         ind = dist.index(n)
+        #         sim[i][ind] = 1.0
         return sim
 
     def hyperG(self, knn, l1, sim, W):
@@ -910,12 +951,12 @@ class DHMamba_ms(nn.Module):
         # print("sim shape:", sim.shape)  # 应该是 [B, half_num]
         # print("sim sample:", sim[0, :])
         # print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
-        zero_cols = np.where(np.sum(knn, axis=0) == 0)[0]
-        if len(zero_cols) > 0:
-            print(f"[Warning] Found {len(zero_cols)} knn zero-degree hyperedges : {zero_cols}")
-        zero_cols = np.where(np.sum(l1, axis=0) == 0)[0]
-        if len(zero_cols) > 0:
-            print(f"[Warning] Found {len(zero_cols)} l1 zero-degree hyperedges : {zero_cols}")
+        # zero_cols = np.where(np.sum(knn, axis=0) == 0)[0]
+        # if len(zero_cols) > 0:
+        #     print(f"[Warning] Found {len(zero_cols)} knn zero-degree hyperedges : {zero_cols}")
+        # zero_cols = np.where(np.sum(l1, axis=0) == 0)[0]
+        # if len(zero_cols) > 0:
+        #     print(f"[Warning] Found {len(zero_cols)} l1 zero-degree hyperedges : {zero_cols}")
         zero_cols = np.where(np.sum(sim, axis=0) == 0)[0]
         if len(zero_cols) > 0:
             print(f"[Warning] Found {len(zero_cols)} sim zero-degree hyperedges : {zero_cols}")
