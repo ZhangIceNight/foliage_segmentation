@@ -18,6 +18,7 @@ while [[ "$#" -gt 0 ]]; do
         --epochs) EPOCHS="$2"; shift ;;
         --lr) LR="$2"; shift ;;
         --fold) FOLD_NUM="$2"; shift ;;
+        --debug) DEBUG=1 ;;  # 如果传了 --debug 就只跑一次
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -37,7 +38,14 @@ export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 cd "$PROJECT_ROOT"
 
-for fold in $(seq 0 $((FOLD_NUM-1)) ); do
+if [ "$DEBUG" -eq 1 ]; then
+    folds=(0)
+else
+    folds=($(seq 0 $((FOLD_NUM-1))))
+fi
+
+
+for fold in ${folds[@]}; do
     CMD_HYDRA_ARGS="$HYDRA_ARGS data.fold_idx=$fold"
     python train.py --config-name $CONFIG_NAME $CMD_HYDRA_ARGS # fold 0-4
     # python train.py --config-name $CONFIG_NAME $HYDRA_ARGS # fold 0 for 5 times used for repeat exps

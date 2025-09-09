@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from torch import Tensor
 from timm.models.layers import DropPath, trunc_normal_
-
+from torch_cluster import knn
 
 from pointnet2_ops import pointnet2_utils
 from knn_cuda import KNN
@@ -173,117 +173,111 @@ class Group(nn.Module):
         self.knn_mid = KNN(k=group_size, transpose_mode=True)
         self.knn_small = KNN(k=max(1, group_size//2), transpose_mode=True)
 
-    def _get_neighborhood(self, xyz, centers, dist, k):
-        if centers.size(1) == 0:
-            return centers.new_zeros((xyz.size(0), 0, k, 3))
+    def _get_neighborhood(self, xyz, centers, k):
+        """
+        xyz: [B, N, 3]
+        centers: [B, G, 3]
+        k: 邻居数
+        return: neigh [B, G, k, 3]
+        """
         B, N, _ = xyz.shape
-        _, idx = torch.topk(dist, k, dim=-1, largest=False, sorted=False)  # [B, G, k]
-
-        # --- 保证每个中心点至少包含自己 ---
+        neigh_list = []
         for b in range(B):
-            for g in range(centers.size(1)):
-                if not (idx[b, g] == g).any():   # 如果没选到自己
-                    idx[b, g, -1] = g            # 强制最后一个位置替换为自己
+            # knn(query, support, k) -> (idx_query, idx_support)
+            idx_query, idx_support = knn(x=xyz[b], y=centers[b], k=k)
 
-        idx_base = torch.arange(0, B, device=xyz.device).view(-1, 1, 1) * N
-        idx = (idx + idx_base).view(-1)
-        neigh = xyz.view(B*N, 3)[idx].view(B, centers.size(1), k, 3)
-        return neigh - centers.unsqueeze(2)
+            # 按 query 分组，把 support 邻居取出来
+            neigh = xyz[b][idx_support].view(centers[b].size(0), k, 3)
+            neigh_list.append(neigh - centers[b].unsqueeze(1))  # 相对坐标
+        return torch.stack(neigh_list, dim=0)  # [B, G, k, 3]
 
     def forward(self, xyz):
         B, N, _ = xyz.shape
+        half_num = self.num_group // 2
 
-        if self.dist == "interpolate":
-            half_num = self.num_group // 2
+        # 1. FPS采样一半点
+        centers_half = fps(xyz, half_num)  # [B, half_num, 3]
 
-            # 1. FPS采样一半点
-            centers_half = fps(xyz, half_num)  # [B, half_num, 3]
+        # 2. 计算密度（Chamfer方式）
+        dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
+        mask = (dist < self.avg_dist * 2).float()
+        masked_dist = dist.clone()
+        masked_dist[mask == 0] = float('inf')
+        masked_dist[masked_dist == 0] = float('inf')
+        density, _ = torch.min(masked_dist, dim=-1)  # [B, half_num]
 
-            # 2. 计算密度（Chamfer方式）
-            dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
-            mask = (dist < self.avg_dist * 2).float()
-            masked_dist = dist.clone()
-            masked_dist[mask == 0] = float('inf')
-            masked_dist[masked_dist == 0] = float('inf')
-            density, _ = torch.min(masked_dist, dim=-1)  # [B, half_num]
+        # 3. 按密度排序，前半部分为高密度
+        sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)
+        centers_sorted = torch.gather(
+            centers_half, 1, idx_sort.unsqueeze(-1).expand(-1, -1, 3)
+        )
+        num_dense = half_num // 2
+        dense_centers = centers_sorted[:, :num_dense, :]
 
-            # 3. 按密度排序，前半部分为高密度
-            sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)
-            centers_sorted = torch.gather(
-                centers_half, 1, idx_sort.unsqueeze(-1).expand(-1, -1, 3)
-            )
-            num_dense = half_num // 2
-            dense_centers = centers_sorted[:, :num_dense, :]
+        # 4. 高密度点插值生成新点（每个点生成2个插值点）
+        dist_dense = torch.cdist(dense_centers, xyz)  # [B, num_dense, N]
+        _, knn_idx = torch.topk(dist_dense, 3, dim=-1, largest=False, sorted=True)  # [B, num_dense, 3]
+        knn_idx = knn_idx[:, :, 1:]  # 去掉自己 [B, num_dense, 2]
+        idx_base = torch.arange(0, B, device=xyz.device).view(-1, 1, 1) * N
+        knn_idx_flat = (knn_idx + idx_base).view(-1)
+        knn_points = xyz.view(B * N, 3)[knn_idx_flat].view(B, num_dense, 2, 3)  # [B, num_dense, 2, 3]
 
-            # 4. 高密度点插值生成新点
-            dist_dense = torch.cdist(dense_centers, xyz)  # [B, num_dense, N]
-            _, knn_idx = torch.topk(dist_dense, 2, dim=-1, largest=False, sorted=True)
-            idx_base = torch.arange(0, B, device=xyz.device).view(-1, 1, 1) * N
-            knn_idx_flat = (knn_idx + idx_base).view(-1)
-            knn_points = xyz.view(B * N, 3)[knn_idx_flat].view(B, num_dense, 2, 3)
-            interp_points = 0.5 * (knn_points[:, :, 0, :] + knn_points[:, :, 1, :])  # [B, num_dense, 3]
+        # 生成两个插值点：分别是 dense_centers 和 knn_points[:, :, 0], knn_points[:, :, 1] 的中点
+        interp1 = 0.5 * (dense_centers + knn_points[:, :, 0, :])  # [B, num_dense, 3]
+        interp2 = 0.5 * (dense_centers + knn_points[:, :, 1, :])  # [B, num_dense, 3]
 
-            # 5. 合并FPS点和插值点
-            centers_final = torch.cat([centers_half, interp_points], dim=1)  # [B, half_num+num_dense, 3]
+        interp_points = torch.cat([interp1, interp2], dim=1)  # [B, 2*num_dense, 3] → [B, 64, 3]
 
-            # 6. 如果点数不足 num_group，从已有 FPS 点 + 插值点中随机复制补足
-            cur_num = centers_final.size(1)
-            if cur_num < self.num_group:
-                diff = self.num_group - cur_num
-                rand_idx = torch.randint(0, cur_num, (B, diff), device=xyz.device)
-                idx_base_dup = torch.arange(0, B, device=xyz.device).view(-1, 1) * cur_num
-                rand_idx_flat = (rand_idx + idx_base_dup).view(-1)
-                centers_dup = centers_final.view(B * cur_num, 3)[rand_idx_flat].view(B, diff, 3)
-                centers_final = torch.cat([centers_final, centers_dup], dim=1)
+        # 5. 合并 FPS 点和插值点
+        centers_final = torch.cat([centers_half, interp_points], dim=1)  # [B, 128, 3]
 
-            # 7. 统一 KNN 获取邻域
-            dist_final = torch.cdist(centers_final, xyz)  # [B, num_group, N]
-            neighborhood = self._get_neighborhood(xyz, centers_final, dist_final, self.group_size)
+        # 6. 统一 KNN 获取邻域
+        neighborhood = self._get_neighborhood(xyz, centers_final, self.group_size)
 
-            return [neighborhood], [centers_final]
+        return neighborhood, centers_final
 
-        else:
-            # 非interpolate保持原样
-            centers = fps(xyz, self.num_group)
-            dist_mat = torch.cdist(centers, xyz)
-            radius = self.avg_dist
-            mask = (dist_mat < radius * 2).float()
-            if self.dist == "volume":
-                counts = mask.sum(-1)
-                volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
-                avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)
-            elif self.dist == "chamfer":
-                masked_dist = dist_mat.clone()
-                masked_dist[mask == 0] = float("inf")
-                masked_dist[masked_dist == 0] = float("inf")
-                min_dist, _ = torch.min(masked_dist, dim=-1)
-                min_dist[counts < 2] = 0.0
-                avg_dist = min_dist
-            else:
-                raise ValueError(f"Unknown dist mode: {self.dist}")
+        # else:
+        #     # 非interpolate保持原样
+        #     centers = fps(xyz, self.num_group)
+        #     dist_mat = torch.cdist(centers, xyz)
+        #     radius = self.avg_dist
+        #     mask = (dist_mat < radius * 2).float()
+        #     if self.dist == "volume":
+        #         counts = mask.sum(-1)
+        #         volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
+        #         avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)
+        #     elif self.dist == "chamfer":
+        #         masked_dist = dist_mat.clone()
+        #         masked_dist[mask == 0] = float("inf")
+        #         masked_dist[masked_dist == 0] = float("inf")
+        #         min_dist, _ = torch.min(masked_dist, dim=-1)
+        #         min_dist[counts < 2] = 0.0
+        #         avg_dist = min_dist
+        #     else:
+        #         raise ValueError(f"Unknown dist mode: {self.dist}")
 
-            density = avg_dist
-            sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)
-            q1 = self.num_group // 4
-            q2 = self.num_group // 2
-            q3 = 3 * self.num_group // 4
-            centers_sorted = torch.gather(
-                centers, 1, idx_sort.unsqueeze(-1).expand(-1, -1, 3)
-            )
-            dist_sorted = torch.gather(
-                dist_mat, 1, idx_sort.unsqueeze(-1).expand(-1, -1, xyz.size(1))
-            )
-            groups = [
-                (centers_sorted[:, :q1, :], dist_sorted[:, :q1, :], 2 * self.group_size),
-                (centers_sorted[:, q1:q3, :], dist_sorted[:, q1:q3, :], self.group_size),
-                (centers_sorted[:, q3:, :], dist_sorted[:, q3:, :], self.group_size // 2),
-            ]
-            neighborhood_list, center_list = [], []
-            for c, d, k in groups:
-                neigh = self._get_neighborhood(xyz, c, d, k)
-                neighborhood_list.append(neigh)
-                center_list.append(c)
-            return neighborhood_list, center_list
+        #     density = avg_dist
+        #     sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)
+        #     q1 = self.num_group // 4
+        #     q2 = self.num_group // 2
+        #     q3 = 3 * self.num_group // 4
+        #     centers_sorted = torch.gather(
+        #         centers, 1, idx_sort.unsqueeze(-1).expand(-1, -1, 3)
+        #     )
+        #     dist_sorted = torch.gather(
+        #         dist_mat, 1, idx_sort.unsqueeze(-1).expand(-1, -1, xyz.size(1))
+        #     )
+        #     groups = [
+        #         (centers_sorted[:, :q1, :], dist_sorted[:, :q1, :], 2 * self.group_size),
+        #         (centers_sorted[:, q1:q3, :], dist_sorted[:, q1:q3, :], self.group_size),
+        #         (centers_sorted[:, q3:, :], dist_sorted[:, q3:, :], self.group_size // 2),
+        #     ]
+        #     neighborhood_list, center_list = [], []
+        #     for c, d, k in groups:
+        #         neigh = self._get_neighborhood(xyz, c, d, k)
+        #         neighborhood_list.append(neigh)
+        #         center_list.append(c)
+        #     return neighborhood_list, center_list
 
 # class Group(nn.Module):
 #     def __init__(self, num_group, group_size, avg_dist=None, dist="chamfer"):
@@ -962,25 +956,19 @@ class DHMamba_ms(nn.Module):
     def forward(self, pts):
         B, N, C = pts.shape
         # group_divider 输出: 
-        #   neighborhood_list: list of [B, G_i, M_i, 3]
-        #   center_list: list of [B, G_i, 3]
-        neighborhood_list, center_list = self.group_divider(pts)
-
+        #   neighborhood: list of [B, G_i, M_i, 3]
+        #   center: list of [B, G_i, 3]
+        neighborhood, center = self.group_divider(pts)
         # 编码 neighborhood -> tokens
-        group_input_tokens = [self.encoder(neigh) for neigh in neighborhood_list]   # 每个 [B, G_i, encoder_dim]
-        # 拼接所有尺度的 token
-        group_input_tokens = torch.cat(group_input_tokens, dim=1)                   # [B, sum(G_i), encoder_dim]
-
+        group_input_tokens = self.encoder(neighborhood)   # 每个 [B, G_i, encoder_dim]
         # 编码 center -> pos
-        pos = [self.pos_embed(center) for center in center_list]                    # 每个 [B, G_i, trans_dim]
-        # 拼接所有尺度的 pos
-        pos = torch.cat(pos, dim=1)                                                 # [B, sum(G_i), trans_dim]
+        pos = self.pos_embed(center)     
 
 
         # hypergraph serailization
         X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 2
+        n_neighbors = 4
         for j in range(B):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
@@ -1010,7 +998,6 @@ class DHMamba_ms(nn.Module):
 
         x_global_feature = torch.cat((x_max_feature, x_avg_feature), 1)
 
-        center = torch.cat(center_list, dim=1)  # [B, sum(G_i), 3]
         f_level_0 = self.propagation_0(pts.transpose(-1, -2), center.transpose(-1, -2), pts.transpose(-1, -2), x) # [B, 3328, N]
 
         x = torch.cat((f_level_0, x_global_feature), 1)  # [B, 3328, N]
