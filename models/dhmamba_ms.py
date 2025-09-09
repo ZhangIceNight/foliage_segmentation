@@ -898,18 +898,21 @@ class DHMamba_ms(nn.Module):
     def hyperG(self, knn, l1, sim, W):
         H = np.concatenate((knn, l1, sim), axis=1)
         # H = knn
-        # print("knn shape:", knn.shape)  # 应该是 [B, half_num]
-        # print("knn sample:", knn[0, :5])
-        # print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
-        # print("l1 shape:", l1.shape)  # 应该是 [B, half_num]
-        # print("l1 sample:", l1[0, :5])
-        # print("Any NaN or Inf:", torch.isnan(l1).any(), torch.isinf(l1).any())
-        # print("sim shape:", sim.shape)  # 应该是 [B, half_num]
-        # print("sim sample:", sim[0, :5])
-        # print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
-        # zero_cols = np.where(np.sum(H, axis=0) == 0)[0]
-        # if len(zero_cols) > 0:
-        #     print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
+        knn = torch.from_numpy(knn).cuda().float()
+        l1 = torch.from_numpy(l1).cuda().float()
+        sim = torch.from_numpy(sim).cuda().float()
+        print("knn shape:", knn.shape)  # 应该是 [B, half_num]
+        print("knn sample:", knn[0, :5])
+        print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
+        print("l1 shape:", l1.shape)  # 应该是 [B, half_num]
+        print("l1 sample:", l1[0, :5])
+        print("Any NaN or Inf:", torch.isnan(l1).any(), torch.isinf(l1).any())
+        print("sim shape:", sim.shape)  # 应该是 [B, half_num]
+        print("sim sample:", sim[0, :5])
+        print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
+        zero_cols = np.where(np.sum(H, axis=0) == 0)[0]
+        if len(zero_cols) > 0:
+            print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
         # the degree of the node
         DV = np.sum(H, axis=1)
         # the degree of the hyperedge
