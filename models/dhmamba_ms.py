@@ -912,7 +912,14 @@ class DHMamba_ms(nn.Module):
         # print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
         zero_cols = np.where(np.sum(knn, axis=0) == 0)[0]
         if len(zero_cols) > 0:
-            print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
+            print(f"[Warning] Found {len(zero_cols)} knn zero-degree hyperedges : {zero_cols}")
+        zero_cols = np.where(np.sum(l1, axis=0) == 0)[0]
+        if len(zero_cols) > 0:
+            print(f"[Warning] Found {len(zero_cols)} l1 zero-degree hyperedges : {zero_cols}")
+        zero_cols = np.where(np.sum(sim, axis=0) == 0)[0]
+        if len(zero_cols) > 0:
+            print(f"[Warning] Found {len(zero_cols)} sim zero-degree hyperedges : {zero_cols}")
+
         # the degree of the node
         DV = np.sum(H, axis=1)
         # the degree of the hyperedge
