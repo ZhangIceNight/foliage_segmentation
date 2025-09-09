@@ -205,8 +205,25 @@ class Group(nn.Module):
         mask = (dist < self.avg_dist * 2).float()
         masked_dist = dist.clone()
         masked_dist[mask == 0] = float('inf')
-        masked_dist[masked_dist == 0] = float('inf')
-        density, _ = torch.min(masked_dist, dim=-1)  # [B, half_num]
+
+
+        # 构造 batch 索引和中心索引
+        batch_idx = torch.arange(B, device=dist.device).view(-1, 1)
+        center_idx = torch.arange(half_num, device=dist.device).view(1, -1)
+
+        # 排除自己
+        masked_dist = dist.clone()
+        masked_dist[batch_idx, center_idx, center_idx] = float('inf')
+
+        # 取最小值
+        row_min, _ = torch.min(masked_dist, dim=-1)
+
+        # 如果全是 inf，改回 0
+        row_min[torch.isinf(row_min)] = 0.0
+
+        density = row_min  # [B, half_num]
+
+
         print("density shape:", density.shape)  # 应该是 [B, half_num]
         print("density sample:", density[0, :5])
         print("Any NaN or Inf:", torch.isnan(density).any(), torch.isinf(density).any())
@@ -881,18 +898,18 @@ class DHMamba_ms(nn.Module):
     def hyperG(self, knn, l1, sim, W):
         H = np.concatenate((knn, l1, sim), axis=1)
         # H = knn
-        print("knn shape:", knn.shape)  # 应该是 [B, half_num]
-        print("knn sample:", knn[0, :5])
-        print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
-        print("l1 shape:", l1.shape)  # 应该是 [B, half_num]
-        print("l1 sample:", l1[0, :5])
-        print("Any NaN or Inf:", torch.isnan(l1).any(), torch.isinf(l1).any())
-        print("sim shape:", sim.shape)  # 应该是 [B, half_num]
-        print("sim sample:", sim[0, :5])
-        print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
-        zero_cols = np.where(np.sum(H, axis=0) == 0)[0]
-        if len(zero_cols) > 0:
-            print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
+        # print("knn shape:", knn.shape)  # 应该是 [B, half_num]
+        # print("knn sample:", knn[0, :5])
+        # print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
+        # print("l1 shape:", l1.shape)  # 应该是 [B, half_num]
+        # print("l1 sample:", l1[0, :5])
+        # print("Any NaN or Inf:", torch.isnan(l1).any(), torch.isinf(l1).any())
+        # print("sim shape:", sim.shape)  # 应该是 [B, half_num]
+        # print("sim sample:", sim[0, :5])
+        # print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
+        # zero_cols = np.where(np.sum(H, axis=0) == 0)[0]
+        # if len(zero_cols) > 0:
+        #     print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
         # the degree of the node
         DV = np.sum(H, axis=1)
         # the degree of the hyperedge
