@@ -197,9 +197,9 @@ class Group(nn.Module):
 
         # 1. FPS采样一半点
         centers_half = fps(xyz, half_num)  # [B, half_num, 3]
-        print("FPS centers shape:", centers_half.shape)  # 应该是 [B, half_num, 3]
-        print("FPS centers sample:", centers_half[0, :5, :])
-        print("Any NaN or Inf:", torch.isnan(centers_half).any(), torch.isinf(centers_half).any())
+        # print("FPS centers shape:", centers_half.shape)  # 应该是 [B, half_num, 3]
+        # print("FPS centers sample:", centers_half[0, :5, :])
+        # print("Any NaN or Inf:", torch.isnan(centers_half).any(), torch.isinf(centers_half).any())
         # 2. 计算密度（Chamfer方式）
         dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
         mask = (dist < self.avg_dist * 2).float()
@@ -207,7 +207,9 @@ class Group(nn.Module):
         masked_dist[mask == 0] = float('inf')
         masked_dist[masked_dist == 0] = float('inf')
         density, _ = torch.min(masked_dist, dim=-1)  # [B, half_num]
-
+        print("density shape:", density.shape)  # 应该是 [B, half_num]
+        print("density sample:", density[0, :5])
+        print("Any NaN or Inf:", torch.isnan(density).any(), torch.isinf(density).any())
         # 3. 按密度排序，前半部分为高密度
         sorted_density, idx_sort = torch.sort(density, dim=-1, descending=False)
         centers_sorted = torch.gather(
@@ -879,10 +881,18 @@ class DHMamba_ms(nn.Module):
     def hyperG(self, knn, l1, sim, W):
         H = np.concatenate((knn, l1, sim), axis=1)
         # H = knn
-
+        print("knn shape:", knn.shape)  # 应该是 [B, half_num]
+        print("knn sample:", knn[0, :5])
+        print("Any NaN or Inf:", torch.isnan(knn).any(), torch.isinf(knn).any())
+        print("l1 shape:", l1.shape)  # 应该是 [B, half_num]
+        print("l1 sample:", l1[0, :5])
+        print("Any NaN or Inf:", torch.isnan(l1).any(), torch.isinf(l1).any())
+        print("sim shape:", sim.shape)  # 应该是 [B, half_num]
+        print("sim sample:", sim[0, :5])
+        print("Any NaN or Inf:", torch.isnan(sim).any(), torch.isinf(sim).any())
         zero_cols = np.where(np.sum(H, axis=0) == 0)[0]
         if len(zero_cols) > 0:
-            print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges in batch {j}: {zero_cols}")
+            print(f"[Warning] Found {len(zero_cols)} zero-degree hyperedges : {zero_cols}")
         # the degree of the node
         DV = np.sum(H, axis=1)
         # the degree of the hyperedge
@@ -979,7 +989,7 @@ class DHMamba_ms(nn.Module):
             knn = self.KNN(X[j, :, :], n_neighbors)
             l1 = self.l1_representation(X[j, :, :], n_neighbors)
             sim = self.similarity(X[j, :, :], n_neighbors)
-
+            
             G = self.hyperG(knn, l1, sim, self.W)
             # G = self.abhyperG(l1, self.W)
             H.append(torch.as_tensor(G).unsqueeze(0))
