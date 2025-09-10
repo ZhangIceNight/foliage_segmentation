@@ -737,25 +737,41 @@ class DHMamba(nn.Module):
         
         return sim
 
-    def hyperG(self, knn, l1, sim, W):
-        H = np.concatenate((knn, l1, sim), axis=1)
-        # H = knn
-        # the degree of the node
-        DV = np.sum(H, axis=1)
-        # the degree of the hyperedge
-        DE = np.sum(H, axis=0)
-        invDE = np.mat(np.diag(np.power(DE, -1)))
-        DV2 = np.mat(np.diag(np.power(DV, -0.5)))
+    def hyperG(self, knn, l1, sim, W, device=None):
+        """
+        knn, l1, sim: torch.Tensor, shape (N, E_knn / E_l1 / E_sim)，0/1 或权重矩阵
+        W: torch.Tensor, shape (E_total,) or (E_total, E_total)，超边权重
+        return: G (torch.Tensor), shape (N, N)
+        """
 
-        HT = H.T
-        DV2_H = DV2 * H
-        invDE_HT_DV2 = invDE * HT * DV2
-        DV2_H = torch.as_tensor(DV2_H).cuda().float()
-        invDE_HT_DV2 = torch.as_tensor(invDE_HT_DV2).cuda().float()
+        if device is None:
+            device = knn.device
 
-        w = torch.diag(W)
-        G = torch.mm(w, invDE_HT_DV2)
-        G = torch.mm(DV2_H, G)
+        # 拼接超图关联矩阵 H: [N, E]
+        H = torch.cat((knn, l1, sim), dim=1).to(device)   # [N, E]
+
+        # 度矩阵（节点和超边）
+        DV = torch.sum(H, dim=1)          # [N]
+        DE = torch.sum(H, dim=0)          # [E]
+
+        # 构造对角矩阵的逆/平方逆
+        invDE = torch.diag(torch.pow(DE, -1))
+        DV2 = torch.diag(torch.pow(DV, -0.5))
+
+        # H^T
+        HT = H.t()
+
+        # 中间矩阵
+        DV2_H = DV2 @ H                   # [N, E]
+        invDE_HT_DV2 = invDE @ HT @ DV2   # [E, N]
+
+        # 权重矩阵 w
+        if W.dim() == 1:
+            W = torch.diag(W)
+        w = W.to(device)
+
+        # 组合得到 G
+        G = DV2_H @ (w @ invDE_HT_DV2)    # [N, N]
         return G
     
     def abhyperG(self, hyp, W):
