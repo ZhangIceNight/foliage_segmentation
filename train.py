@@ -42,7 +42,8 @@ def train(config: DictConfig):
         workspace="zwjnefu"
     )
     comet_logger.experiment.add_tag(f"fold_{fold}")
-    comet_logger.experiment.add_tag(f"alpha_{config.model.alpha}")
+    if config.model.get("alpha"):
+        comet_logger.experiment.add_tag(f"alpha_{config.model.alpha}")
     comet_logger.experiment.log_parameters({"fold_idx": fold})
 
     # Setup Dataset Module
