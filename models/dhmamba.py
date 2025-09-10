@@ -861,7 +861,7 @@ class DHMamba(nn.Module):
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
 
         # hypergraph serailization
-        X = group_input_tokens.cpu().detach().numpy()
+        X = group_input_tokens
         H = []
         n_neighbors = 4
         for j in range(B):
