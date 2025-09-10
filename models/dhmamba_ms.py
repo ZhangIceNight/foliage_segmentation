@@ -204,7 +204,7 @@ class Group(nn.Module):
         dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
         mask = (dist < self.avg_dist * self.alpha).float()
         masked_dist = dist.clone()
-        masked_dist[mask == 0] = float('inf')
+        masked_dist[mask == 0] = 100.0
 
 
         # 构造 batch 索引和中心索引
@@ -213,13 +213,11 @@ class Group(nn.Module):
 
         # 排除自己
         masked_dist = dist.clone()
-        masked_dist[batch_idx, center_idx, center_idx] = float('inf')
+        masked_dist[batch_idx, center_idx, center_idx] = 100.0
 
         # 取最小值
         row_min, _ = torch.min(masked_dist, dim=-1)
 
-        # 如果全是 inf，改回 0
-        row_min[torch.isinf(row_min)] = 0.0
 
         density = row_min  # [B, half_num]
 

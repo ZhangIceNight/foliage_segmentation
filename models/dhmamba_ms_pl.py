@@ -10,9 +10,9 @@ class DHMamba_ms_pl(pl.LightningModule):
         self.model_hparams = config.model
         self.opt_hparams = config.optimizer
         if config.model.get('dist') == 'volume':
-            self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_volume_dist']), alpha=float(self.model_hparams['alpha']))
+            self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_volume_dist']), alpha=float(self.model_hparams['alpha']), HGNeighbors=int(self.model_hparams['HGNeighbors']))
         elif config.model.get('dist') == 'chamfer':
-            self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_chamfer_dist']), alpha=float(self.model_hparams['alpha']))
+            self.model = DHMamba_ms(num_classes=int(self.model_hparams['num_classes']), trans_dim=int(self.model_hparams['trans_dim']),  num_group=int(self.model_hparams['num_group']), group_size=int(self.model_hparams['group_size']), avg_dist=float(self.model_hparams['avg_chamfer_dist']), alpha=float(self.model_hparams['alpha']), HGNeighbors=int(self.model_hparams['HGNeighbors']))
         self.loss_fn = nn.CrossEntropyLoss()
 
         self.save_hyperparameters()
