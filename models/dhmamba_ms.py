@@ -161,12 +161,12 @@ def fps(data, number):
 
 
 class Group(nn.Module):
-    def __init__(self, num_group, group_size, avg_dist=None, dist="chamfer"):
+    def __init__(self, num_group, group_size, avg_dist=None, alpha=2.0):
         super().__init__()
         self.num_group = num_group
         self.group_size = group_size
         self.avg_dist = avg_dist
-        self.dist = dist
+        self.alpha = alpha
 
 
         self.knn_large = KNN(k=2*group_size, transpose_mode=True)
@@ -202,7 +202,7 @@ class Group(nn.Module):
         # print("Any NaN or Inf:", torch.isnan(centers_half).any(), torch.isinf(centers_half).any())
         # 2. 计算密度（Chamfer方式）
         dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
-        mask = (dist < self.avg_dist * 2).float()
+        mask = (dist < self.avg_dist * alpha).float()
         masked_dist = dist.clone()
         masked_dist[mask == 0] = float('inf')
 
@@ -774,7 +774,7 @@ class MixerModelForSegmentation(MixerModel):
 
 
 class DHMamba_ms(nn.Module):
-    def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5, dist="chamfer"):
+    def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5, alpha=2.0):
         super().__init__()
 
         self.trans_dim = trans_dim
@@ -783,9 +783,9 @@ class DHMamba_ms(nn.Module):
         self.avg_dist = avg_dist
         self.group_size = group_size
         self.num_group = num_group
-
+        self.alpha = alpha
         # grouper
-        self.group_divider = Group(num_group=self.num_group, group_size=self.group_size, avg_dist=self.avg_dist, dist=dist)
+        self.group_divider = Group(num_group=self.num_group, group_size=self.group_size, avg_dist=self.avg_dist, alpha=self.alpha)
         # Weight for hypergraph merging
         self.W = Parameter(torch.ones(self.num_group * 3))
         # define the encoder

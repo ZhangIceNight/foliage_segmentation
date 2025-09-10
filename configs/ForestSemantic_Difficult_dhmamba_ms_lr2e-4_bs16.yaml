@@ -23,6 +23,7 @@ model:
   num_group: 128
   group_size: 32
   trans_dim: 384
+  alpha: 3.0  # chamfer距离阈值倍数
 
 
 optimizer:
