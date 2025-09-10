@@ -774,7 +774,7 @@ class MixerModelForSegmentation(MixerModel):
 
 
 class DHMamba_ms(nn.Module):
-    def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5, alpha=2.0):
+    def __init__(self, num_classes=2, trans_dim=384, num_group=128, group_size=32, avg_dist=0.5, alpha=2.0, HGNeighbors=4):
         super().__init__()
 
         self.trans_dim = trans_dim
@@ -784,6 +784,7 @@ class DHMamba_ms(nn.Module):
         self.group_size = group_size
         self.num_group = num_group
         self.alpha = alpha
+        self.HGNeighbors = HGNeighbors
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size, avg_dist=self.avg_dist, alpha=self.alpha)
         # Weight for hypergraph merging
@@ -1188,7 +1189,7 @@ class DHMamba_ms(nn.Module):
         X = group_input_tokens
         # X = group_input_tokens.cpu().detach().numpy()
         H = []
-        n_neighbors = 4
+        n_neighbors = self.HGNeighbors  # 4
         for j in range(B):
             Xj = X[j, :, :]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]

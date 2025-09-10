@@ -599,7 +599,7 @@ class MixerModelForSegmentation(MixerModel):
 
 
 class DHMamba(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, HGNeighbors=2):
         super().__init__()
 
         self.trans_dim = 384
@@ -607,6 +607,7 @@ class DHMamba(nn.Module):
         self.cls_dim = num_classes
         self.group_size = 32
         self.num_group = 128
+        self.HGNeighbors = HGNeighbors
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
         # Weight for hypergraph merging
@@ -879,7 +880,7 @@ class DHMamba(nn.Module):
         # hypergraph serailization
         X = group_input_tokens
         H = []
-        n_neighbors = 4
+        n_neighbors = self.HGNeighbors  # 2
         for j in range(B):
             Xj = X[j, :, :]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]

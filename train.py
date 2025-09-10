@@ -44,6 +44,8 @@ def train(config: DictConfig):
     comet_logger.experiment.add_tag(f"fold_{fold}")
     if config.model.get("alpha"):
         comet_logger.experiment.add_tag(f"alpha_{config.model.alpha}")
+    if config.model.get("HGNeighbors"):
+        comet_logger.experiment.add_tag(f"k_{config.model.HGNeighbors}")
     comet_logger.experiment.log_parameters({"fold_idx": fold})
 
     # Setup Dataset Module
