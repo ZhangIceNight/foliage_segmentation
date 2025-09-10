@@ -202,7 +202,7 @@ class Group(nn.Module):
         # print("Any NaN or Inf:", torch.isnan(centers_half).any(), torch.isinf(centers_half).any())
         # 2. 计算密度（Chamfer方式）
         dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
-        mask = (dist < self.avg_dist * alpha).float()
+        mask = (dist < self.avg_dist * self.alpha).float()
         masked_dist = dist.clone()
         masked_dist[mask == 0] = float('inf')
 
