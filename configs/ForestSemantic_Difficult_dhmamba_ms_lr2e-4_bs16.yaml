@@ -23,7 +23,7 @@ model:
   num_group: 128
   group_size: 32
   trans_dim: 384
-  alpha: 10.0  # chamfer距离阈值倍数
+  alpha: 1.0  # chamfer距离阈值倍数
   HGNeighbors: 4
 
 
@@ -37,7 +37,7 @@ optimizer:
 trainer:
   max_epochs: 100
   accelerator: "gpu"
-  devices: [0]
+  devices: [1]
 
 comet:
   # name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
