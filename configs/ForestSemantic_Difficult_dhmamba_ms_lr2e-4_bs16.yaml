@@ -20,10 +20,10 @@ model:
   # dist: "chamfer"  # "volume" or "chamfer" or "interpolate"
   dist: "volume"  # "volume" or "chamfer" or "interpolate"
   # dist: "interpolate" # "volume" or "chamfer" or "interpolate"
-  num_group: 128
+  num_group: 256
   group_size: 32
   trans_dim: 384
-  alpha: 3.0  # chamfer距离阈值倍数
+  alpha: 2.0  # chamfer距离阈值倍数
   HGNeighbors: 4
 
 
