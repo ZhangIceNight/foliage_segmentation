@@ -17,9 +17,9 @@ class DHMamba_hi_pl(pl.LightningModule):
                                 alpha=float(self.model_hparams['alpha']), 
                                 HGNeighbors=int(self.model_hparams['HGNeighbors']))
         self.loss_fn = nn.CrossEntropyLoss()
-        print("Model params:", sum(p.numel() for p in self.parameters()))
-        for name, p in self.named_parameters():
-            print(name, p.shape, p.requires_grad)
+        # print("Model params:", sum(p.numel() for p in self.parameters()))
+        # for name, p in self.named_parameters():
+        #     print(name, p.shape, p.requires_grad)
 
         self.save_hyperparameters()
 
