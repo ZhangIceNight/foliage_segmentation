@@ -615,7 +615,8 @@ class DHMamba_hi(nn.Module):
                                     avg_dist=self.avg_dist, 
                                     alpha=self.alpha)
         # Weight for hypergraph merging
-        self.W = Parameter(torch.ones(self.num_group * 3))
+        self.n_hypernode = sum(self.num_group)
+        self.W = Parameter(torch.ones(self.n_hypernode * 3))
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
