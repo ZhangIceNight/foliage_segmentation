@@ -949,11 +949,11 @@ class DHMamba_hi(nn.Module):
         for neighborhood in neighborhoods:
             group_input_tokens.append(self.encoder(neighborhood))   # 每个 [B, G_i, encoder_dim]
         group_input_tokens = torch.cat(group_input_tokens, dim=1)  # [B, G, encoder_dim]
-        centers = torch.cat(centers, dim=1)                        # [B, G, 3]
-        assert group_input_tokens.shape[1] == centers.shape[1], f"group_input_tokens: {group_input_tokens.shape}, centers: {centers.shape}"
+        center = torch.cat(centers, dim=1)                        # [B, G, 3]
+        assert group_input_tokens.shape[1] == center.shape[1], f"group_input_tokens: {group_input_tokens.shape}, centers: {centers.shape}"
         assert group_input_tokens.shape[1] == sum(self.num_group[i] for i in range(len(self.num_group))), f"group_input_tokens: {group_input_tokens.shape}, num_group: {self.num_group}"
         # 编码 center -> pos
-        pos = self.pos_embed(centers)
+        pos = self.pos_embed(center)
 
 
         # hypergraph serailization
