@@ -41,5 +41,5 @@ trainer:
 
 comet:
   # name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
-  name: "ForestSemantic_Difficult_dhmamba_ms_volume_lr2e-4_bs16"
+  name: "ForestSemantic_Difficult_dhmamba_hi_lr2e-4_bs16"
   # name: "ForestSemantic_Difficult_dhmamba_ms_interpolate_lr2e-4_bs16"
