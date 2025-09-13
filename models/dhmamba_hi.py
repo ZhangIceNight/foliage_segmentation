@@ -620,7 +620,7 @@ class DHMamba_hi(nn.Module):
         # define the encoder
         self.encoder_dims = 384
         self.encoder = Encoder(encoder_channel=self.encoder_dims)
-        self.HGCN = HGCNNet(img_len=self.num_group)
+        self.HGCN = HGCNNet(img_len=self.n_hypernode)
         self.pos_embed = nn.Sequential(
             nn.Linear(3, 128),
             nn.GELU(),
