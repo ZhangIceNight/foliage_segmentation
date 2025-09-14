@@ -724,13 +724,13 @@ class DHMamba_mse(nn.Module):
         col_idx = knn_idx
 
         if not is_prob:
-            values = torch.ones_like(row_idx, dtype=torch.float32, device=device)
+            values_fill = torch.ones_like(row_idx, dtype=torch.float32, device=device)
         else:
             avg_dist = dist.mean()
-            values = torch.exp(- (knn_val ** 2) / (avg_dist ** 2 + 1e-8))
+            values_fill = torch.exp(- (knn_val ** 2) / (avg_dist ** 2 + 1e-8))
 
         knn = torch.zeros((N, N), device=device, dtype=torch.float32)
-        knn[row_idx[mask], col_idx[mask]] = values[mask]
+        knn[row_idx[mask], col_idx[mask]] = values_fill[mask]
 
         # 保证每个节点至少和自己相连（对角线 = 1）
         knn.fill_diagonal_(1.0)
