@@ -707,8 +707,8 @@ class DHMamba_mse(nn.Module):
         # 构造掩码
         mask = torch.zeros_like(knn_idx, dtype=torch.bool)
 
-        # 按 values 排序
-        sorted_idx = torch.argsort(values)
+        # 按 density 排序
+        sorted_idx = torch.argsort(density)
         half = N // 2
         small_idx = sorted_idx[:half]  # 前一半节点
         large_idx = sorted_idx[half:]  # 后一半节点
@@ -761,8 +761,8 @@ class DHMamba_mse(nn.Module):
         # 构造掩码
         mask = torch.zeros_like(topk_idx, dtype=torch.bool)
         
-        # 按 values 排序
-        sorted_idx = torch.argsort(values)
+        # 按 density 排序
+        sorted_idx = torch.argsort(density)
         half = N // 2
         small_idx = sorted_idx[:half]  # 前一半索引
         large_idx = sorted_idx[half:]  # 后一半索引
@@ -921,7 +921,7 @@ class DHMamba_mse(nn.Module):
         knn_idx_all = knn_idx_all[:, 1:]  # (n_nodes, k_max) 排除了自己
 
 
-        # 按 values 排序
+        # 按 density 排序
         sorted_idx = torch.argsort(density)
         half = n_nodes // 2
         small_idx = sorted_idx[:half]
