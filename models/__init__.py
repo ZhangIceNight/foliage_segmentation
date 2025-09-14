@@ -25,12 +25,14 @@
 from .dhmamba_pl import DHMamba_pl
 from .dhmamba_ms_pl import DHMamba_ms_pl
 from .dhmamba_hi_pl import DHMamba_hi_pl
+from .dhmamba_mse_pl import DHMamba_mse_pl
 model_dict = {
     # 'pointnet2': PointNet2_pl,
     # 'pointnet': PointNet_pl,
     'dhmamba': DHMamba_pl,
     'dhmamba_ms': DHMamba_ms_pl,
     'dhmamba_hi': DHMamba_hi_pl,
+    'dhmamba_mse': DHMamba_mse_pl
 }
 
 def build_model(config):
