@@ -714,10 +714,10 @@ class DHMamba_mse(nn.Module):
         large_idx = sorted_idx[half:]  # 后一半节点
 
         # 前一半节点保留全部邻居
-        mask[small_idx, :] = True
+        mask.scatter_(0, small_idx.unsqueeze(1).expand(-1, mask.size(1)), True)
 
         # 后一半节点只保留前 n_neighbors+1 个
-        mask[large_idx, :n_neighbors+1] = True
+        mask.scatter_(0, large_idx.unsqueeze(1).expand(-1, n_neighbors+1), True)
 
         # 构造稠密邻接矩阵
         row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, k_max).reshape(-1)
@@ -768,10 +768,10 @@ class DHMamba_mse(nn.Module):
         large_idx = sorted_idx[half:]  # 后一半索引
 
         # 前一半节点保留全部 topk
-        mask[small_idx, :] = True
+        mask.scatter_(0, small_idx.unsqueeze(1).expand(-1, mask.size(1)), True)
 
         # 后一半节点只保留前 n_neighbors+1 个
-        mask[large_idx, :n_neighbors+1] = True
+        mask.scatter_(0, large_idx.unsqueeze(1).expand(-1, n_neighbors+1), True)
 
         # 构建 sim 矩阵
         sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
@@ -929,8 +929,8 @@ class DHMamba_mse(nn.Module):
 
         # mask: 前一半节点保留全部 k_max，后一半节点只取前 n_neighbors
         mask = torch.zeros_like(knn_idx_all, dtype=torch.bool)
-        mask[small_idx, :] = True
-        mask[large_idx, :n_neighbors] = True
+        mask.scatter_(0, small_idx.unsqueeze(1).expand(-1, mask.size(1)), True)
+        mask.scatter_(0, large_idx.unsqueeze(1).expand(-1, n_neighbors+1), True)
 
 
         # 预分配 weight 矩阵
