@@ -690,6 +690,7 @@ class DHMamba_mse(nn.Module):
         X: torch.Tensor, shape [N, D], 节点特征
         n_neighbors: int, 邻居数
         is_prob: bool, 是否用高斯权重，否则是0-1
+        density: torch.Tensor, shape [N,1], 每个节点的密度
         return:
             knn: torch.Tensor, shape [N, N]
         """
@@ -720,7 +721,7 @@ class DHMamba_mse(nn.Module):
         mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
 
         # 构造稠密邻接矩阵
-        row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, k_max).reshape(-1)
+        row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, k_max)
         col_idx = knn_idx
 
         if not is_prob:
