@@ -26,7 +26,7 @@ model:
   # group_size: [4,8,16,32]
   trans_dim: 384
   alpha: 2.0  # chamfer距离阈值倍数
-  HGNeighbors: 8
+  HGNeighbors: 32
 
 
 optimizer:
