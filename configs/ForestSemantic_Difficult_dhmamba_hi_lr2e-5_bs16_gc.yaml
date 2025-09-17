@@ -41,7 +41,7 @@ trainer:
   gradient_clip_val: 1.0  # 如果 loss 还是偶尔会突然飙升，可以调小（比如 0.5）。 如果发现梯度被裁得太狠、收敛变慢，可以适当调大（2.0~5.0）。
   gradient_clip_algorithm: "norm"
   accelerator: "gpu"
-  devices: [1]
+  devices: [0]
 
 comet:
   # name: "ForestSemantic_Difficult_dhmamba_ms_chamfer_lr2e-4_bs16"
