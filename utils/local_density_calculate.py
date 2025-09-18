@@ -60,7 +60,7 @@ def compute_chamfer_distance(points, radius=0.1):
     return cd
 
 def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
-    points = np.load(file_path)  # shape [N, 3]
+    points = np.load(file_path)["xyz"].astype(np.float32)  # shape [N, 3]
     print(f"Analyzing {file_path}, total points: {points.shape[0]}")
     sampled_points = farthest_point_sampling(points, m=m)
     
@@ -115,7 +115,7 @@ def analyze_directory(dir_path, save_dir):
     volume_all, chamfer_all = [], []
     print(f"Analyzing directory: {dir_path}")
     for file in tqdm(os.listdir(dir_path)):
-        if not file.endswith(".npy"):
+        if not file.endswith(".npz"):
             continue
         fpath = os.path.join(dir_path, file)
         print(f"Processing file: {fpath}")
