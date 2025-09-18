@@ -18,8 +18,8 @@ class DHMamba_mse_pl(pl.LightningModule):
         self.save_hyperparameters()
 
     def training_step(self, batch, batch_idx):
-        points, labels = batch
-        logits = self.model(points)
+        points, labels, avg_dist = batch
+        logits = self.model(points, avg_dist)
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
         torch.use_deterministic_algorithms(False)  # 关闭 deterministic

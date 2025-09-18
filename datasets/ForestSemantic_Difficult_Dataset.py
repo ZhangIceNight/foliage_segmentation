@@ -8,13 +8,14 @@ from pytorch_lightning import LightningDataModule
 from utils import augmentations
 
 class ForestSemantic_Difficult_Dataset(Dataset):
-    def __init__(self, data_dir, split='train', num_points=1024, file_list=None, use_normalization=False, augmentations_list=[]):
+    def __init__(self, data_dir, split='train', num_points=1024, file_list=None, use_normalization=False, calculate_avg_dist=False, augmentations_list=[]):
         self.data_dir = data_dir
         self.split = split
         self.num_points = num_points
         self.file_list = file_list
         self.use_normalization = use_normalization
         self.augmentations = augmentations_list
+        self.calculate_avg_dist = calculate_avg_dist
  
     def __len__(self):
         return len(self.file_list)
@@ -49,11 +50,19 @@ class ForestSemantic_Difficult_Dataset(Dataset):
         # 归一化
         if self.use_normalization:
             point_cloud = augmentations.pc_normalize(point_cloud)
- 
-        return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long()
+        
+        # 计算平均邻居距离（用于 DHMamba 的高斯权重）
+        if self.calculate_avg_dist:
+            """体积估算的平均点间距"""
+            min_xyz = point_cloud.min(axis=1)
+            max_xyz = point_cloud.max(axis=1)
+            volume = np.prod(max_xyz - min_xyz, axis=1)
+            avg_dist = (volume / point_cloud.shape[1]) ** (1/3)
+            
+        return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0)
 
 class ForestSemantic_Difficult_DataModule(LightningDataModule):
-    def __init__(self, data_dir, split_json_path, num_points=1024, batch_size=32, fold_idx=0, num_workers=4, use_normalization=False, augmentations_list=None, **kwargs):
+    def __init__(self, data_dir, split_json_path, num_points=1024, batch_size=32, fold_idx=0, num_workers=4, use_normalization=False, augmentations_list=None, calculate_avg_dist=False, **kwargs):
         super().__init__()
         self.data_dir = data_dir
         self.split_json_path = split_json_path
@@ -63,14 +72,15 @@ class ForestSemantic_Difficult_DataModule(LightningDataModule):
         self.num_workers = num_workers
         self.use_normalization = use_normalization
         self.augmentations_list = augmentations_list
+        self.calculate_avg_dist = calculate_avg_dist
 
     def setup(self, stage=None):
         with open(self.split_json_path, "r") as f:
             splits = json.load(f)
         train_files = splits[f"fold_{self.fold_idx}"]["train"]
         val_files   = splits[f"fold_{self.fold_idx}"]["val"]
-        self.train_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='train', num_points=self.num_points, file_list=train_files, use_normalization=self.use_normalization, augmentations_list=self.augmentations_list)
-        self.val_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='val', num_points=self.num_points, file_list=val_files, use_normalization=self.use_normalization)
+        self.train_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='train', num_points=self.num_points, file_list=train_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist, augmentations_list=self.augmentations_list)
+        self.val_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='val', num_points=self.num_points, file_list=val_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist)
 
     def train_dataloader(self):
         return DataLoader(
