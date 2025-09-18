@@ -59,9 +59,9 @@ def compute_chamfer_distance(points, radius=0.1):
     cd = np.array(chamfer)
     return cd
 
-def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
-    points = np.load(file_path)["xyz"].astype(np.float32)  # shape [N, 3]
-    print(f"Analyzing {file_path}, total points: {points.shape[0]}")
+def analyze_pointcloud(points, save_dir, m=128, radius=0.1):
+    points = points
+    print(f"total points: {points.shape[0]}")
     sampled_points = farthest_point_sampling(points, m=m)
     
     # 计算两个距离
@@ -154,10 +154,12 @@ def analyze_directory(dir_path, save_dir):
             continue
         fpath = os.path.join(dir_path, file)
         print(f"Processing file: {fpath}")
-        avg_dc = avg_distance_chamfer(np.load(fpath)["xyz"].astype(np.float32))
-        avg_dv = avg_distance_volume(np.load(fpath)["xyz"].astype(np.float32))
+        pcd = np.load(fpath)["xyz"].astype(np.float32)
+        pcd = normalize(pcd)
+        avg_dc = avg_distance_chamfer(pcd)
+        avg_dv = avg_distance_volume(pcd)
         print(f"  Avg Chamfer Distance: {avg_dc:.6f}, Avg Volume Distance: {avg_dv:.6f}")
-        stats = analyze_pointcloud(fpath, save_dir)
+        stats = analyze_pointcloud(pcd, save_dir)
         all_stats[file] = stats
 
         volume_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["volume"]["mean"]])
