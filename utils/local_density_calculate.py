@@ -113,11 +113,12 @@ def analyze_directory(dir_path, save_dir):
     all_stats = {}
 
     volume_all, chamfer_all = [], []
-
+    print(f"Analyzing directory: {dir_path}")
     for file in tqdm(os.listdir(dir_path)):
         if not file.endswith(".npy"):
             continue
         fpath = os.path.join(dir_path, file)
+        print(f"Processing file: {fpath}")
         stats = analyze_pointcloud(fpath, save_dir)
         all_stats[file] = stats
 
