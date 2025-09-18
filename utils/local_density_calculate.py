@@ -122,8 +122,8 @@ def analyze_directory(dir_path, save_dir):
         stats = analyze_pointcloud(fpath, save_dir)
         all_stats[file] = stats
 
-        volume_all.extend(np.load(fpath).shape[0] * [stats["volume"]["mean"]])
-        chamfer_all.extend(np.load(fpath).shape[0] * [stats["chamfer"]["mean"]])
+        volume_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["volume"]["mean"]])
+        chamfer_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["chamfer"]["mean"]])
 
     # 全局统计
     global_stats = {
