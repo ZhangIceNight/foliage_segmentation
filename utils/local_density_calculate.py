@@ -49,7 +49,7 @@ def compute_chamfer_distance(points, radius=0.1):
     tree = cKDTree(points)
     chamfer = []
     for i, p in enumerate(points):
-        i+dx = tree.query_ball_point(p, r=radius)
+        idx = tree.query_ball_point(p, r=radius)
         idx = [j for j in idx if j != i]  # 去掉自己
         if len(idx) == 0:
             chamfer.append(0.0)
