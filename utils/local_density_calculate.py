@@ -4,22 +4,67 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 
-def compute_volume_distance(points):
-    # TODO: 你之前的 volume distance 公式，这里我先假设返回 (N,)
-    vd = np.linalg.norm(points, axis=1)  # 占位
+from scipy.spatial import cKDTree
+
+def farthest_point_sampling(points, m=128):
+    """
+    points: (N, 3)
+    m: 采样点数
+    return: (m, 3) 采样点
+    """
+    N = points.shape[0]
+    sampled_idx = np.zeros(m, dtype=np.int64)
+    distances = np.full(N, np.inf)
+
+    # 随机选一个初始点
+    sampled_idx[0] = np.random.randint(0, N)
+    farthest_point = points[sampled_idx[0]]
+
+    for i in range(1, m):
+        dist = np.linalg.norm(points - farthest_point, axis=1)
+        distances = np.minimum(distances, dist)
+        sampled_idx[i] = np.argmax(distances)
+        farthest_point = points[sampled_idx[i]]
+
+    return points[sampled_idx]
+
+def compute_volume_distance(points, radius=0.1):
+    """
+    points: (N, 3)
+    radius: 搜索半径
+    return: (N,) 每个点的 volume distance
+    """
+    tree = cKDTree(points)
+    counts = np.array([len(tree.query_ball_point(p, r=radius)) for p in points])
+    volume = (4.0 / 3.0) * np.pi * (radius ** 3)
+    vd = (volume / np.clip(counts, 1, None)) ** (1/3)
     return vd
 
-def compute_chamfer_distance(points):
-    # TODO: 你之前的 chamfer distance 公式，这里我先假设返回 (N,)
-    cd = np.linalg.norm(points - points.mean(axis=0), axis=1)  # 占位
+def compute_chamfer_distance(points, radius=0.1):
+    """
+    points: (N, 3)
+    radius: 搜索半径
+    return: (N,) 每个点的 chamfer distance
+    """
+    tree = cKDTree(points)
+    chamfer = []
+    for i, p in enumerate(points):
+        idx = tree.query_ball_point(p, r=radius)
+        idx = [j for j in idx if j != i]  # 去掉自己
+        if len(idx) == 0:
+            chamfer.append(0.0)
+        else:
+            dists = np.linalg.norm(points[idx] - p, axis=1)
+            chamfer.append(dists.min())
+    cd = np.array(chamfer)
     return cd
 
-def analyze_pointcloud(file_path, save_dir):
+def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
     points = np.load(file_path)  # shape [N, 3]
-
+    sampled_points = farthest_point_sampling(points, m=m)
     # 计算两个距离
-    vd = compute_volume_distance(points)
-    cd = compute_chamfer_distance(points)
+    vd = compute_volume_distance(sampled_points, radius=radius)
+    cd = compute_chamfer_distance(sampled_points, radius=radius)
 
     stats = {}
     for name, arr in [("volume", vd), ("chamfer", cd)]:
