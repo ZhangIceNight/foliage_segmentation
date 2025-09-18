@@ -15,7 +15,7 @@ data:
 
 model:
   num_classes: 2
-  HGNeighbors: 2
+  HGNeighbors: 8
 
 optimizer:
   learning_rate: 0.0002
