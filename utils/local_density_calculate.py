@@ -49,7 +49,7 @@ def compute_chamfer_distance(points, radius=0.1):
     tree = cKDTree(points)
     chamfer = []
     for i, p in enumerate(points):
-        idx = tree.query_ball_point(p, r=radius)
+        i+dx = tree.query_ball_point(p, r=radius)
         idx = [j for j in idx if j != i]  # 去掉自己
         if len(idx) == 0:
             chamfer.append(0.0)
@@ -159,7 +159,7 @@ def analyze_directory(dir_path, save_dir):
         avg_dc = avg_distance_chamfer(pcd)
         avg_dv = avg_distance_volume(pcd)
         print(f"  Avg Chamfer Distance: {avg_dc:.6f}, Avg Volume Distance: {avg_dv:.6f}")
-        stats = analyze_pointcloud(pcd, fpath, save_dir, m=128, radius=avg_dc*2)
+        stats = analyze_pointcloud(pcd, fpath, save_dir, m=128, radius=avg_dv*2)
         all_stats[file] = stats
 
         volume_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["volume"]["mean"]])
