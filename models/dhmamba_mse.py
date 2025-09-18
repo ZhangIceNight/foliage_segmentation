@@ -788,14 +788,55 @@ class DHMamba_mse(nn.Module):
 
 
     def similarity(self, X, n_neighbors, density=None):
+        # """
+        # X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
+        # n_neighbors: int, top-k相似节点数量
+        # 返回:
+        #     sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
+        # """
+        # N = X.shape[0]
+        
+        # # L2归一化
+        # X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
+        
+        # # 相似度矩阵 (余弦相似度)
+        # sim_mat = X_norm @ X_norm.T  # [N, N]
+        
+        # # 取每行 top-k 索引 (包含自己)
+        # # 统一取 2*n_neighbors+1
+        # k_max = min(2 * n_neighbors + 1, N)
+        # topk_vals, topk_idx = torch.topk(sim_mat, k=k_max, dim=1, largest=True)
+
+        # # 构造掩码
+        # mask = torch.zeros_like(topk_idx, dtype=torch.bool)
+        
+        # # 按 density 排序
+        # sorted_idx = torch.argsort(density)
+        # half = N // 2
+        # small_idx = sorted_idx[:half]  # 前一半索引
+        # large_idx = sorted_idx[half:]  # 后一半索引
+
+        # # 前一半节点保留全部 topk
+        # mask.scatter_(0, small_idx.view(-1,1).expand(-1, mask.size(1)), True)
+
+        # # 后一半节点只保留前 n_neighbors+1 个
+        # mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
+
+        # # 构建 sim 矩阵
+        # sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
+        # row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, k_max)  # [N, k_max]
+        # sim[row_idx[mask], topk_idx[mask]] = 1.0
+        
+        # # 强制对角线为1，保证每个节点自己被选上
+        # sim.fill_diagonal_(1.0)
+        
+        # return sim
         """
         X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
         n_neighbors: int, top-k相似节点数量
         返回:
             sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
         """
-        N = X.shape[0]
-        
         # L2归一化
         X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
         
@@ -803,35 +844,18 @@ class DHMamba_mse(nn.Module):
         sim_mat = X_norm @ X_norm.T  # [N, N]
         
         # 取每行 top-k 索引 (包含自己)
-        # 统一取 2*n_neighbors+1
-        k_max = min(2 * n_neighbors + 1, N)
-        topk_vals, topk_idx = torch.topk(sim_mat, k=k_max, dim=1, largest=True)
-
-        # 构造掩码
-        mask = torch.zeros_like(topk_idx, dtype=torch.bool)
+        topk_vals, topk_idx = torch.topk(sim_mat, k=n_neighbors+1, dim=1, largest=True)
         
-        # 按 density 排序
-        sorted_idx = torch.argsort(density)
-        half = N // 2
-        small_idx = sorted_idx[:half]  # 前一半索引
-        large_idx = sorted_idx[half:]  # 后一半索引
-
-        # 前一半节点保留全部 topk
-        mask.scatter_(0, small_idx.view(-1,1).expand(-1, mask.size(1)), True)
-
-        # 后一半节点只保留前 n_neighbors+1 个
-        mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
-
         # 构建 sim 矩阵
+        N = X.shape[0]
         sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
-        row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, k_max)  # [N, k_max]
-        sim[row_idx[mask], topk_idx[mask]] = 1.0
+        row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, n_neighbors+1)  # [N, k+1]
+        sim[row_idx, topk_idx] = 1.0
         
         # 强制对角线为1，保证每个节点自己被选上
         sim.fill_diagonal_(1.0)
         
         return sim
-
 
     def hyperG(self, knn, l1, sim, W, device=None):
         """
@@ -1042,7 +1066,7 @@ class DHMamba_mse(nn.Module):
             # 3种超图构建方式
             knn = self.KNN(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
             l1 = self.l1_representation(Xj, n_neighbors, dist=dist)  # [G, G]
-            sim = self.similarity(Xj, n_neighbors, density=densityj)  # [G, G]
+            sim = self.similarity(Xj, n_neighbors)  # [G, G]
 
             G = self.hyperG(knn, l1, sim, self.W)
             # G = self.abhyperG(l1, self.W)
