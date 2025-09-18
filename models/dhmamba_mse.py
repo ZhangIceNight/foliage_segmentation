@@ -1040,6 +1040,7 @@ class DHMamba_mse(nn.Module):
                     f.write(str(density[i][j]) + ' ')
                 f.write('\n')
             f.write('finish item\n')
+            f.write('density shape:' + str(density.shape) + '\n')
         print('density:', density)
         density = torch.from_numpy(density).cuda().float()
         # 编码 neighborhood -> tokens
