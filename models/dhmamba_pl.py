@@ -15,7 +15,7 @@ class DHMamba_pl(pl.LightningModule):
         self.save_hyperparameters()
 
     def training_step(self, batch, batch_idx):
-        points, labels = batch
+        points, labels, _ = batch
         logits = self.model(points)
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
@@ -27,7 +27,7 @@ class DHMamba_pl(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        points, labels = batch
+        points, labels, _ = batch
         logits = self.model(points)
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()

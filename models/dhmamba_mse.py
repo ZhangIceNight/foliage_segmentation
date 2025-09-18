@@ -1038,16 +1038,16 @@ class DHMamba_mse(nn.Module):
         #   neighborhood: list of [B, G_i, M_i, 3]
         #   center: list of [B, G_i, 3]
         neighborhood, center, density = self.group_divider(pts, avg_dist)
-        density = density.cpu().detach().numpy()
-        with open ('/home/wjzhang/density.txt', 'a') as f:
-            for i in range(density.shape[0]):
-                for j in range(density.shape[1]):
-                    f.write(str(density[i][j]) + ' ')
-                f.write('\n')
-            f.write('finish item\n')
-            f.write('density shape:' + str(density.shape) + '\n')
-        print('density:', density)
-        density = torch.from_numpy(density).cuda().float()
+        # density = density.cpu().detach().numpy()
+        # with open ('/home/wjzhang/density.txt', 'a') as f:
+        #     for i in range(density.shape[0]):
+        #         for j in range(density.shape[1]):
+        #             f.write(str(density[i][j]) + ' ')
+        #         f.write('\n')
+        #     f.write('finish item\n')
+        #     f.write('density shape:' + str(density.shape) + '\n')
+        # print('density:', density)
+        # density = torch.from_numpy(density).cuda().float()
         # 编码 neighborhood -> tokens
         group_input_tokens = self.encoder(neighborhood)   # 每个 [B, G_i, encoder_dim]
         # 编码 center -> pos
