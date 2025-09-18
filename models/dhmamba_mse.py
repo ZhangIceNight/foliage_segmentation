@@ -192,44 +192,51 @@ class Group(nn.Module):
         return torch.stack(neigh_list, dim=0)  # [B, G, k, 3]
 
 
-    def _compute_volume_distance_cluster(self, points: torch.Tensor, radius: float = 0.1, max_neighbors: int = 64) -> torch.Tensor:
-        """
-        高效 batch 版本 volume distance，使用 torch_cluster.radius_graph
-        Args:
-            points: torch.Tensor, shape [B, N, C]
-            radius: 搜索半径
-            max_neighbors: 每个点的最大邻居数
-        Returns:
-            vd: torch.Tensor, shape [B, N]
-        """
-        B, N, C = points.shape
-        device = points.device
-        
-        # 展平 batch
-        points_flat = points.reshape(B*N, C)               # [B*N, C]
-        batch = torch.arange(B, device=device).repeat_interleave(N)  # [B*N]
-        
-        # 半径搜索邻居
-        edge_indices = []
-        for b in range(B):
-            mask = batch == b
-            edge_idx_b = radius_graph(points_flat[mask], r=float(radius[b]*self.alpha), batch=None)
-            edge_indices.append(edge_idx_b)
-        edge_index = torch.cat(edge_indices, dim=1)
-        # edge_index = radius_graph(points_flat, r=radius, batch=batch, max_num_neighbors=max_neighbors)
-        # edge_index: [2, E], edge_index[0] -> target, edge_index[1] -> neighbor
-
-        # 统计每个点邻居数量
-        counts = torch.zeros(B*N, device=device, dtype=torch.float32)
-        counts.scatter_add_(0, edge_index[0], torch.ones_like(edge_index[0], dtype=torch.float32))
-        
-        # 计算 volume distance
+    def _compute_volume_distance_cluster(self, centers, xyz, radius):
+        dist_mat = torch.cdist(centers, xyz)
+        radius = self.avg_dist
+        mask = (dist_mat < radius * 2).float()
+        counts = mask.sum(-1)
         volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
-        vd = (volume / counts.clamp(min=1.0)) ** (1/3)
+        avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)
+        return avg_dist
+        # """
+        # 高效 batch 版本 volume distance，使用 torch_cluster.radius_graph
+        # Args:
+        #     points: torch.Tensor, shape [B, N, C]
+        #     radius: 搜索半径
+        #     max_neighbors: 每个点的最大邻居数
+        # Returns:
+        #     vd: torch.Tensor, shape [B, N]
+        # """
+        # B, N, C = points.shape
+        # device = points.device
         
-        # 恢复 batch 维度
-        vd = vd.reshape(B, N)
-        return vd
+        # # 展平 batch
+        # points_flat = points.reshape(B*N, C)               # [B*N, C]
+        # batch = torch.arange(B, device=device).repeat_interleave(N)  # [B*N]
+        
+        # # 半径搜索邻居
+        # edge_indices = []
+        # for b in range(B):
+        #     mask = batch == b
+        #     edge_idx_b = radius_graph(points_flat[mask], r=float(radius[b]*self.alpha), batch=None)
+        #     edge_indices.append(edge_idx_b)
+        # edge_index = torch.cat(edge_indices, dim=1)
+        # # edge_index = radius_graph(points_flat, r=radius, batch=batch, max_num_neighbors=max_neighbors)
+        # # edge_index: [2, E], edge_index[0] -> target, edge_index[1] -> neighbor
+
+        # # 统计每个点邻居数量
+        # counts = torch.zeros(B*N, device=device, dtype=torch.float32)
+        # counts.scatter_add_(0, edge_index[0], torch.ones_like(edge_index[0], dtype=torch.float32))
+        
+        # # 计算 volume distance
+        # volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
+        # vd = (volume / counts.clamp(min=1.0)) ** (1/3)
+        
+        # # 恢复 batch 维度
+        # vd = vd.reshape(B, N)
+        # return vd
 
     def forward(self, xyz, avg_dist):
         B, N, _ = xyz.shape
