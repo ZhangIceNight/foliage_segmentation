@@ -732,7 +732,42 @@ class DHMamba_mse(nn.Module):
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
 
-    def KNN(self, X, n_neighbors, is_prob=True, dist=None, density=None):
+    def KNN(self, X, n_neighbors, is_prob=True, dist=None):
+        """
+        torch 实现的 KNN 图构建
+        X: torch.Tensor, shape [N, D], 节点特征
+        n_neighbors: int, 邻居数
+        is_prob: bool, 是否用高斯权重，否则是0-1
+        return:
+            knn: torch.Tensor, shape [N, N]
+        """
+        device = X.device
+        N = X.size(0)
+
+        # pairwise 距离 (欧式)
+        # dist = torch.cdist(X, X, p=2)  # [N, N]
+
+        # 取每个节点 top-k 最近邻 (包含自己，因为 dist[i,i]=0 最小)
+        knn_val, knn_idx = torch.topk(dist, k=n_neighbors+1, dim=1, largest=False)
+
+        # 构造稠密邻接矩阵
+        row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, n_neighbors+1).reshape(-1)
+        col_idx = knn_idx.reshape(-1)
+
+        if not is_prob:
+            values = torch.ones_like(row_idx, dtype=torch.float32, device=device)
+        else:
+            avg_dist = dist.mean()
+            values = torch.exp(- (knn_val.reshape(-1) ** 2) / (avg_dist ** 2 + 1e-8))
+
+        knn = torch.zeros((N, N), device=device)
+        knn[row_idx, col_idx] = values
+
+        # 保证每个节点至少和自己相连（对角线 = 1）
+        knn.fill_diagonal_(1.0)
+
+        return knn
+    def KNN_density(self, X, n_neighbors, is_prob=True, dist=None, density=None):
         """
         torch 实现的 KNN 图构建
         X: torch.Tensor, shape [N, D], 节点特征
@@ -1061,10 +1096,11 @@ class DHMamba_mse(nn.Module):
         n_neighbors = self.HGNeighbors  # 4
         for j in range(B):
             Xj = X[j, :, :]
-            densityj = density[j, :].unsqueeze(-1)  # [G, 1]
+            # densityj = density[j, :].unsqueeze(-1)  # [G, 1]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]
             # 3种超图构建方式
-            knn = self.KNN(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
+            # knn = self.KNN_density(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
+            knn = self.KNN(Xj, n_neighbors, dist=dist)
             l1 = self.l1_representation(Xj, n_neighbors, dist=dist)  # [G, G]
             sim = self.similarity(Xj, n_neighbors)  # [G, G]
 
