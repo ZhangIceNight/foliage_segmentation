@@ -108,6 +108,41 @@ def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
     print(f"Stats: {stats}")
     return stats
 
+def normalize(points):
+    """归一化到中心在原点，坐标[-1,1]范围"""
+    centroid = points.mean(axis=0)
+    points = points - centroid
+    scale = np.max(np.linalg.norm(points, axis=1))
+    points = points / scale
+    return points
+
+def avg_distance_volume(points):
+    """体积估算的平均点间距"""
+    if points.shape[0] < 4:
+        return 0.0
+    min_xyz = points.min(axis=0)
+    max_xyz = points.max(axis=0)
+    volume = np.prod(max_xyz - min_xyz)
+    avg_dist = (volume / points.shape[0]) ** (1/3)
+    return avg_dist
+
+def avg_distance_chamfer(points: np.ndarray) -> float:
+    """Chamfer 最近邻平均距离（NumPy 版本，全局参考半径）"""
+    if points.shape[0] < 2:
+        return 0.0
+    
+    # pairwise distance
+    diff = points[:, None, :] - points[None, :, :]   # [N, N, 3]
+    dist_matrix = np.linalg.norm(diff, axis=-1)      # [N, N]
+    
+    # 自己到自己距离设为无穷大
+    np.fill_diagonal(dist_matrix, np.inf)
+    
+    # 每个点的最近邻
+    min_dist = np.min(dist_matrix, axis=1)           # [N]
+    
+    return float(np.mean(min_dist))
+
 def analyze_directory(dir_path, save_dir):
     os.makedirs(save_dir, exist_ok=True)
     all_stats = {}
@@ -119,6 +154,9 @@ def analyze_directory(dir_path, save_dir):
             continue
         fpath = os.path.join(dir_path, file)
         print(f"Processing file: {fpath}")
+        avg_dc = avg_distance_chamfer(np.load(fpath)["xyz"].astype(np.float32))
+        avg_dv = avg_distance_volume(np.load(fpath)["xyz"].astype(np.float32))
+        print(f"  Avg Chamfer Distance: {avg_dc:.6f}, Avg Volume Distance: {avg_dv:.6f}")
         stats = analyze_pointcloud(fpath, save_dir)
         all_stats[file] = stats
 
