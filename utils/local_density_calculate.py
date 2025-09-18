@@ -63,7 +63,8 @@ def analyze_pointcloud(points, file_path, save_dir, m=128, radius=0.1):
     points = points
     print(f"total points: {points.shape[0]}")
     sampled_points = farthest_point_sampling(points, m=m)
-    
+    save_dir = save_dir + file_path.split("/")[-1]
+    os.makedirs(save_dir, exist_ok=True)
     # 计算两个距离
     vd = compute_volume_distance(sampled_points, radius=radius)
     cd = compute_chamfer_distance(sampled_points, radius=radius)
