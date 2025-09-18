@@ -243,7 +243,7 @@ class Group(nn.Module):
 
         # 1. FPS采样点
         centers = fps(xyz, self.num_group)  # [B, self.num_group, 3]
-        density = self._compute_volume_distance_cluster(centers, radius=avg_dist * self.alpha, max_neighbors=128)  # [B, N]
+        density = self._compute_volume_distance_cluster(centers, xyz, radius=avg_dist * self.alpha)  # [B, N]
 
         # # 2. 计算密度（Chamfer方式）
         # dist = torch.cdist(centers, xyz)  # [B, self.num_group, N]
