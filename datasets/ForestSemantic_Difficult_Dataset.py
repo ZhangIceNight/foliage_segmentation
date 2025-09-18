@@ -54,10 +54,10 @@ class ForestSemantic_Difficult_Dataset(Dataset):
         # 计算平均邻居距离（用于 DHMamba 的高斯权重）
         if self.calculate_avg_dist:
             """体积估算的平均点间距"""
-            min_xyz = point_cloud.min(axis=1)
-            max_xyz = point_cloud.max(axis=1)
-            volume = np.prod(max_xyz - min_xyz, axis=1)
-            avg_dist = (volume / point_cloud.shape[1]) ** (1/3)
+            min_xyz = point_cloud.min(axis=0)
+            max_xyz = point_cloud.max(axis=0)
+            volume = np.prod(max_xyz - min_xyz)
+            avg_dist = (volume / point_cloud.shape[0]) ** (1/3)
             
         return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0)
 
