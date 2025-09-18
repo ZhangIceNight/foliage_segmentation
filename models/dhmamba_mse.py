@@ -986,7 +986,7 @@ class DHMamba_mse(nn.Module):
         #   center: list of [B, G_i, 3]
         neighborhood, center, density = self.group_divider(pts)
         density = density.cpu().detach().numpy()
-        with open ('~/density.txt', 'a') as f:
+        with open ('/home/wjzhang/density.txt', 'a') as f:
             for i in range(density.shape[0]):
                 for j in range(density.shape[1]):
                     f.write(str(density[i][j]) + ' ')
