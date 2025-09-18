@@ -210,7 +210,13 @@ class Group(nn.Module):
         batch = torch.arange(B, device=device).repeat_interleave(N)  # [B*N]
         
         # 半径搜索邻居
-        edge_index = radius_graph(points_flat, r=radius, batch=batch, max_num_neighbors=max_neighbors)
+        edge_indices = []
+        for b in range(B):
+            mask = batch == b
+            edge_idx_b = radius_graph(points_flat[mask], r=float(radius[b]*self.alpha), batch=None)
+            edge_indices.append(edge_idx_b)
+        edge_index = torch.cat(edge_indices, dim=1)
+        # edge_index = radius_graph(points_flat, r=radius, batch=batch, max_num_neighbors=max_neighbors)
         # edge_index: [2, E], edge_index[0] -> target, edge_index[1] -> neighbor
 
         # 统计每个点邻居数量
