@@ -936,7 +936,7 @@ class DHMamba_mse(nn.Module):
         G = torch.mm(DV2_H, G)
         return G
 
-    def l1_representation(self, X, n_neighbors, reg_eps=1e-3, device=None, dist=None, density=None):
+    def l1_representation(self, X, n_neighbors, reg_eps=1e-3, device=None, dist=None):
         """
         Torch 版本的 L1-like (这里使用 L2/LLE 闭式解) 局部重建权重。
         Args:
@@ -959,40 +959,22 @@ class DHMamba_mse(nn.Module):
         n_nodes, feat_dim = X.shape
         k = int(n_neighbors)
         assert k >= 1 and k < n_nodes, "n_neighbors must be >=1 and < n_nodes"
-        k_max = min(2 * n_neighbors, n_nodes - 1)  # 最大邻居数
-        ones_kmax = torch.ones(k_max, device=device, dtype=X.dtype)
-        eye_kmax = torch.eye(k_max, device=device, dtype=X.dtype)
 
         # 距离矩阵并取 topk（包含 self）
         # dist = torch.cdist(X, X)  # (n_nodes, n_nodes)
         # 取 k+1 个最近（包含自己），然后排除自己
-        _, knn_idx_all = torch.topk(dist, k=k_max+1, largest=False, sorted=False)  # (n_nodes, k_max+1)
-        knn_idx_all = knn_idx_all[:, 1:]  # (n_nodes, k_max) 排除了自己
-
-
-        # 按 density 排序
-        sorted_idx = torch.argsort(density)
-        half = n_nodes // 2
-        small_idx = sorted_idx[:half]
-        large_idx = sorted_idx[half:]
-
-        # mask: 前一半节点保留全部 k_max，后一半节点只取前 n_neighbors
-        mask = torch.zeros_like(knn_idx_all, dtype=torch.bool)
-        mask.scatter_(0, small_idx.view(-1,1).expand(-1, mask.size(1)), True)
-        mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
-
+        _, knn_idx_all = torch.topk(dist, k=k+1, largest=False, sorted=False)  # (n_nodes, k+1)
+        knn_idx = knn_idx_all[:, 1:k+1]  # (n_nodes, k) 排除了自己
 
         # 预分配 weight 矩阵
         weights = torch.zeros((n_nodes, n_nodes), device=device, dtype=X.dtype)
+
+        ones_k = torch.ones((k,), device=device, dtype=X.dtype)
+
+        eye_k = torch.eye(k, device=device, dtype=X.dtype)
+
         for i in range(n_nodes):
-            neighbors_all = knn_idx_all[i]            # shape (k,)
-            mask_i = mask[i]
-            neighbors = neighbors_all[mask_i]         # shape (k,) 取出有效邻
-            k = neighbors.shape[0]                     # 当前节点的实际邻居数
-            if k == 0:
-                continue  # 极端情况，没邻居了
-
-
+            neighbors = knn_idx[i]            # shape (k,)
             P = X[neighbors]                  # (k, d)
             v = X[i].unsqueeze(0)             # (1, d)
             Z = P - v                         # (k, d)
@@ -1004,15 +986,14 @@ class DHMamba_mse(nn.Module):
             traceC = torch.trace(C)
             # 若 traceC == 0（所有邻居与中心相同）也要加一个小值
             reg = reg_eps * (traceC if traceC > 0 else 1.0) + 1e-6
-            C = C + torch.eye(k, device=device, dtype=X.dtype) * reg
-
+            C = C + eye_k * reg
 
             # solve C w = 1
             try:
-                w = torch.linalg.solve(C, torch.ones(k, device=device, dtype=X.dtype))    # (k,)
+                w = torch.linalg.solve(C, ones_k)    # (k,)
             except RuntimeError:
                 # 万一奇异，用伪逆回退
-                w = torch.matmul(torch.linalg.pinv(C), torch.ones(k, device=device, dtype=X.dtype))
+                w = torch.matmul(torch.linalg.pinv(C), ones_k)
 
             s = w.sum()
             if s.abs() < 1e-12:
@@ -1060,7 +1041,7 @@ class DHMamba_mse(nn.Module):
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]
             # 3种超图构建方式
             knn = self.KNN(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
-            l1 = self.l1_representation(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
+            l1 = self.l1_representation(Xj, n_neighbors, dist=dist)  # [G, G]
             sim = self.similarity(Xj, n_neighbors, density=densityj)  # [G, G]
 
             G = self.hyperG(knn, l1, sim, self.W)
