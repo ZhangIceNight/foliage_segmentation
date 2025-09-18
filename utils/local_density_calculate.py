@@ -61,7 +61,9 @@ def compute_chamfer_distance(points, radius=0.1):
 
 def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
     points = np.load(file_path)  # shape [N, 3]
+    print(f"Analyzing {file_path}, total points: {points.shape[0]}")
     sampled_points = farthest_point_sampling(points, m=m)
+    
     # 计算两个距离
     vd = compute_volume_distance(sampled_points, radius=radius)
     cd = compute_chamfer_distance(sampled_points, radius=radius)
@@ -91,7 +93,19 @@ def analyze_pointcloud(file_path, save_dir, m=128, radius=0.1):
         save_path = os.path.join(save_dir, f"{fname}_{name}.png")
         plt.savefig(save_path, dpi=200)
         plt.close()
+    # ---- 可视化 FPS 采样点 vs 全部点 ----
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(points[:,0], points[:,1], points[:,2], s=1, c="lightgray", alpha=0.5)
+    ax.scatter(sampled_points[:,0], sampled_points[:,1], sampled_points[:,2], s=20, c="red", alpha=0.9)
+    ax.set_title("FPS sampling vs full cloud")
 
+    fname = os.path.splitext(os.path.basename(file_path))[0]
+    save_path = os.path.join(save_dir, f"{fname}_fps.png")
+    plt.savefig(save_path, dpi=200)
+    plt.close()
+    print(f"Visualization saved to {save_path}")
+    print(f"Stats: {stats}")
     return stats
 
 def analyze_directory(dir_path, save_dir):
