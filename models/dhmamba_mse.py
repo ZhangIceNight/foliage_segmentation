@@ -993,6 +993,7 @@ class DHMamba_mse(nn.Module):
                 f.write('\n')
             f.write('finish item\n')
         print('density:', density)
+        density = torch.from_numpy(density).cuda().float()
         # 编码 neighborhood -> tokens
         group_input_tokens = self.encoder(neighborhood)   # 每个 [B, G_i, encoder_dim]
         # 编码 center -> pos
