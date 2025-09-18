@@ -190,36 +190,46 @@ class Group(nn.Module):
             neigh = xyz[b][idx_support].view(centers[b].size(0), k, 3)
             neigh_list.append(neigh - centers[b].unsqueeze(1))  # 相对坐标
         return torch.stack(neigh_list, dim=0)  # [B, G, k, 3]
-
-    def forward(self, xyz):
+    def _compute_volume_distance_cluster(self, centers, xyz, radius):
+        dist_mat = torch.cdist(centers, xyz)
+        radius = self.avg_dist
+        mask = (dist_mat < radius * 2).float()
+        counts = mask.sum(-1)
+        volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
+        avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)
+        return avg_dist
+    
+    def forward(self, xyz, avg_dist=None):
         B, N, _ = xyz.shape
         half_num = self.num_group // 2
 
         # 1. FPS采样一半点
         centers_half = fps(xyz, half_num)  # [B, half_num, 3]
+        density = self._compute_volume_distance_cluster(centers_half, xyz, radius=avg_dist * self.alpha)  # [B, N]
+
         # print("FPS centers shape:", centers_half.shape)  # 应该是 [B, half_num, 3]
         # print("FPS centers sample:", centers_half[0, :5, :])
         # print("Any NaN or Inf:", torch.isnan(centers_half).any(), torch.isinf(centers_half).any())
         # 2. 计算密度（Chamfer方式）
-        dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
-        mask = (dist < self.avg_dist * self.alpha).float()
-        masked_dist = dist.clone()
-        masked_dist[mask == 0] = 100.0
+        # dist = torch.cdist(centers_half, xyz)  # [B, half_num, N]
+        # mask = (dist < self.avg_dist * self.alpha).float()
+        # masked_dist = dist.clone()
+        # masked_dist[mask == 0] = 100.0
 
 
-        # 构造 batch 索引和中心索引
-        batch_idx = torch.arange(B, device=dist.device).view(-1, 1)
-        center_idx = torch.arange(half_num, device=dist.device).view(1, -1)
+        # # 构造 batch 索引和中心索引
+        # batch_idx = torch.arange(B, device=dist.device).view(-1, 1)
+        # center_idx = torch.arange(half_num, device=dist.device).view(1, -1)
 
-        # 排除自己
-        masked_dist = dist.clone()
-        masked_dist[batch_idx, center_idx, center_idx] = 100.0
+        # # 排除自己
+        # masked_dist = dist.clone()
+        # masked_dist[batch_idx, center_idx, center_idx] = 100.0
 
-        # 取最小值
-        row_min, _ = torch.min(masked_dist, dim=-1)
+        # # 取最小值
+        # row_min, _ = torch.min(masked_dist, dim=-1)
 
 
-        density = row_min  # [B, half_num]
+        # density = row_min  # [B, half_num]
 
 
         # print("density shape:", density.shape)  # 应该是 [B, half_num]
@@ -1171,12 +1181,12 @@ class DHMamba_ms(nn.Module):
         # l1 = sparse.coo_matrix((values, (node_idx, edge_idx)), shape=(n_nodes, n_edges)).toarray()
         # return l1
 
-    def forward(self, pts):
+    def forward(self, pts, avg_dist=None):
         B, N, C = pts.shape
         # group_divider 输出: 
         #   neighborhood: list of [B, G_i, M_i, 3]
         #   center: list of [B, G_i, 3]
-        neighborhood, center = self.group_divider(pts)
+        neighborhood, center = self.group_divider(pts, avg_dist)
         # 编码 neighborhood -> tokens
         group_input_tokens = self.encoder(neighborhood)   # 每个 [B, G_i, encoder_dim]
         # 编码 center -> pos
