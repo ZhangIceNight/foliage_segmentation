@@ -148,7 +148,7 @@ def analyze_directory(dir_path, save_dir):
 
 if __name__ == "__main__":
     stats, global_stats = analyze_directory(
-        dir_path="./data/ForestSemantic_Difficult/tiles_filtered_fps",
+        dir_path="./data/ForestSemantic_Difficult/test/",
         save_dir="./local_density_results_vis"
         )
 
