@@ -44,7 +44,7 @@ def evaluate(config: DictConfig):
     # Dataset
     data_module = ForestSemantic_Difficult_DataModule(**config.data)
     data_module.setup()
-
+    val_loader = data_module.val_dataloader()
     # Model
     if not config.model.get("resume"):
         raise ValueError("You must specify a checkpoint in config.model.resume for evaluation")
@@ -59,7 +59,7 @@ def evaluate(config: DictConfig):
     )
 
     # Run test (or validation)
-    results = trainer.validate(model, datamodule=data_module, ckpt_path=ckpt_path)
+    results = trainer.validate(model, dataloaders=val_loader, ckpt_path=ckpt_path)
     logger.info(f"Evaluation results: {results}")
     comet_logger.experiment.log_metrics({f"eval_{k}": v for k, v in results[0].items()})
 
