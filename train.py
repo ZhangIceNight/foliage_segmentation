@@ -33,7 +33,7 @@ def train(config: DictConfig):
 
     # 保存当前 config 到实验目录
     OmegaConf.save(config, os.path.join(exp_dir, "config.yaml"))
-    print(OmegaConf.to_yaml(config))
+    logger.info(OmegaConf.to_yaml(config))
 
     comet_logger = CometLogger(
         project_name=config.comet.get("project"),
@@ -41,18 +41,18 @@ def train(config: DictConfig):
         # offline_directory=comet_dir,
         workspace="zwjnefu"
     )
+    comet_logger.experiment.add_tag(f"dataset_{config.data.dataset_type}")
     comet_logger.experiment.add_tag(f"fold_{fold}")
     # if config.model.get("alpha"):
     #     comet_logger.experiment.add_tag(f"alpha_{config.model.alpha}")
-    if config.model.get("HGNeighbors"):
-        comet_logger.experiment.add_tag(f"k_{config.model.HGNeighbors}")
+    # if config.model.get("HGNeighbors"):
+    #     comet_logger.experiment.add_tag(f"k_{config.model.HGNeighbors}")
 
     # comet_logger.experiment.add_tag(f"100")
-
+    
     comet_logger.experiment.log_parameters({"fold_idx": fold})
 
     # Setup Dataset Module
-    config.data.fold_idx = fold
     data_module = ForestSemantic_Difficult_DataModule(**config.data)
     data_module.setup()
 
@@ -64,7 +64,7 @@ def train(config: DictConfig):
         dirpath=ckpt_dir,
         filename="{config.model.model_type}-{epoch:02d}-val_mIoU{val_mIoU:.2f}",
         monitor="val_mIoU",
-        save_top_k=1,
+        save_top_k=4,
         mode="max",
         auto_insert_metric_name=False
     )
@@ -72,7 +72,7 @@ def train(config: DictConfig):
     latest_checkpoint_cb = ModelCheckpoint(
         dirpath=ckpt_dir,
         filename="{config.model.model_type}-latest",
-        save_top_k=1,
+        save_top_k=4,
         every_n_epochs=5,
         save_last=True,
     )
@@ -84,10 +84,10 @@ def train(config: DictConfig):
     )
 
     if config.model.get("resume"):
-        print(f"Resuming from checkpoint: {config.model.resume}")
+        logger.info(f"Resuming from checkpoint: {config.model.resume}")
         trainer.fit(model, datamodule=data_module, ckpt_path=config.model.resume)
     else:
-        print("Training from scratch")
+        logger.info("Training from scratch")
         trainer.fit(model, datamodule=data_module)
     
     best_val_mIoU = best_checkpoint_cb.best_model_score.item()
