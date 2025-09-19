@@ -1,0 +1,33 @@
+defaults:
+  - base_dhmamba
+  - _self_
+data:
+  batch_size: 16
+  num_workers: 4
+  num_points: 4096
+  data_dir: "./data/Birch/tiles_filtered_fps"
+  augmentations_list: ['rotate', 'scale', 'shift']
+  fold_idx: 0
+  dataset_type: Birch
+  split_json_path: "./data/Birch/splits.json"
+  use_normalization: true
+
+
+model:
+  num_classes: 2
+  HGNeighbors: 8
+  # resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/ForestSemantic_Difficult/dhmamba/fold_0/exp_20250918_162354/checkpoints/last.ckpt"
+optimizer:
+  learning_rate: 0.0002
+  weight_decay: 0.00005
+  max_epochs: 100
+  eta_min: 0.000001
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 100
+  accelerator: "gpu"
+  devices: [1]
+
+comet:
+  name: "Birch_dhmamba_lr2e-4_bs16"
