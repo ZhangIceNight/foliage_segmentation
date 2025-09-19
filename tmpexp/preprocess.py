@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import json
+from pathlib import Path
 try:
     from plyfile import PlyData
 except ImportError:
@@ -28,12 +29,19 @@ def read_single_las(file_path):
 
 
 def split_and_save_tiles(file_path, output_dir, tile_size=1.0, min_points=100):
-    """将点云按 tile_size 网格切割并保存为 .npy"""
+    """
+    将点云按 tile_size 网格切割并保存为 .npy
+
+    支持输入格式：`.las/.laz`, `.npy`, `.ply`, `.txt`
+    - 对于 `.npy`，将读取前三列作为坐标（如果超过3列会截断为3列）
+    - 对于 `.ply/.txt/.las`，自动读取 x,y,z
+    """
     os.makedirs(output_dir, exist_ok=True)
-    pcd = read_single_las(file_path)
-    if pcd is None:
+    try:
+        xyz, _, _ = _load_points(file_path)
+    except Exception as e:
+        print(f"❌ 无法读取点云文件 {file_path}: {e}")
         return
-    xyz = np.asarray(pcd.points)
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
     for point in xyz:
@@ -55,27 +63,31 @@ def split_and_save_tiles(file_path, output_dir, tile_size=1.0, min_points=100):
 
 def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_points=100):
     """
-    按 tile_size 对大场景点云切割，并同步切割标签，保存为 .npz 文件。
-    
-    :param file_path: str, .las 文件路径
+    按 tile_size 对大场景点云切割，并同步切割标签，保存为 `.npz` 文件。
+
+    支持输入格式：`.las/.laz`, `.npy`, `.ply`
+    - `.las/.laz`: 使用 classification 作为标签
+    - `.npy`: 若数组列数>=4，默认最后一列为标签；前三列为 x,y,z
+    - `.ply`: 自动检测顶点属性中的 label/class/classification 等字段作为标签
+
+    :param file_path: str, 点云文件路径
     :param output_dir: str, 输出目录
     :param tile_size: float, 网格大小（单位：米）
     :param min_points: int, 小于该点数的 tile 不保存
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Step 1: 读取坐标和标签
-    las = laspy.read(file_path)
-    xyz = np.vstack((las.x, las.y, las.z)).T
-    labels = las.classification  # 👈 标签
-
+    # Step 1: 读取坐标和标签（通用）
+    xyz, labels = _load_points_and_labels(file_path)
+    if labels is None:
+        raise ValueError("该文件未包含可用标签，无法执行带标签切块。请提供含标签的 .las/.laz、含标签列的 .npy 或带 label 属性的 .ply。")
     assert xyz.shape[0] == labels.shape[0], "标签数与点数不一致"
 
     # Step 2: 初始化切块
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
 
-    for i, _ in enumerate(range(xyz.shape[0])):
+    for i in range(xyz.shape[0]):
         point = xyz[i]
         label = labels[i]
 
@@ -262,6 +274,54 @@ def _load_points(file_path):
         raise ValueError(f"不支持的文件格式: {ext}")
     return points, scale, offset
 
+
+def _load_points_and_labels(file_path):
+    """
+    通用读取函数：返回 (xyz, labels)
+    支持：
+    - .las/.laz: 使用 classification 作为标签
+    - .npy: 若列数>=4，最后一列视为标签；前三列为 xyz
+    - .ply: 顶点属性中存在 label/class/classification 等字段则作为标签
+    其它格式暂不支持返回标签。
+    """
+    ext = os.path.splitext(file_path)[-1].lower()
+    if ext in [".las", ".laz"]:
+        if laspy is None:
+            raise ImportError("请先安装 laspy: pip install laspy")
+        las = laspy.read(file_path)
+        xyz = np.vstack((las.x, las.y, las.z)).T
+        labels = np.asarray(las.classification, dtype=np.uint8)
+        return xyz, labels
+    elif ext == ".npy":
+        arr = np.load(file_path)
+        if arr.ndim > 2:
+            arr = arr.reshape(-1, arr.shape[-1])
+        if arr.ndim == 1:
+            raise ValueError(".npy 需要为二维数组 [N, C]")
+        if arr.shape[1] < 3:
+            raise ValueError(".npy 至少需要3列表示 xyz")
+        xyz = arr[:, :3]
+        labels = arr[:, -1].astype(np.int32) if arr.shape[1] >= 4 else None
+        return xyz, labels
+    elif ext == ".ply":
+        if PlyData is None:
+            raise ImportError("请先安装 plyfile: pip install plyfile")
+        ply = PlyData.read(file_path)
+        vertex = ply["vertex"]
+        xyz = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
+        # 检测可能的标签字段
+        names = list(vertex.data.dtype.names)
+        candidate_keys = [
+            "label", "sem_label", "semantic", "semantic_label",
+            "class", "classification", "category", "Category", "object_id"
+        ]
+        label_key = next((k for k in candidate_keys if k in names), None)
+        labels = np.asarray(vertex[label_key]) if label_key is not None else None
+        return xyz, labels
+    else:
+        # 其它格式目前不支持标签
+        xyz, _, _ = _load_points(file_path)
+        return xyz, None
 
 def check_coordinate_unit(path, verbose=True):
     """
