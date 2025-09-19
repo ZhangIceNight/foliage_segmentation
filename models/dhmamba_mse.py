@@ -1096,11 +1096,11 @@ class DHMamba_mse(nn.Module):
         n_neighbors = self.HGNeighbors  # 4
         for j in range(B):
             Xj = X[j, :, :]
-            # densityj = density[j, :].unsqueeze(-1)  # [G, 1]
+            densityj = density[j, :].unsqueeze(-1)  # [G, 1]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]
             # 3种超图构建方式
-            # knn = self.KNN_density(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
-            knn = self.KNN(Xj, n_neighbors, dist=dist)
+            knn = self.KNN_density(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
+            # knn = self.KNN(Xj, n_neighbors, dist=dist)
             l1 = self.l1_representation(Xj, n_neighbors, dist=dist)  # [G, G]
             sim = self.similarity(Xj, n_neighbors)  # [G, G]
 
