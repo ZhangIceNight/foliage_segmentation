@@ -80,7 +80,6 @@ def train(config: DictConfig):
     trainer = pl.Trainer(
         logger=comet_logger,
         callbacks=[best_checkpoint_cb, latest_checkpoint_cb],
-        enable_checkpointing=False,
         **config['trainer']
     )
 
