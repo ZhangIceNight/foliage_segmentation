@@ -27,7 +27,7 @@ def main():
     # fps_downsample_tiles(input_dir=f"./data/{DATASET_NAME}/tiles_filtered", output_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", target_points=16384)
     kfold_split_dataset(input_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", output_json=f"./data/{DATASET_NAME}/splits.json", k=5)
 if __name__ == "__main__":
-    DATASET_NAME = "Birch"
+    DATASET_NAME = "Larch"
 
     # Tropical_path = '/public/wjzhang/datasets/LabelledPC'  
     # Mixed_path = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples' 
