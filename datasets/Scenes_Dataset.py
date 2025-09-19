@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from pytorch_lightning import LightningDataModule
 from utils import augmentations
 
-class ForestSemantic_Difficult_Dataset(Dataset):
+class Scenes_Dataset(Dataset):
     def __init__(self, data_dir, split='train', num_points=1024, file_list=None, use_normalization=False, calculate_avg_dist=False, augmentations_list=[]):
         self.data_dir = data_dir
         self.split = split
@@ -61,7 +61,7 @@ class ForestSemantic_Difficult_Dataset(Dataset):
             
         return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0)
 
-class ForestSemantic_Difficult_DataModule(LightningDataModule):
+class Scenes_DataModule(LightningDataModule):
     def __init__(self, data_dir, split_json_path, num_points=1024, batch_size=32, fold_idx=0, num_workers=4, use_normalization=False, augmentations_list=None, calculate_avg_dist=False, **kwargs):
         super().__init__()
         self.data_dir = data_dir
@@ -79,8 +79,8 @@ class ForestSemantic_Difficult_DataModule(LightningDataModule):
             splits = json.load(f)
         train_files = splits[f"fold_{self.fold_idx}"]["train"]
         val_files   = splits[f"fold_{self.fold_idx}"]["val"]
-        self.train_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='train', num_points=self.num_points, file_list=train_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist, augmentations_list=self.augmentations_list)
-        self.val_ds = ForestSemantic_Difficult_Dataset(self.data_dir, split='val', num_points=self.num_points, file_list=val_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist)
+        self.train_ds = Scenes_Dataset(self.data_dir, split='train', num_points=self.num_points, file_list=train_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist, augmentations_list=self.augmentations_list)
+        self.val_ds = Scenes_Dataset(self.data_dir, split='val', num_points=self.num_points, file_list=val_files, use_normalization=self.use_normalization, calculate_avg_dist=self.calculate_avg_dist)
 
     def train_dataloader(self):
         return DataLoader(
@@ -101,9 +101,9 @@ class ForestSemantic_Difficult_DataModule(LightningDataModule):
         )
 
 if __name__ == "__main__":
-    data_module = ForestSemantic_Difficult_DataModule(
-        data_dir="./data/ForestSemantic_Difficult/tiles_filtered_fps",
-        split_json_path="./data/ForestSemantic_Difficult/split.json",
+    data_module = Scenes_DataModule(
+        data_dir="./data/Birch/tiles_filtered_fps",
+        split_json_path="./data/Birch/split.json",
         num_points=4096,
         batch_size=8,
         num_workers=0

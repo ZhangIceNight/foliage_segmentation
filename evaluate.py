@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import CometLogger
 
 from models import build_model
-from datasets.ForestSemantic_Difficult_Dataset import ForestSemantic_Difficult_DataModule
+from datasets.Scenes_Dataset import Scenes_DataModule
 from utils.logger_utils import setup_logger, create_experiment_dir
 from utils.seed_utils import seed_everything
 
