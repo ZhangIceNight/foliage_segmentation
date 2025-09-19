@@ -294,8 +294,6 @@ def _load_points_and_labels(file_path):
         return xyz, labels
     elif ext == ".npy":
         arr = np.load(file_path)
-        if arr.ndim > 2:
-            arr = arr.reshape(-1, arr.shape[-1])
         if arr.ndim == 1:
             raise ValueError(".npy 需要为二维数组 [N, C]")
         if arr.shape[1] < 3:
