@@ -102,8 +102,8 @@ class Scenes_DataModule(LightningDataModule):
 
 if __name__ == "__main__":
     data_module = Scenes_DataModule(
-        data_dir="./data/Birch/tiles_filtered_fps",
-        split_json_path="./data/Birch/split.json",
+        data_dir="./data/ForestSemantic_Difficult/tiles_filtered_fps",
+        split_json_path="./data/ForestSemantic_Difficult/split.json",
         num_points=4096,
         batch_size=8,
         num_workers=0
