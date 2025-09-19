@@ -55,7 +55,6 @@ def evaluate(config: DictConfig):
     # Trainer
     trainer = pl.Trainer(
         logger=comet_logger,
-        enable_checkpointing=False,
         **config['trainer']
     )
 
