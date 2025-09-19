@@ -79,13 +79,14 @@ def train(config: DictConfig):
 
     trainer = pl.Trainer(
         logger=comet_logger,
-        callbacks=[best_checkpoint_cb, latest_checkpoint_cb],        
+        callbacks=[best_checkpoint_cb, latest_checkpoint_cb],
+        enable_checkpointing=False,
         **config['trainer']
     )
 
     if config.model.get("resume"):
         print(f"Resuming from checkpoint: {config.model.resume}")
-        trainer.fit(model, datamodule=data_module, ckpt_path=config.model.resume)
+        trainer.validate(model, datamodule=data_module, ckpt_path=config.model.resume)
     else:
         print("Training from scratch")
         trainer.fit(model, datamodule=data_module)
