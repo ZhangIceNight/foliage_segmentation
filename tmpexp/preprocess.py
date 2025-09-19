@@ -140,18 +140,22 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
             xyz = data['xyz']
             label = data['label'].astype(np.uint8)
 
-            # 选择有效标签的点
-            valid_mask = np.isin(label, [2, 3, 4, 5])
-            if not np.any(valid_mask):
-                # 没有有效点，跳过
-                continue
+            if relabel:
+                # 选择有效标签的点
+                valid_mask = np.isin(label, [2, 3, 4, 5])
+                if not np.any(valid_mask):
+                    # 没有有效点，跳过
+                    continue
 
-            xyz_valid = xyz[valid_mask]
-            label_valid = label[valid_mask]
+                xyz_valid = xyz[valid_mask]
+                label_valid = label[valid_mask]
 
-            # 标签重新映射
-            label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0)
+                # 标签重新映射
+                label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0)
 
+            else:
+                xyz_valid = xyz
+                label_valid = label
             # 判断点数是否满足
             if len(xyz_valid) < min_points:
                 continue
