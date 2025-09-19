@@ -50,8 +50,7 @@ def evaluate(config: DictConfig):
         raise ValueError("You must specify a checkpoint in config.model.resume for evaluation")
     ckpt_path = config.model.resume
     logger.info(f"Loading checkpoint from {ckpt_path}")
-    model = build_model(config).load_from_checkpoint(ckpt_path, cfg=config)
-    model.eval()
+    model = build_model(config)
     # Trainer
     trainer = pl.Trainer(
         logger=comet_logger,
@@ -59,9 +58,10 @@ def evaluate(config: DictConfig):
     )
 
     # Run test (or validation)
-    results = trainer.validate(model, dataloaders=val_loader, ckpt_path=ckpt_path)
-    logger.info(f"Evaluation results: {results}")
-    comet_logger.experiment.log_metrics({f"eval_{k}": v for k, v in results[0].items()})
+    trainer.validate(model, datamodule=data_module, ckpt_path=config.model.resume)
+    
+    # logger.info(f"Evaluation results: {results}")
+    # comet_logger.experiment.log_metrics({f"eval_{k}": v for k, v in results[0].items()})
 
     logger.info(f"===== End Evaluation Fold {fold} =====")
 
