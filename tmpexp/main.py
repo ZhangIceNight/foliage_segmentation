@@ -19,7 +19,7 @@ def main():
     # detail_dataset_info(Birch_path, name="Birch")
     # detail_dataset_info(Larch_path, name="Larch")
     # detail_dataset_info(Chinese_scholar_tree_path, name="Chinese_scholar_tree")
-    detail_dataset_info(path, name="Evo_mls")
+    detail_dataset_info(path, name="Evo")
     # detail_dataset_info(ForestSemantic_Difficult_path, name="ForestSemantic_Difficult")
 
     # split_and_save_tiles_with_labels(path, output_dir=output_dir, tile_size=1, min_points=4096)
@@ -27,7 +27,7 @@ def main():
     # fps_downsample_tiles(input_dir=f"./data/{DATASET_NAME}/tiles_filtered", output_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", target_points=16384)
     # kfold_split_dataset(input_dir="./data/ForestSemantic_Difficult/tiles_filtered_fps", output_json="./data/ForestSemantic_Difficult/splits.json", k=5)
 if __name__ == "__main__":
-    DATASET_NAME = "Evo_mls"
+    DATASET_NAME = "Evo"
 
     # Tropical_path = '/public/wjzhang/datasets/LabelledPC'  
     # Mixed_path = '/public/wjzhang/datasets/wood_seg_samples/wood_seg_samples' 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         "Birch": "/home/wjzhang/workspace/datasets/DHMamba_project/Birch/reference_pc_White_Birch.npy",
         "Larch": "/home/wjzhang/workspace/datasets/DHMamba_project/Larch/reference_pc_Dahurian_Larch.npy",
         "Chinese_scholar_tree": "/home/wjzhang/workspace/datasets/DHMamba_project/Chinese_scholar_tree/reference_pc_Chinese_scholar_tree.npy",
-        "Evo_mls": "/home/wjzhang/workspace/datasets/DHMamba_project/Evo_mls/plot_a.ply",
+        "Evo": "/home/wjzhang/workspace/datasets/DHMamba_project/Evo/plot_a.ply",
         "ForestSemantic_Difficult": "/home/wjzhang/workspace/datasets/DHMamba_project/ForestSemantic_Difficult/Plot_5.las",
     }
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         "Birch": "/home/wjzhang/workspace/datasets/DHMamba_project/Birch/tiles",
         "Larch": "/home/wjzhang/workspace/datasets/DHMamba_project/Larch/tiles",
         "Chinese_scholar_tree": "/home/wjzhang/workspace/datasets/DHMamba_project/Chinese_scholar_tree/tiles",
-        "Evo_mls": "/home/wjzhang/workspace/datasets/DHMamba_project/Evo_mls/tiles",
+        "Evo": "/home/wjzhang/workspace/datasets/DHMamba_project/Evo/tiles",
     }
 
     main()
