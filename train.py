@@ -83,9 +83,9 @@ def train(config: DictConfig):
         **config['trainer']
     )
 
-    if config.model.get("train_resume"):
+    if config.model.get("resume"):
         print(f"Resuming from checkpoint: {config.model.resume}")
-        trainer.fit(model, datamodule=data_module, ckpt_path=config.model.resume)
+        trainer.validate(model, datamodule=data_module, ckpt_path=config.model.resume)
     else:
         print("Training from scratch")
         trainer.fit(model, datamodule=data_module)
