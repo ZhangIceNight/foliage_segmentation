@@ -104,10 +104,15 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     print(f"✅ 切割完成，共生成 {len(tiles)} 个格子")
     print("正在保存每个 tile...")
     count = 0
+    all_point_count = xyz.shape[0]
+    unadded_point_count = 0
+    added_point_count = 0
     for key, tile_data in tiles.items():
         if len(tile_data["xyz"]) < min_points:
+            unadded_point_count += len(tile_data["xyz"])
             print(f"❌ Tile {key} 点数不足,只有: {len(tile_data['xyz'])}，已跳过")
             continue
+        added_point_count += len(tile_data["xyz"])
         xyz_arr = np.array(tile_data["xyz"])
         label_arr = np.array(tile_data["label"], dtype=np.uint8)
         out_path = os.path.join(output_dir, f"tile_{key[0]}_{key[1]}.npz")
@@ -115,6 +120,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
         count += 1
 
     print(f"✅ 保存完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
+    print(f"all points: {all_point_count}, added points: {added_point_count}, unadded points: {unadded_point_count}")
 
 
 def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=False):
