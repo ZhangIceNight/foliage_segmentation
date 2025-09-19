@@ -116,7 +116,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     print(f"✅ 保存完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
 
 
-def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
+def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=False):
     """
     遍历 npz tile 文件，重标 label，并过滤点数不足的文件
     :param input_dir: 输入的 tiles 文件夹路径
