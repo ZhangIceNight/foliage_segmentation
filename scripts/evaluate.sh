@@ -4,7 +4,7 @@
 #   ./evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 5
 #   ./evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 1
 # bash scripts/evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 1 --resume path/to/ckpt.ckpt
-
+# bash scripts/evaluate.sh --config-name ForestSemantic_Difficult_dhmamba_mse_lr2e-4_bs16 --fold 1 --resume 
 CONFIG_NAME="default"
 RESUME=""
 FOLD_NUM=""
