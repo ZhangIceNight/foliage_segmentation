@@ -51,7 +51,7 @@ def evaluate(config: DictConfig):
     ckpt_path = config.model.resume
     logger.info(f"Loading checkpoint from {ckpt_path}")
     model = build_model(config).load_from_checkpoint(ckpt_path, cfg=config)
-
+    model.eval()
     # Trainer
     trainer = pl.Trainer(
         logger=comet_logger,
