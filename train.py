@@ -72,7 +72,6 @@ def train(config: DictConfig):
     latest_checkpoint_cb = ModelCheckpoint(
         dirpath=ckpt_dir,
         filename="{config.model.model_type}-latest",
-        save_top_k=4,
         every_n_epochs=5,
         save_last=True,
     )
