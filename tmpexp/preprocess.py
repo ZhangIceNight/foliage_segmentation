@@ -314,14 +314,11 @@ def _load_points_and_labels(file_path):
         ply = PlyData.read(file_path)
         vertex = ply["vertex"]
         xyz = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
-        # 检测可能的标签字段
-        names = list(vertex.data.dtype.names)
-        candidate_keys = [
-            "label", "sem_label", "semantic", "semantic_label",
-            "class", "classification", "category", "Category", "object_id"
-        ]
-        label_key = next((k for k in candidate_keys if k in names), None)
-        labels = np.asarray(vertex[label_key]) if label_key is not None else None
+
+        if 'gt_class' in vertex:
+            labels = np.asarray(vertex['gt_class'])
+        else:
+            raise ValueError("PLY 文件中未找到 'gt_class' 标签字段，无法提取标签。")
         return xyz, labels
     else:
         # 其它格式目前不支持标签
