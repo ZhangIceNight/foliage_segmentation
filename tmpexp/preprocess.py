@@ -106,6 +106,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     count = 0
     for key, tile_data in tiles.items():
         if len(tile_data["xyz"]) < min_points:
+            print(f"❌ Tile {key} 点数不足,只有: {len(tile_data['xyz'])}，已跳过")
             continue
         xyz_arr = np.array(tile_data["xyz"])
         label_arr = np.array(tile_data["label"], dtype=np.uint8)
@@ -126,7 +127,7 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
     os.makedirs(output_dir, exist_ok=True)
 
     # 获取所有 .npz 文件
-    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
+    npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz') or f.endswith('.npy')]
     total_files = len(npz_files)
     saved_files = 0
 
