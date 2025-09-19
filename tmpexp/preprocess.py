@@ -87,7 +87,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
     print(f"应该生成格子: {((xyz[:, 0].max() - min_x) // tile_size + 1) * ((xyz[:, 1].max() - min_y) // tile_size + 1)}")
-    for i, _ in enumerate(range(xyz.shape[0])):
+    for i, _ in tqdm(enumerate(range(xyz.shape[0]))):
         point = xyz[i]
         label = labels[i]
 
