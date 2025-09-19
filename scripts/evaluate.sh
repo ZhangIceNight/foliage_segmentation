@@ -33,11 +33,7 @@ cd "$PROJECT_ROOT"
 if [ "$DEBUG" -eq 1 ]; then
     folds=(0)
 else
-    if [ "$FOLD_NUM" -gt 1 ]; then
-        folds=($(seq 0 $((FOLD_NUM-1))))
-    else
-        folds=($FOLD_NUM-1)
-    fi
+    folds=($(seq 0 $((FOLD_NUM-1))))
 fi
 
 for fold in ${folds[@]}; do

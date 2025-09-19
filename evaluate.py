@@ -60,7 +60,7 @@ def evaluate(config: DictConfig):
     )
 
     # Run test (or validation)
-    results = trainer.test(model, datamodule=data_module, ckpt_path=ckpt_path)
+    results = trainer.validate(model, datamodule=data_module, ckpt_path=ckpt_path)
     logger.info(f"Evaluation results: {results}")
     comet_logger.experiment.log_metrics({f"eval_{k}": v for k, v in results[0].items()})
 
