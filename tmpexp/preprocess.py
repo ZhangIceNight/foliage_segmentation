@@ -113,7 +113,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
         np.savez(out_path, xyz=xyz_arr, label=label_arr)
         count += 1
 
-    print(f"✅ 切割完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
+    print(f"✅ 保存完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
 
 
 def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096):
