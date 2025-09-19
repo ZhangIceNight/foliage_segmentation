@@ -8,6 +8,7 @@ BATCH_SIZE=""
 RESUME=""
 EPOCHS=""
 LR=""
+DEBUG=0
 
 # 使用 getopt 风格解析命令行参数
 while [[ "$#" -gt 0 ]]; do
