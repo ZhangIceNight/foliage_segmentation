@@ -23,8 +23,8 @@ def main():
     # detail_dataset_info(ForestSemantic_Difficult_path, name="ForestSemantic_Difficult")
 
     # split_and_save_tiles_with_labels(path, output_dir=output_dir, tile_size=1, min_points=4096)
-    filter_and_relabel_tiles(input_dir=f"./data/{DATASET_NAME}/tiles", output_dir=f"./data/{DATASET_NAME}/tiles_filtered", min_points=4096)
-    # fps_downsample_tiles(input_dir=f"./data/{DATASET_NAME}/tiles_filtered", output_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", target_points=16384)
+    # filter_and_relabel_tiles(input_dir=f"./data/{DATASET_NAME}/tiles", output_dir=f"./data/{DATASET_NAME}/tiles_filtered", min_points=4096)
+    fps_downsample_tiles(input_dir=f"./data/{DATASET_NAME}/tiles_filtered", output_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", target_points=16384)
     # kfold_split_dataset(input_dir=f"./data/{DATASET_NAME}/tiles_filtered_fps", output_json=f"./data/{DATASET_NAME}/splits.json", k=5)
 if __name__ == "__main__":
     DATASET_NAME = "ForestSemantic_Simple"
