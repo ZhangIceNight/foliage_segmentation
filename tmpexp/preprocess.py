@@ -144,8 +144,12 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
 
         try:
             data = np.load(file_path)
-            xyz = data['xyz']
-            label = data['label'].astype(np.uint8)
+            if filename.endswith('.npy'):
+                xyz = data[:, :3]
+                label = data[:, -1].astype(np.uint8)
+            else:
+                xyz = data['xyz']
+                label = data['label'].astype(np.uint8)
 
             if relabel:
                 # 选择有效标签的点
