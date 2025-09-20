@@ -17,6 +17,7 @@ class DHMamba_pl(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         points, labels, _ = batch
         logits = self.model(points)
+        print("train logits:", logits.shape, "train labels:", labels.shape)
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
         torch.use_deterministic_algorithms(False)  # 关闭 deterministic
@@ -29,6 +30,7 @@ class DHMamba_pl(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         points, labels, _ = batch
         logits = self.model(points)
+        print("val logits:", logits.shape, "val labels:", labels.shape)
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
         torch.use_deterministic_algorithms(False)  # 关闭 deterministic
