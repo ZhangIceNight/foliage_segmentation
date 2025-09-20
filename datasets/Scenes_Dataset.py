@@ -97,7 +97,8 @@ class Scenes_DataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
 
 if __name__ == "__main__":
