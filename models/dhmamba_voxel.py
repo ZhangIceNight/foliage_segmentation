@@ -271,13 +271,13 @@ class VoxelEncoder(nn.Module):
             nn.Conv1d(3, 128, 1),
             nn.BatchNorm1d(128),
             nn.ReLU(inplace=True),
-            nn.Conv1d(128, 256, 1)
+            nn.Conv1d(128, 128, 1)
         )
         self.second_conv = nn.Sequential(
-            nn.Conv1d(512, 512, 1),
-            nn.BatchNorm1d(512),
+            nn.Conv1d(256, 256, 1),
+            nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
-            nn.Conv1d(512, self.encoder_channel, 1)
+            nn.Conv1d(256, self.encoder_channel, 1)
         )
 
     def forward(self, xyz):
