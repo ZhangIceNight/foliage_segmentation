@@ -745,7 +745,7 @@ class DHMamba_voxel(nn.Module):
         self.depth = 12
         self.cls_dim = num_classes
         self.group_size = 32
-        self.num_group = 125  # 5*5*5
+        self.num_group = 64  # 4*4*4
         self.HGNeighbors = HGNeighbors
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
