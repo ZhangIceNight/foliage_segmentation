@@ -749,7 +749,7 @@ class DHMamba_voxel(nn.Module):
         self.HGNeighbors = HGNeighbors
         # grouper
         self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
-        self.voxel_encoder = VoxelEncoder(m=self.num_group**(1/3), min_points=4, encoder_channel=self.group_size)
+        self.voxel_encoder = VoxelEncoder(m=int(round(self.num_group ** (1/3))), min_points=4, encoder_channel=self.group_size)
         # Weight for hypergraph merging
         self.W = Parameter(torch.ones(self.num_group * 3))
         # define the encoder
