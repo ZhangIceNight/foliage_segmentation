@@ -311,25 +311,29 @@ class VoxelEncoder(nn.Module):
         voxel_centers = voxel_sum / torch.clamp(voxel_count.unsqueeze(-1), min=1.0)  # [B,G,3]
 
         # 4️⃣ 将 voxel 内点按 voxel 分组
-        # 构建 mask 每个 voxel 的点索引
         batch_idx = torch.arange(B, device=xyz.device).view(B,1).expand(B,N)
         voxel_flat_idx = batch_idx * G + voxel_id  # flatten idx [B,N]
 
-        # 使用 advanced indexing 聚合
         all_voxel_points = [[] for _ in range(B*G)]
         for i in range(B):
             for j in range(N):
                 idx = voxel_flat_idx[i,j].item()
                 all_voxel_points[idx].append(xyz[i,j])
-        
-        # 补充最少点数
+
+        # 补充最少点数，避免空 voxel
         for idx, pts in enumerate(all_voxel_points):
-            if len(pts) < min_pts:
+            b_idx = idx // G
+            voxel_idx_in_batch = idx % G
+            if len(pts) == 0:
+                # 空 voxel，用 voxel center 填充
+                center = voxel_centers[b_idx, voxel_idx_in_batch]
+                pts = [center.clone() for _ in range(min_pts)]
+            elif len(pts) < min_pts:
                 while len(pts) < min_pts:
                     pts.append(pts[torch.randint(0,len(pts),(1,)).item()])
             all_voxel_points[idx] = torch.stack(pts, dim=0)  # [M_i,3]
 
-        # 5️⃣ pad voxel 内点到 max length 做 batch PointNet
+        # 5️⃣ pad voxel 内点到 batch PointNet 可处理的 max_len
         max_len = max([pts.shape[0] for pts in all_voxel_points])
         voxel_tensor = torch.zeros(B*G, max_len, 3, device=xyz.device)
         mask = torch.zeros(B*G, max_len, dtype=torch.bool, device=xyz.device)
@@ -348,6 +352,7 @@ class VoxelEncoder(nn.Module):
         voxel_features = feature_global.view(B, G, self.encoder_channel)
 
         return voxel_features, voxel_centers
+
 
 class Encoder(nn.Module):
     def __init__(self, encoder_channel):
