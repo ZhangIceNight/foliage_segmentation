@@ -37,7 +37,7 @@ optimizer:
 trainer:
   max_epochs: 100
   accelerator: "gpu"
-  devices: [0]
+  devices: [1]
 
 comet:
   # name: "ForestSemantic_Difficult_dhmamba_voxel_chamfer_lr2e-4_bs16"

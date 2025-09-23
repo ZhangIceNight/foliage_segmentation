@@ -255,7 +255,7 @@ class Group(nn.Module):
 
 
 class VoxelEncoder(nn.Module):
-    def __init__(self, m=5, min_points=4, encoder_channel=384):
+    def __init__(self, m=10, min_points=4, encoder_channel=384):
         """
         m: voxel 划分数, G = m^3
         min_points: voxel 内最少点数
