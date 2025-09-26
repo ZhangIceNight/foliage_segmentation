@@ -153,8 +153,8 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
 
             if relabel:
                 # 选择有效标签的点
-                # valid_mask = np.isin(label, [2, 3, 4, 5]) # ForestSemantic_Difficult
-                valid_mask = np.isin(label, [4, 5]) # Evo
+                valid_mask = np.isin(label, [2, 3, 4, 5]) # ForestSemantic_Difficult
+                # valid_mask = np.isin(label, [4, 5]) # Evo
                 if not np.any(valid_mask):
                     # 没有有效点，跳过
                     continue
@@ -163,8 +163,8 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
                 label_valid = label[valid_mask]
 
                 # 标签重新映射
-                # label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0) # ForestSemantic_Difficult
-                label_valid = np.where(np.isin(label_valid, [4]), 1, 0) # Evo
+                label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0) # ForestSemantic_Difficult
+                # label_valid = np.where(np.isin(label_valid, [4]), 1, 0) # Evo
                 
 
             else:
