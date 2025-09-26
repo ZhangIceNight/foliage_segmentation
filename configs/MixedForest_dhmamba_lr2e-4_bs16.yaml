@@ -2,7 +2,7 @@ defaults:
   - base_dhmamba
   - _self_
 data:
-  batch_size: 16
+  batch_size: 2
   num_workers: 4
   num_points: 4096
   data_dir: "./data/MixedForest/tiles_filtered_fps"
