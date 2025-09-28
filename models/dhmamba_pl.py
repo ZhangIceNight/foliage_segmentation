@@ -43,10 +43,7 @@ class DHMamba_pl(pl.LightningModule):
             preds = preds.cpu().numpy()
             points = points.cpu().numpy()
             labels = labels.cpu().numpy()
-        if isinstance(preds, np.ndarray):
-            preds = [preds]  # 单个样本时
-            points = [points]
-            labels = [labels]
+
         for i in range(len(preds)):
             file_name, pred, point, label = file_names[i], preds[i], points[i], labels[i]
             print(f"正在保存预测结果: {file_name} ...")
