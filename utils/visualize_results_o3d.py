@@ -81,9 +81,9 @@ if __name__ == "__main__":
     n_methods = 10
     preds_list = [np.random.randint(0, 2, N) for _ in range(n_methods)]
     method_names = [
-        'LeWoS', 'PointNeXt', 'PointNet++', 'PointTransformer', 
-        'PointTransformerV2', 'PointCloudMamba', 'Mamba3D', 
-        'Sen-Net', 'DHMamba w/o MSE', 'DHMamba (Ours)'
+        'PointCloudMamba',  
+        'Sen-Net', 
+        'DHMamba (Ours)'
     ]
 
     visualize_pointcloud_comparison_auto(
