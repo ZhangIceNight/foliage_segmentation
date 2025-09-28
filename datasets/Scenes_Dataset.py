@@ -58,9 +58,11 @@ class Scenes_Dataset(Dataset):
             max_xyz = point_cloud.max(axis=0)
             volume = np.prod(max_xyz - min_xyz)
             avg_dist = (volume / point_cloud.shape[0]) ** (1/3)
-            
-        return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0)
 
+        if self.split == 'train':
+            return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0)
+        else:
+            return torch.as_tensor(point_cloud).float(), torch.as_tensor(label).long(), (avg_dist if self.calculate_avg_dist else 0.0), file_path
 class Scenes_DataModule(LightningDataModule):
     def __init__(self, data_dir, split_json_path, num_points=1024, batch_size=32, fold_idx=0, num_workers=4, use_normalization=False, augmentations_list=None, calculate_avg_dist=False, **kwargs):
         super().__init__()

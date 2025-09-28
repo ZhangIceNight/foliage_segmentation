@@ -3,7 +3,8 @@ import torch
 from torch import optim, nn
 from .dhmamba import DHMamba
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
-
+import numpy as np
+import os
 class DHMamba_pl(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -27,10 +28,47 @@ class DHMamba_pl(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
 
+    def save_predictions(file_names, preds, save_root="/home/wjzhang/workspace/results/DHMamba"):
+        """
+        保存预测结果到 txt 文件。
+        file_name 来自 dataloader (通常是 .npz)，
+        pred 来自模型 (tensor)，自动转 numpy 并保存。
+
+        Example:
+        file_name = /home/wjzhang/data/Larch/tte1.npz
+        保存到   /home/wjzhang/workspace/results/DHMamba/Larch/tte1.txt
+        """
+        # 保证 preds 转成 list[np.ndarray]
+        if isinstance(preds, torch.Tensor):
+            preds = preds.cpu().numpy()
+        if isinstance(preds, np.ndarray):
+            preds = [preds]  # 单个样本时
+
+        for file_name, pred in zip(file_names, preds):
+            # 处理 batch 内每个文件
+            base_name = os.path.basename(file_name)         # tte1.npz
+            name_no_ext = os.path.splitext(base_name)[0]    # tte1
+            parent_dir = os.path.basename(os.path.dirname(file_name))  # Larch
+
+            # 构造保存目录
+            save_dir = os.path.join(save_root, parent_dir)
+            os.makedirs(save_dir, exist_ok=True)
+            save_path = os.path.join(save_dir, name_no_ext + ".txt")
+
+            # 保存预测结果
+            np.savetxt(save_path, pred.astype(int), fmt="%d")
+            print(f"已成功保存到: {save_path}")
+
     def validation_step(self, batch, batch_idx):
-        points, labels, _ = batch
+        points, labels, _, file_names = batch
         logits = self.model(points)
         # print("val logits:", logits.shape, "val labels:", labels.shape)
+
+        preds_save = logits.argmax(dim=-1)   # (B, N)
+        # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
+        for fname, pred in zip(file_names, preds_save):
+            self.save_predictions(fname, pred)
+        
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
         torch.use_deterministic_algorithms(False)  # 关闭 deterministic
