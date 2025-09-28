@@ -36,7 +36,8 @@ def evaluate(config: DictConfig):
     comet_logger = CometLogger(
         project_name=config.comet.get("project"),
         experiment_name=config.comet.get("name") + "_eval", 
-        workspace="zwjnefu"
+        workspace="zwjnefu",
+        mode="offline",
     )
     comet_logger.experiment.add_tag(f"fold_{fold}")
     comet_logger.experiment.log_parameters({"fold_idx": fold})
