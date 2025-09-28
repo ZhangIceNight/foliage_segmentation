@@ -42,7 +42,7 @@ def evaluate(config: DictConfig):
     comet_logger.experiment.log_parameters({"fold_idx": fold})
 
     # Dataset
-    data_module = ForestSemantic_Difficult_DataModule(**config.data)
+    data_module = Scenes_DataModule(**config.data)
     data_module.setup()
     val_loader = data_module.val_dataloader()
     # Model
