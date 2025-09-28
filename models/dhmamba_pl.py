@@ -47,7 +47,8 @@ class DHMamba_pl(pl.LightningModule):
             preds = [preds]  # 单个样本时
             points = [points]
             labels = [labels]
-
+        print(f"preds shape: {preds[0].shape}, unique labels: {np.unique(preds[0])}")
+        print(f"points shape: {points[0].shape}, labels shape: {labels[0].shape}")
         for file_name, pred, point, label in zip(file_names, preds, points, labels):
             print(f"正在保存预测结果: {file_name} ...")
             print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
