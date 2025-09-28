@@ -1,7 +1,7 @@
 import comet_ml
 import logging
 import os
-
+os.environ["COMET_MODE"] = "offline"
 from omegaconf import DictConfig, OmegaConf
 import hydra
 
