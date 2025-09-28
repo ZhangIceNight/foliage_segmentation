@@ -35,7 +35,7 @@ class DHMamba_pl(pl.LightningModule):
         pred 来自模型 (tensor)，自动转 numpy 并保存。
 
         Example:
-        file_name = /home/wjzhang/data/Larch/tte1.npz
+        file_name = ./data/Larch/tiles_filtered_fps/tte1.npz
         保存到   /home/wjzhang/workspace/results/DHMamba/Larch/tte1.txt
         """
         # 保证 preds 转成 list[np.ndarray]
@@ -50,10 +50,10 @@ class DHMamba_pl(pl.LightningModule):
             # 处理 batch 内每个文件
             base_name = os.path.basename(file_name)         # tte1.npz
             name_no_ext = os.path.splitext(base_name)[0]    # tte1
-            parent_dir = os.path.basename(os.path.dirname(file_name))  # Larch
+            grandparent_dir = os.path.basename(os.path.dirname(os.path.dirname(file_name)))  # Larch
 
             # 构造保存目录
-            save_dir = os.path.join(save_root, parent_dir)
+            save_dir = os.path.join(save_root, grandparent_dir)
             os.makedirs(save_dir, exist_ok=True)
             save_path = os.path.join(save_dir, name_no_ext + ".txt")
 
@@ -68,7 +68,7 @@ class DHMamba_pl(pl.LightningModule):
 
         preds_save = logits.argmax(dim=1)   # (B, N)
         # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
-        self.save_predictions(file_names, preds_save)
+        self.save_predictions(file_names, preds_save, points, labels)
         
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
