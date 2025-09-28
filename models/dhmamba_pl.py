@@ -51,6 +51,7 @@ class DHMamba_pl(pl.LightningModule):
         for file_name, pred, point, label in zip(file_names, preds, points, labels):
             print(f"正在保存预测结果: {file_name} ...")
             print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
+            print(f"point shape: {point.shape}, label shape: {label.shape}")
             # 处理 batch 内每个文件
             base_name = os.path.basename(file_name)         # tte1.npz
             name_no_ext_pred = os.path.splitext(base_name)[0] + "_pred"   # tte1_pred
