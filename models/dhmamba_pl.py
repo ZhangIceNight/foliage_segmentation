@@ -68,8 +68,7 @@ class DHMamba_pl(pl.LightningModule):
 
         preds_save = logits.argmax(dim=-1)   # (B, N)
         # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
-        for fname, pred in zip(file_names, preds_save):
-            self.save_predictions(fname, pred)
+        self.save_predictions(file_names, preds_save)
         
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
