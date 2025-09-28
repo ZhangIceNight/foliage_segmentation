@@ -63,12 +63,12 @@ class DHMamba_pl(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         points, labels, _, file_names = batch
-        logits = self.model(points)
-        print("val logits:", logits.shape, "val labels:", labels.shape)
+        logits = self.model(points) # [B, N_classes, N]
+        # print("val logits:", logits.shape, "val labels:", labels.shape)
 
-        preds_save = logits.argmax(dim=-1)   # (B, N)
+        preds_save = logits.argmax(dim=1)   # (B, N)
         # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
-        # self.save_predictions(file_names, preds_save)
+        self.save_predictions(file_names, preds_save)
         
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
