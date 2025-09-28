@@ -28,7 +28,7 @@ class DHMamba_pl(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
 
-    def save_predictions(file_names, preds, save_root="/home/wjzhang/workspace/results/DHMamba"):
+    def save_predictions(self, file_names, preds, save_root="/home/wjzhang/workspace/results/DHMamba"):
         """
         保存预测结果到 txt 文件。
         file_name 来自 dataloader (通常是 .npz)，
@@ -45,6 +45,8 @@ class DHMamba_pl(pl.LightningModule):
             preds = [preds]  # 单个样本时
 
         for file_name, pred in zip(file_names, preds):
+            print(f"正在保存预测结果: {file_name} ...")
+            print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
             # 处理 batch 内每个文件
             base_name = os.path.basename(file_name)         # tte1.npz
             name_no_ext = os.path.splitext(base_name)[0]    # tte1
