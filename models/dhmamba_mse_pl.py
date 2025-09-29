@@ -3,7 +3,8 @@ import torch
 from torch import optim, nn
 from .dhmamba_mse import DHMamba_mse
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
-
+import numpy as np
+import os
 class DHMamba_mse_pl(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -29,9 +30,56 @@ class DHMamba_mse_pl(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
 
+    def save_predictions(self, file_names, preds, points, labels, save_root="/home/wjzhang/workspace/results/DHMamba"):
+        """
+        保存预测结果到 txt 文件。
+        file_name 来自 dataloader (通常是 .npz)，
+        pred 来自模型 (tensor)，自动转 numpy 并保存。
+
+        Example:
+        file_name = ./data/Larch/tiles_filtered_fps/tte1.npz
+        保存到   /home/wjzhang/workspace/results/DHMamba/Larch/tte1.txt
+        """
+        # 保证 preds 转成 list[np.ndarray]
+        if isinstance(preds, torch.Tensor):
+            preds = preds.cpu().numpy()
+            points = points.cpu().numpy()
+            labels = labels.cpu().numpy()
+
+        for i in range(len(preds)):
+            file_name, pred, point, label = file_names[i], preds[i], points[i], labels[i]
+            # print(f"正在保存预测结果: {file_name} ...")
+            # print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
+            # print(f"point shape: {point.shape}, label shape: {label.shape}")
+            # 处理 batch 内每个文件
+            base_name = os.path.basename(file_name)         # tte1.npz
+            name_no_ext_pred = os.path.splitext(base_name)[0] + "_pred"   # tte1_pred
+            name_no_ext_point = os.path.splitext(base_name)[0] + "_point"   # tte1_point
+            name_no_ext_label = os.path.splitext(base_name)[0] + "_label"   # tte1_label
+            grandparent_dir = os.path.basename(os.path.dirname(os.path.dirname(file_name)))  # Larch
+
+            # 构造保存目录
+            save_dir = os.path.join(save_root, grandparent_dir)
+            os.makedirs(save_dir, exist_ok=True)
+            save_path_pred = os.path.join(save_dir, name_no_ext_pred + ".txt")
+            save_path_point = os.path.join(save_dir, name_no_ext_point + ".txt")
+            save_path_label = os.path.join(save_dir, name_no_ext_label + ".txt")
+
+            # 保存预测结果
+            np.savetxt(save_path_pred, pred.astype(int), fmt="%d")
+            np.savetxt(save_path_point, point.astype(float), fmt="%f")
+            np.savetxt(save_path_label, label.astype(int), fmt="%d")
+            print(f"已成功保存到: {save_path_pred}, {save_path_point}, {save_path_label}")
+
     def validation_step(self, batch, batch_idx):
-        points, labels, avg_dist = batch
+        points, labels, avg_dist, file_names = batch
         logits = self.model(points, avg_dist)
+        preds_save = logits.argmax(dim=1)   # (B, N)
+        # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
+        self.save_predictions(file_names, preds_save, points, labels)
+
+        
+        
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()
         torch.use_deterministic_algorithms(False)  # 关闭 deterministic
