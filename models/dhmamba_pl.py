@@ -46,9 +46,9 @@ class DHMamba_pl(pl.LightningModule):
 
         for i in range(len(preds)):
             file_name, pred, point, label = file_names[i], preds[i], points[i], labels[i]
-            print(f"正在保存预测结果: {file_name} ...")
-            print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
-            print(f"point shape: {point.shape}, label shape: {label.shape}")
+            # print(f"正在保存预测结果: {file_name} ...")
+            # print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
+            # print(f"point shape: {point.shape}, label shape: {label.shape}")
             # 处理 batch 内每个文件
             base_name = os.path.basename(file_name)         # tte1.npz
             name_no_ext_pred = os.path.splitext(base_name)[0] + "_pred"   # tte1_pred
@@ -76,7 +76,7 @@ class DHMamba_pl(pl.LightningModule):
 
         preds_save = logits.argmax(dim=1)   # (B, N)
         # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
-        self.save_predictions(file_names, preds_save, points, labels)
+        # self.save_predictions(file_names, preds_save, points, labels)
         
         # 保存原状态
         orig = torch.are_deterministic_algorithms_enabled()

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KDTree
+import os
 
 def visualize_pointcloud_comparison_auto(points, labels_gt, preds_list, method_names,
                                          zoom_radius=1.0, zoom_box_size=2.0,
@@ -53,7 +54,8 @@ def visualize_pointcloud_comparison_auto(points, labels_gt, preds_list, method_n
     ax = fig.add_subplot(111, projection='3d')
     plot_points(ax, points_crop, labels_crop, title=method_names[-1])
     plt.tight_layout()
-    plt.savefig(f"{save_prefix}_{method_names[-1]}_zoom.pdf", dpi=300)
+    save_path = os.path.join("F:/workspace/dhmamba_vis/", f"{save_prefix}_{method_names[-1]}_zoom.pdf")
+    plt.savefig(save_path, dpi=300)
     plt.close()
 
     if output_combined:
@@ -67,23 +69,27 @@ def visualize_pointcloud_comparison_auto(points, labels_gt, preds_list, method_n
             ax = fig.add_subplot(1, len(preds_list_plot), i+1, projection='3d')
             plot_points(ax, points_crop, labels_crop, title=name, is_gt=(name=="GT"))
         plt.tight_layout()
-        plt.savefig(f"{save_prefix}_all_methods_zoom.pdf", dpi=300)
+        save_path = os.path.join("F:/workspace/dhmamba_vis/", f"{save_prefix}_all_methods_zoom.pdf")
+        plt.savefig(save_path, dpi=300)
         plt.close()
 
     print(f"自动局部放大区域中心：{center}, bounding box: {[xmin,xmax,ymin,ymax,zmin,zmax]}")
 
 if __name__ == "__main__":
     # ----------- 模拟数据 -----------
-    N = 4096
-    points = np.random.rand(N, 3) * 10
-    labels_gt = np.random.randint(0, 2, N)
+    points_path = 'F:/workspace/dhmamba_vis/ForestSemantic_Difficult/tile_2_14_point.txt'
+    labels_gt_path = 'F:/workspace/dhmamba_vis/ForestSemantic_Difficult/tile_2_14_label.txt'
+    pred_low_path = 'F:/workspace/dhmamba_vis/ForestSemantic_Difficult/tile_2_14_pred.txt'
 
-    n_methods = 10
-    preds_list = [np.random.randint(0, 2, N) for _ in range(n_methods)]
+    points = np.loadtxt(points_path)  # (N, 3)
+    labels_gt = np.loadtxt(labels_gt_path).astype(int)  # (N,)
+    pred_low = np.loadtxt(pred_low_path).astype(int)  # (N,)
+
+    preds_list = [pred_low]
     method_names = [
         'PointCloudMamba',  
-        'Sen-Net', 
-        'DHMamba (Ours)'
+        # 'Sen-Net', 
+        # 'DHMamba (Ours)'
     ]
 
     visualize_pointcloud_comparison_auto(
@@ -93,6 +99,6 @@ if __name__ == "__main__":
         method_names=method_names,
         zoom_radius=1.0,
         zoom_box_size=2.0,
-        save_prefix="ExamplePointCloud",
+        save_prefix="pdc",
         output_combined=True
     )

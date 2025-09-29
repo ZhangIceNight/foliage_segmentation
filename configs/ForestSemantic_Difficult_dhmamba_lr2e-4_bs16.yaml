@@ -16,7 +16,7 @@ data:
 model:
   num_classes: 2
   HGNeighbors: 8
-  resume: "./Results/ForestSemantic_Difficult/dhmamba/fold_0/exp_20250919_131402/checkpoints/0-96-val_mIoU0.65.ckpt"
+  # resume: "./Results/ForestSemantic_Difficult/dhmamba/fold_0/exp_20250919_131402/checkpoints/0-96-val_mIoU0.65.ckpt"
 optimizer:
   learning_rate: 0.0002
   weight_decay: 0.00005
@@ -27,7 +27,7 @@ optimizer:
 trainer:
   max_epochs: 100
   accelerator: "gpu"
-  devices: [1]
+  devices: [0]
 
 comet:
   name: "ForestSemantic_Difficult_dhmamba_lr2e-4_bs16"
