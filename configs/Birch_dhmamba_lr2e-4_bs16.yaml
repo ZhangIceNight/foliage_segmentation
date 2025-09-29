@@ -16,7 +16,7 @@ data:
 model:
   num_classes: 2
   HGNeighbors: 8
-  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/Birch/dhmamba/fold_0/checkpoints/exp_20250929_105542/checkpoints/0-30-val_mIoU0.48.ckpt"
+  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/Birch/dhmamba/fold_0/exp_20250929_105542/checkpoints/0-30-val_mIoU0.48.ckpt"
 optimizer:
   learning_rate: 0.0002
   weight_decay: 0.00005
