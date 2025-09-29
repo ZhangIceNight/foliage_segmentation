@@ -16,7 +16,7 @@ data:
 model:
   num_classes: 2
   HGNeighbors: 8
-  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/Larch/dhmamba/fold_0/exp_20250929_130207/0-24-val_mIoU0.50.ckpt"
+  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/Larch/dhmamba/fold_0/exp_20250920_113825/0-81-val_mIoU0.55.ckpt"
 optimizer:
   learning_rate: 0.0002
   weight_decay: 0.00005
