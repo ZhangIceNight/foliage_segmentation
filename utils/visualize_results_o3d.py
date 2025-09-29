@@ -157,13 +157,13 @@ def batch_visualize(base_dir, pred_dirs, method_names, save_dir):
 
 if __name__ == "__main__":
     # GT 文件夹
-    base_dir = "F:/workspace/dhmamba_vis/Larch_55"
+    base_dir = "F:/workspace/dhmamba_vis/Birch_59"
 
     # 各预测文件夹
     pred_dirs = [
-        "F:/workspace/dhmamba_vis/Larch_49",
-        "F:/workspace/dhmamba_vis/Larch_50",
-        "F:/workspace/dhmamba_vis/Larch_55",
+        "F:/workspace/dhmamba_vis/Birch_48",
+        "F:/workspace/dhmamba_vis/Birch_57",
+        "F:/workspace/dhmamba_vis/Birch_59",
     ]
 
     method_names = ['Sen-Net', 'PointCloudMamba', 'DHMamba (Ours)']
