@@ -99,13 +99,11 @@ pip install mamba-ssm==1.1.1
 ```
 ### Train
 
-
 ```bash
 bash scripts/train.sh --config-name Larch_dhmamba_lr2e-4_bs16 --fold 5
 ```
 
 ### Evaluation
-#### pretrain.pth could be download [here](https://pan.baidu.com/s/1EPuKfV9J_bKp1KPqpOt62w?pwd=stjh)
 
 ```bash
 bash scripts/evaluate.sh --config-name Larch_dhmamba_lr2e-4_bs16 --fold 5
