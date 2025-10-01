@@ -26,7 +26,6 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 
-# https://github.com/huggingface/transformers/blob/c28d04e9e252a1a099944e325685f14d242ecdcd/src/transformers/models/gpt2/modeling_gpt2.py#L454
 def _init_weights(
         module,
         n_layer,
@@ -42,18 +41,8 @@ def _init_weights(
         nn.init.normal_(module.weight, std=initializer_range)
 
     if rescale_prenorm_residual:
-        # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
-        #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
-        #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
-        #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
-        #
-        # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
         for name, p in module.named_parameters():
             if name in ["out_proj.weight", "fc2.weight"]:
-                # Special Scaled Initialization --> There are 2 Layer Norms per Mamba Block
-                # Following Pytorch init, except scale by 1/sqrt(2 * n_layer)
-                # We need to reinit p since this code could be called multiple times
-                # Having just p *= scale would repeatedly scale it down
                 nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 with torch.no_grad():
                     p /= math.sqrt(n_residuals_per_layer * n_layer)
@@ -177,7 +166,7 @@ class Group(nn.Module):
         """
         xyz: [B, N, 3]
         centers: [B, G, 3]
-        k: 邻居数
+        k: number of neighbors
         return: neigh [B, G, k, 3]
         """
         B, N, _ = xyz.shape
@@ -186,9 +175,9 @@ class Group(nn.Module):
             # knn(query, support, k) -> (idx_query, idx_support)
             idx_query, idx_support = knn(x=xyz[b], y=centers[b], k=k)
 
-            # 按 query 分组，把 support 邻居取出来
+            # group as query, fetch support neighbors
             neigh = xyz[b][idx_support].view(centers[b].size(0), k, 3)
-            neigh_list.append(neigh - centers[b].unsqueeze(1))  # 相对坐标
+            neigh_list.append(neigh - centers[b].unsqueeze(1))  # Relative Coordinates
         return torch.stack(neigh_list, dim=0)  # [B, G, k, 3]
 
 
@@ -200,71 +189,13 @@ class Group(nn.Module):
         volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
         avg_dist = (volume / counts.clamp(min=1.0)) ** (1/3)
         return avg_dist
-        # """
-        # 高效 batch 版本 volume distance，使用 torch_cluster.radius_graph
-        # Args:
-        #     points: torch.Tensor, shape [B, N, C]
-        #     radius: 搜索半径
-        #     max_neighbors: 每个点的最大邻居数
-        # Returns:
-        #     vd: torch.Tensor, shape [B, N]
-        # """
-        # B, N, C = points.shape
-        # device = points.device
-        
-        # # 展平 batch
-        # points_flat = points.reshape(B*N, C)               # [B*N, C]
-        # batch = torch.arange(B, device=device).repeat_interleave(N)  # [B*N]
-        
-        # # 半径搜索邻居
-        # edge_indices = []
-        # for b in range(B):
-        #     mask = batch == b
-        #     edge_idx_b = radius_graph(points_flat[mask], r=float(radius[b]*self.alpha), batch=None)
-        #     edge_indices.append(edge_idx_b)
-        # edge_index = torch.cat(edge_indices, dim=1)
-        # # edge_index = radius_graph(points_flat, r=radius, batch=batch, max_num_neighbors=max_neighbors)
-        # # edge_index: [2, E], edge_index[0] -> target, edge_index[1] -> neighbor
-
-        # # 统计每个点邻居数量
-        # counts = torch.zeros(B*N, device=device, dtype=torch.float32)
-        # counts.scatter_add_(0, edge_index[0], torch.ones_like(edge_index[0], dtype=torch.float32))
-        
-        # # 计算 volume distance
-        # volume = (4.0 / 3.0) * torch.pi * (radius ** 3)
-        # vd = (volume / counts.clamp(min=1.0)) ** (1/3)
-        
-        # # 恢复 batch 维度
-        # vd = vd.reshape(B, N)
-        # return vd
-
+ 
     def forward(self, xyz, avg_dist):
         B, N, _ = xyz.shape
 
-        # 1. FPS采样点
         centers = fps(xyz, self.num_group)  # [B, self.num_group, 3]
         density = self._compute_volume_distance_cluster(centers, xyz, radius=avg_dist * self.alpha)  # [B, N]
 
-        # # 2. 计算密度（Chamfer方式）
-        # dist = torch.cdist(centers, xyz)  # [B, self.num_group, N]
-        # mask = (dist < self.avg_dist * self.alpha).float()
-        # masked_dist = dist.clone()
-        # masked_dist[mask == 0] = 100.0
-
-
-        # # 3. 构造 batch 索引和中心索引
-        # batch_idx = torch.arange(B, device=dist.device).view(-1, 1)
-        # center_idx = torch.arange(self.num_group, device=dist.device).view(1, -1)
-
-        # # 4. 排除自己
-        # masked_dist = dist.clone()
-        # masked_dist[batch_idx, center_idx, center_idx] = 100.0
-
-        # # 5. 取最小值
-        # row_min, _ = torch.min(masked_dist, dim=-1)
-        # density = row_min  # [B, self.num_group]
-
-        # knn to get the neighborhood
         neighborhood = self._get_neighborhood(xyz, centers, self.group_size)
 
         return neighborhood, centers, density
@@ -334,14 +265,6 @@ class MixerModel(nn.Module):
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
-
-        # self.embedding = nn.Embedding(vocab_size, d_model, **factory_kwargs)
-
-        # We change the order of residual and layer norm:
-        # Instead of LN -> Attn / MLP -> Add, we do:
-        # Add -> LN -> Attn / MLP / Mixer, returning both the residual branch (output of Add) and
-        # the main branch (output of MLP / Mixer). The model definition is unchanged.
-        # This is for performance reason: we can fuse add + layer_norm.
         self.fused_add_norm = fused_add_norm
         if self.fused_add_norm:
             if layer_norm_fn is None or rms_norm_fn is None:
@@ -475,86 +398,37 @@ class HGCN_layer(nn.Module):
         gc3 = self.relu(feature + gc3)
         return gc3
 
-
-class HGCNNet_deep(nn.Module):
-    def __init__(self, img_len):
-        super(HGCNNet, self).__init__()
-        self.gc1 = GraphConvolution(384, 384)
-        self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer1 = HGCN_layer(img_len, 384)
-
-        self.gc2 = GraphConvolution(384, 384)
-        self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer2 = HGCN_layer(img_len, 384)
-
-        self.gc3 = GraphConvolution(384, 384)
-        self.bn3 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer3 = HGCN_layer(img_len, 384)
-
-        self.gc4 = GraphConvolution(384, 384)
-        self.bn4 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
-        self.HGCN_layer4 = HGCN_layer(img_len, 384)
-
-        self.gc5 = GraphConvolution(384, 384)
-        self.relu = nn.Softplus()
-
-    def forward(self, feature, H):
-        gc1 = self.gc1(feature, H)
-        gc1 = self.bn1(gc1)
-        gc1 = self.relu(gc1)
-        gc1 = self.HGCN_layer1(gc1, H)
-
-        gc2 = self.gc2(gc1, H)
-        gc2 = self.bn2(gc2)
-        gc2 = self.relu(gc2)
-        gc2 = self.HGCN_layer2(gc2, H)
-
-        gc3 = self.gc3(gc2, H)
-        gc3 = self.bn3(gc3)
-        gc3 = self.relu(gc3)
-        gc3 = self.HGCN_layer3(gc3, H)
-
-        gc4 = self.gc4(gc3, H)
-        gc4 = self.bn4(gc4)
-        gc4 = self.relu(gc4)
-        gc4 = self.HGCN_layer4(gc4, H)
-
-        gc5 = self.gc5(gc4, H)
-        gc5 = self.relu(gc5)
-        return gc5
-
-
 class HGCNNet(nn.Module):
     def __init__(self, img_len):
         super(HGCNNet, self).__init__()
-        # 第一层
+        # first layer
         self.gc1 = GraphConvolution(384, 384)
         self.bn1 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
         self.HGCN_layer1 = HGCN_layer(img_len, 384)
 
-        # 第二层
+        # second layer
         self.gc2 = GraphConvolution(384, 384)
         self.bn2 = nn.BatchNorm1d(img_len, eps=1e-05, momentum=0.1, affine=True)
         self.HGCN_layer2 = HGCN_layer(img_len, 384)
 
-        # 输出层
+        # output layer
         self.gc3 = GraphConvolution(384, 384)
         self.relu = nn.Softplus()
 
     def forward(self, feature, H):
-        # 第一层
+        # first layer
         gc1 = self.gc1(feature, H)
         gc1 = self.bn1(gc1)
         gc1 = self.relu(gc1)
         gc1 = self.HGCN_layer1(gc1, H)
 
-        # 第二层
+        # second layer
         gc2 = self.gc2(gc1, H)
         gc2 = self.bn2(gc2)
         gc2 = self.relu(gc2)
         gc2 = self.HGCN_layer2(gc2, H)
 
-        # 输出层
+        # output layer
         gc3 = self.gc3(gc2, H)
         gc3 = self.relu(gc3)
         
@@ -696,7 +570,6 @@ class DHMamba_mse(nn.Module):
 
         self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
         
-        # 更新卷积层的输入维度
         self.convs1 = nn.Conv1d(3328, 512, 1)
         self.dp1 = nn.Dropout(0.5)
         self.convs2 = nn.Conv1d(512, 256, 1)
@@ -731,79 +604,43 @@ class DHMamba_mse(nn.Module):
             print(f'[Mamba] Successful Loading the ckpt from {bert_ckpt_path}')
         else:
             print(f'[Mamba] No ckpt is loaded, training from scratch!')
-
-    def KNN(self, X, n_neighbors, is_prob=True, dist=None):
-        """
-        torch 实现的 KNN 图构建
-        X: torch.Tensor, shape [N, D], 节点特征
-        n_neighbors: int, 邻居数
-        is_prob: bool, 是否用高斯权重，否则是0-1
-        return:
-            knn: torch.Tensor, shape [N, N]
-        """
-        device = X.device
-        N = X.size(0)
-
-        # pairwise 距离 (欧式)
-        # dist = torch.cdist(X, X, p=2)  # [N, N]
-
-        # 取每个节点 top-k 最近邻 (包含自己，因为 dist[i,i]=0 最小)
-        knn_val, knn_idx = torch.topk(dist, k=n_neighbors+1, dim=1, largest=False)
-
-        # 构造稠密邻接矩阵
-        row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, n_neighbors+1).reshape(-1)
-        col_idx = knn_idx.reshape(-1)
-
-        if not is_prob:
-            values = torch.ones_like(row_idx, dtype=torch.float32, device=device)
-        else:
-            avg_dist = dist.mean()
-            values = torch.exp(- (knn_val.reshape(-1) ** 2) / (avg_dist ** 2 + 1e-8))
-
-        knn = torch.zeros((N, N), device=device)
-        knn[row_idx, col_idx] = values
-
-        # 保证每个节点至少和自己相连（对角线 = 1）
-        knn.fill_diagonal_(1.0)
-
-        return knn
+    
     def KNN_density(self, X, n_neighbors, is_prob=True, dist=None, density=None):
         """
-        torch 实现的 KNN 图构建
-        X: torch.Tensor, shape [N, D], 节点特征
-        n_neighbors: int, 邻居数
-        is_prob: bool, 是否用高斯权重，否则是0-1
-        density: torch.Tensor, shape [N,1], 每个节点的密度
+        KNN hypergraph construction
+        input:
+            X: torch.Tensor, shape [N, D], vertex feature
+            n_neighbors: int, number of neighbors
+            is_prob: bool, whether to use Gaussian weight, otherwise 0-1
+            dist: pairwise distance matrix, torch.Tensor, shape [N, N]
+            density: global density for input pointclouds
         return:
             knn: torch.Tensor, shape [N, N]
         """
         device = X.device
         N = X.size(0)
 
-        # pairwise 距离 (欧式)
-        # dist = torch.cdist(X, X, p=2)  # [N, N]
-
-        # 取每个节点 top-k 最近邻 (包含自己，因为 dist[i,i]=0 最小)
-         # 统一取 2*n_neighbors+1 最近邻
+        # select nearest k neighbors (including itself, since dist[i,i]=0 is the smallest)
+        # all nodes uniformly take 2*n_neighbors+1 nearest neighbors
         k_max = min(2 * n_neighbors + 1, N)
         knn_val, knn_idx = torch.topk(dist, k=k_max, dim=1, largest=False)
 
-        # 构造掩码
+        # construct mask
         mask = torch.zeros_like(knn_idx, dtype=torch.bool)
 
-        # 按 density 排序
+        # sort by density
         sorted_idx = torch.argsort(density)
         half = N // 2
         small_idx = sorted_idx[:half]  # 前一半节点
         large_idx = sorted_idx[half:]  # 后一半节点
 
-        # 前一半节点保留全部邻居
+        # keep all neighbors for the first half nodes
         mask.scatter_(0, small_idx.view(-1,1).expand(-1, mask.size(1)), True)
 
-        # 后一半节点只保留前 n_neighbors+1 个
+        # keep only the first n_neighbors+1 for the second half nodes
         mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
 
-        # 构造稠密邻接矩阵
+        # construct dense adjacency matrix
         row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, k_max)
         col_idx = knn_idx
 
@@ -816,116 +653,72 @@ class DHMamba_mse(nn.Module):
         knn = torch.zeros((N, N), device=device, dtype=torch.float32)
         knn[row_idx[mask], col_idx[mask]] = values_fill[mask]
 
-        # 保证每个节点至少和自己相连（对角线 = 1）
+        # guarantee each node is at least connected to itself (diagonal = 1)
         knn.fill_diagonal_(1.0)
 
         return knn
 
-
     def similarity(self, X, n_neighbors, density=None):
-        # """
-        # X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
-        # n_neighbors: int, top-k相似节点数量
-        # 返回:
-        #     sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
-        # """
-        # N = X.shape[0]
-        
-        # # L2归一化
-        # X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
-        
-        # # 相似度矩阵 (余弦相似度)
-        # sim_mat = X_norm @ X_norm.T  # [N, N]
-        
-        # # 取每行 top-k 索引 (包含自己)
-        # # 统一取 2*n_neighbors+1
-        # k_max = min(2 * n_neighbors + 1, N)
-        # topk_vals, topk_idx = torch.topk(sim_mat, k=k_max, dim=1, largest=True)
-
-        # # 构造掩码
-        # mask = torch.zeros_like(topk_idx, dtype=torch.bool)
-        
-        # # 按 density 排序
-        # sorted_idx = torch.argsort(density)
-        # half = N // 2
-        # small_idx = sorted_idx[:half]  # 前一半索引
-        # large_idx = sorted_idx[half:]  # 后一半索引
-
-        # # 前一半节点保留全部 topk
-        # mask.scatter_(0, small_idx.view(-1,1).expand(-1, mask.size(1)), True)
-
-        # # 后一半节点只保留前 n_neighbors+1 个
-        # mask.scatter_(0, large_idx.view(-1,1).expand(-1, n_neighbors+1), True)
-
-        # # 构建 sim 矩阵
-        # sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
-        # row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, k_max)  # [N, k_max]
-        # sim[row_idx[mask], topk_idx[mask]] = 1.0
-        
-        # # 强制对角线为1，保证每个节点自己被选上
-        # sim.fill_diagonal_(1.0)
-        
-        # return sim
         """
-        X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
-        n_neighbors: int, top-k相似节点数量
-        返回:
-            sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
+        X: torch.Tensor, shape [N, D], N nodes, each node D-dimensional feature
+        n_neighbors: int, top-k similar nodes
+        return:
+            sim: torch.Tensor, shape [N, N], 0-1matrix representation of hypergraph connections
         """
-        # L2归一化
+        # L2 normalization
         X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
         
-        # 相似度矩阵 (余弦相似度)
+        # similarity matrix (cosine similarity)
         sim_mat = X_norm @ X_norm.T  # [N, N]
         
-        # 取每行 top-k 索引 (包含自己)
+        # select top-k index in each row (including itself, since dist[i,i]=0 is the smallest)
         topk_vals, topk_idx = torch.topk(sim_mat, k=n_neighbors+1, dim=1, largest=True)
         
-        # 构建 sim 矩阵
+        # construct sim matrix
         N = X.shape[0]
         sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
         row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, n_neighbors+1)  # [N, k+1]
         sim[row_idx, topk_idx] = 1.0
         
-        # 强制对角线为1，保证每个节点自己被选上
+        # force diagonal to be 1, guarantee each node is selected
         sim.fill_diagonal_(1.0)
         
         return sim
 
     def hyperG(self, knn, l1, sim, W, device=None):
         """
-        knn, l1, sim: torch.Tensor, shape (N, E_knn / E_l1 / E_sim)，0/1 或权重矩阵
-        W: torch.Tensor, shape (E_total,) or (E_total, E_total)，超边权重
+        knn, l1, sim: torch.Tensor, shape (N, E_knn / E_l1 / E_sim), 0/1 or weight matrix
+        W: torch.Tensor, shape (E_total,) or (E_total, E_total), hyperedge weights
         return: G (torch.Tensor), shape (N, N)
         """
 
         if device is None:
             device = knn.device
 
-        # 拼接超图关联矩阵 H: [N, E]
+        # concatenate hypergraph incidence matrix H: [N, E]
         H = torch.cat((knn, l1, sim), dim=1).to(device)   # [N, E]
 
-        # 度矩阵（节点和超边）
+        # degree matrix (nodes and hyperedges)
         DV = torch.sum(H, dim=1)          # [N]
         DE = torch.sum(H, dim=0)          # [E]
 
-        # 构造对角矩阵的逆/平方逆
+        # construct inverse/square root of diagonal matrix
         invDE = torch.diag(torch.pow(DE, -1))
         DV2 = torch.diag(torch.pow(DV, -0.5))
 
         # H^T
         HT = H.t()
 
-        # 中间矩阵
+        # temporary intermediate matrix
         DV2_H = DV2 @ H                   # [N, E]
         invDE_HT_DV2 = invDE @ HT @ DV2   # [E, N]
 
-        # 权重矩阵 w
+        # weight matrix w
         if W.dim() == 1:
             W = torch.diag(W)
         w = W.to(device)
 
-        # 组合得到 G
+        # combine to get G
         G = DV2_H @ (w @ invDE_HT_DV2)    # [N, N]
         return G
 
@@ -974,42 +767,18 @@ class DHMamba_mse(nn.Module):
         # G = torch.mm(DV2_H, G)
         # return G
     
-    def abhyperG(self, hyp, W):
-        H = hyp
-        # H = knn
-        # the degree of the node
-        DV = np.sum(H, axis=1)
-        # the degree of the hyperedge
-        DE = np.sum(H, axis=0)
-        invDE = np.mat(np.diag(np.power(DE, -1)))
-        DV2 = np.mat(np.diag(np.power(DV, -0.5)))
-
-        HT = H.T
-        DV2_H = DV2 * H
-        invDE_HT_DV2 = invDE * HT * DV2
-        DV2_H = torch.as_tensor(DV2_H).cuda().float()
-        invDE_HT_DV2 = torch.as_tensor(invDE_HT_DV2).cuda().float()
-
-        w = torch.diag(W)
-        G = torch.mm(w, invDE_HT_DV2)
-        G = torch.mm(DV2_H, G)
-        return G
-
     def l1_representation(self, X, n_neighbors, reg_eps=1e-3, device=None, dist=None):
         """
-        Torch 版本的 L1-like (这里使用 L2/LLE 闭式解) 局部重建权重。
+        Torch version L1-like
         Args:
             X: torch.Tensor, shape (n_nodes, feat_dim), dtype=float32/64, on some device
             n_neighbors: int, number of neighbors to use (exclude self)
             reg_eps: float, regularization coefficient multiplier for trace(C)
-            device: optional device (if None, 使用 X.device)
+            device: optional device (if None, X.device)
         Returns:
             weights: torch.Tensor, shape (n_nodes, n_nodes), dtype same as X,
                     weights[j, i] = weight of neighbor j for reconstructing node i.
                     Columns sum to 1 (except columns that remain zero if something weird).
-        Notes:
-            - Complexity O(n_nodes * k^2 * d) per sample; 对 n_nodes ~ 128, k~8..32 很快。
-            - 如果想要稀疏 COO 输出可以再把非零元素取出来。
         """
         if device is None:
             device = X.device
@@ -1019,13 +788,11 @@ class DHMamba_mse(nn.Module):
         k = int(n_neighbors)
         assert k >= 1 and k < n_nodes, "n_neighbors must be >=1 and < n_nodes"
 
-        # 距离矩阵并取 topk（包含 self）
-        # dist = torch.cdist(X, X)  # (n_nodes, n_nodes)
-        # 取 k+1 个最近（包含自己），然后排除自己
+        # select k+1 nearest neighbors (including self), then exclude self
         _, knn_idx_all = torch.topk(dist, k=k+1, largest=False, sorted=False)  # (n_nodes, k+1)
         knn_idx = knn_idx_all[:, 1:k+1]  # (n_nodes, k) 排除了自己
 
-        # 预分配 weight 矩阵
+        # pre-allocate weight matrix
         weights = torch.zeros((n_nodes, n_nodes), device=device, dtype=X.dtype)
 
         ones_k = torch.ones((k,), device=device, dtype=X.dtype)
@@ -1041,9 +808,9 @@ class DHMamba_mse(nn.Module):
             # C = Z Z^T  (k x k)
             C = Z @ Z.transpose(0, 1)         # (k, k)
 
-            # regularize: add eps * trace(C) to diagonal (标准做法)
+            # regularize: add eps * trace(C) to diagonal
             traceC = torch.trace(C)
-            # 若 traceC == 0（所有邻居与中心相同）也要加一个小值
+            # add a small value if traceC == 0 (all neighbors are the same as center)
             reg = reg_eps * (traceC if traceC > 0 else 1.0) + 1e-6
             C = C + eye_k * reg
 
@@ -1051,17 +818,17 @@ class DHMamba_mse(nn.Module):
             try:
                 w = torch.linalg.solve(C, ones_k)    # (k,)
             except RuntimeError:
-                # 万一奇异，用伪逆回退
+                # if singular, use pseudo-inverse fallback
                 w = torch.matmul(torch.linalg.pinv(C), ones_k)
 
             s = w.sum()
             if s.abs() < 1e-12:
-                # 如果求解出全零（极端情况），退化到均匀权重
+                # if all zero (extreme case), degenerate to uniform weights
                 w = torch.ones_like(w) / k
             else:
                 w = w / s
 
-            # 填入 weights 的第 i 列（neighbors 行）
+            # fill in the i-th column of weights (neighbors rows)
             weights[neighbors, i] = w
 
         return weights  # torch.Tensor, shape (n_nodes, n_nodes)
@@ -1069,25 +836,9 @@ class DHMamba_mse(nn.Module):
 
     def forward(self, pts, avg_dist):
         B, N, C = pts.shape
-        # group_divider 输出: 
-        #   neighborhood: list of [B, G_i, M_i, 3]
-        #   center: list of [B, G_i, 3]
         neighborhood, center, density = self.group_divider(pts, avg_dist)
-        # density = density.cpu().detach().numpy()
-        # with open ('/home/wjzhang/density.txt', 'a') as f:
-        #     for i in range(density.shape[0]):
-        #         for j in range(density.shape[1]):
-        #             f.write(str(density[i][j]) + ' ')
-        #         f.write('\n')
-        #     f.write('finish item\n')
-        #     f.write('density shape:' + str(density.shape) + '\n')
-        # print('density:', density)
-        # density = torch.from_numpy(density).cuda().float()
-        # 编码 neighborhood -> tokens
         group_input_tokens = self.encoder(neighborhood)   # 每个 [B, G_i, encoder_dim]
-        # 编码 center -> pos
         pos = self.pos_embed(center)     
-
 
         # hypergraph serailization
         X = group_input_tokens
@@ -1098,15 +849,12 @@ class DHMamba_mse(nn.Module):
             Xj = X[j, :, :]
             densityj = density[j, :].unsqueeze(-1)  # [G, 1]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]
-            # 3种超图构建方式
+            # 3 types of hypergraph
             knn = self.KNN_density(Xj, n_neighbors, dist=dist, density=densityj)  # [G, G]
-            # knn = self.KNN(Xj, n_neighbors, dist=dist)
             l1 = self.l1_representation(Xj, n_neighbors, dist=dist)  # [G, G]
             sim = self.similarity(Xj, n_neighbors)  # [G, G]
 
             G = self.hyperG(knn, l1, sim, self.W)
-            # G = self.abhyperG(l1, self.W)
-            # H.append(torch.as_tensor(G).unsqueeze(0))
             H.append(G.unsqueeze(0))
 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]

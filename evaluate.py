@@ -24,12 +24,12 @@ def evaluate(config: DictConfig):
         fold_idx=fold
     )
     
-    # 初始化 logger
+    # initialize logger
     log_file = os.path.join(log_dir, "evaluate.log")
     logger = setup_logger(log_file)
     logger.info(f"===== Starting Evaluation Fold {fold} =====")
 
-    # 保存 config
+    # save config
     OmegaConf.save(config, os.path.join(exp_dir, "config_eval.yaml"))
     print(OmegaConf.to_yaml(config))
 

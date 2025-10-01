@@ -27,7 +27,7 @@ class Scenes_Dataset(Dataset):
         label = data["label"].astype(np.int64)
 
         N = point_cloud.shape[0]
-        # 随机采样
+        # random sampling
         if N >= self.num_points:
             idxs = np.random.choice(N, self.num_points, replace=False)
         else:
@@ -36,7 +36,7 @@ class Scenes_Dataset(Dataset):
         point_cloud = point_cloud[idxs]
         label = label[idxs]
 
-        # 数据增强（仅对训练集）
+        # Data augmentation (only for training set)
         if self.split == 'train':
             if 'rotate' in self.augmentations:
                 point_cloud = augmentations.random_rotate_point_cloud_y_axis(point_cloud)
@@ -47,13 +47,13 @@ class Scenes_Dataset(Dataset):
             if 'dropout' in self.augmentations:
                 point_cloud = augmentations.random_sample_dropout(point_cloud)
  
-        # 归一化
+        # Normalization
         if self.use_normalization:
             point_cloud = augmentations.pc_normalize(point_cloud)
-        
-        # 计算平均邻居距离（用于 DHMamba 的高斯权重）
+
+        # Calculate average neighbor distance (for Gaussian weights in DHMamba)
         if self.calculate_avg_dist:
-            """体积估算的平均点间距"""
+            """Estimate average point spacing for volume calculation"""
             min_xyz = point_cloud.min(axis=0)
             max_xyz = point_cloud.max(axis=0)
             volume = np.prod(max_xyz - min_xyz)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
  
     data_module.setup()
  
-    # 测试 data_loader
+    # test data_loader
     train_loader = data_module.train_dataloader()
     batch = next(iter(train_loader))
     points, labels = batch

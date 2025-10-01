@@ -19,27 +19,27 @@ class DHMamba_pl(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         points, labels, _ = batch
         logits = self.model(points)
-        # print("train logits:", logits.shape, "train labels:", labels.shape)
-        # 保存原状态
+
+        # keep original state
         orig = torch.are_deterministic_algorithms_enabled()
-        torch.use_deterministic_algorithms(False)  # 关闭 deterministic
+        torch.use_deterministic_algorithms(False)  # disable deterministic
         loss = self.loss_fn(logits, labels.squeeze())
-        torch.use_deterministic_algorithms(orig)  # 恢复原状态
+        torch.use_deterministic_algorithms(orig)  # restore original state
 
         self.log("train_loss", loss, prog_bar=True, logger=True)
         return loss
 
-    def save_predictions(self, file_names, preds, points, labels, save_root="/home/wjzhang/workspace/results/DHMamba"):
+    def save_predictions(self, file_names, preds, points, labels, save_root="./Results/visualization_results/"):
         """
-        保存预测结果到 txt 文件。
-        file_name 来自 dataloader (通常是 .npz)，
-        pred 来自模型 (tensor)，自动转 numpy 并保存。
+        save predictions to txt files.
+        file_names: npz files loaded from dataloader
+        preds: from model (tensor), automatically convert to numpy and save.
 
         Example:
-        file_name = ./data/Larch/tiles_filtered_fps/tte1.npz
-        保存到   /home/wjzhang/workspace/results/DHMamba/Larch/tte1.txt
+        file_name: ./data/Larch/tiles_filtered_fps/tte1.npz
+        save to: ./Results/visualization_results/Larch/tte1.txt
         """
-        # 保证 preds 转成 list[np.ndarray]
+        # preds to list[np.ndarray]
         if isinstance(preds, torch.Tensor):
             preds = preds.cpu().numpy()
             points = points.cpu().numpy()
@@ -47,48 +47,44 @@ class DHMamba_pl(pl.LightningModule):
 
         for i in range(len(preds)):
             file_name, pred, point, label = file_names[i], preds[i], points[i], labels[i]
-            # print(f"正在保存预测结果: {file_name} ...")
-            # print(f"pred shape: {pred.shape}, unique labels: {np.unique(pred)}")
-            # print(f"point shape: {point.shape}, label shape: {label.shape}")
-            # 处理 batch 内每个文件
+
+            # process each file in the batch
             base_name = os.path.basename(file_name)         # tte1.npz
             name_no_ext_pred = os.path.splitext(base_name)[0] + "_pred"   # tte1_pred
             name_no_ext_point = os.path.splitext(base_name)[0] + "_point"   # tte1_point
             name_no_ext_label = os.path.splitext(base_name)[0] + "_label"   # tte1_label
             grandparent_dir = os.path.basename(os.path.dirname(os.path.dirname(file_name)))  # Larch
 
-            # 构造保存目录
+            # construct save directory
             save_dir = os.path.join(save_root, grandparent_dir)
             os.makedirs(save_dir, exist_ok=True)
             save_path_pred = os.path.join(save_dir, name_no_ext_pred + ".txt")
             save_path_point = os.path.join(save_dir, name_no_ext_point + ".txt")
             save_path_label = os.path.join(save_dir, name_no_ext_label + ".txt")
 
-            # 保存预测结果
+            # save predictions
             np.savetxt(save_path_pred, pred.astype(int), fmt="%d")
             np.savetxt(save_path_point, point.astype(float), fmt="%f")
             np.savetxt(save_path_label, label.astype(int), fmt="%d")
-            print(f"已成功保存到: {save_path_pred}, {save_path_point}, {save_path_label}")
+            print(f"Successfully saved to: {save_path_pred}, {save_path_point}, {save_path_label}")
 
     def validation_step(self, batch, batch_idx):
         points, labels, _, file_names = batch
         logits = self.model(points) # [B, N_classes, N]
-        # print("val logits:", logits.shape, "val labels:", labels.shape)
-
         preds_save = logits.argmax(dim=1)   # (B, N)
-        # file_names 是长度为 B 的列表，preds 是 (B, N) tensor
+        # file_names is a list with length of B，preds: [B, N] tensor
         self.save_predictions(file_names, preds_save, points, labels)
-        
-        # 保存原状态
+
+        # keep original state
         orig = torch.are_deterministic_algorithms_enabled()
-        torch.use_deterministic_algorithms(False)  # 关闭 deterministic
+        torch.use_deterministic_algorithms(False)  # disable deterministic
         loss = self.loss_fn(logits, labels.squeeze())
-        torch.use_deterministic_algorithms(orig)  # 恢复原状态
+        torch.use_deterministic_algorithms(orig)  # restore original state
         preds = torch.argmax(logits, dim=1)
         accuracy = (preds == labels).float().mean()
         miou = self.calculate_iou(preds, labels, self.model_hparams['num_classes'])
 
-        # 记录验证损失 & 准确率
+        # save validation loss & accuracy
         self.log("val_loss", loss, prog_bar=True, logger=True)
         self.log("val_acc", accuracy, prog_bar=True, logger=True)
         self.log("val_mIoU", miou, prog_bar=True, logger=True)
@@ -113,7 +109,7 @@ class DHMamba_pl(pl.LightningModule):
             union = pred_inds.sum().float() + target_inds.sum().float() - intersection
 
             if union == 0:
-                ious.append(torch.tensor(1.0, device=pred.device))  # 保持在同一 device
+                ious.append(torch.tensor(1.0, device=pred.device)) 
             else:
                 ious.append(intersection / union)
 
@@ -122,7 +118,7 @@ class DHMamba_pl(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.opt_hparams["learning_rate"], weight_decay=self.opt_hparams["weight_decay"])
  
-        total_epochs = self.opt_hparams["max_epochs"]  # 例如：50
+        total_epochs = self.opt_hparams["max_epochs"]  
         warmup_epochs = self.opt_hparams["warmup_epochs"]
 
         scheduler_warmup = LinearLR(
@@ -132,18 +128,16 @@ class DHMamba_pl(pl.LightningModule):
             total_iters=warmup_epochs
         )
     
-        # Cosine 退火阶段：从 max lr 衰减到接近 0
         scheduler_cosine = CosineAnnealingLR(
             optimizer,
             T_max=total_epochs - warmup_epochs,  
             eta_min=self.opt_hparams["eta_min"]
         )
     
-        # 合并两个调度器为一个阶段式调度器
         combined_scheduler = SequentialLR(
             optimizer,
             schedulers=[scheduler_warmup, scheduler_cosine],
-            milestones=[warmup_epochs]  # 第 5 个 epoch 结束后切换到 cosine
+            milestones=[warmup_epochs]  
         )
  
         return {
@@ -154,7 +148,6 @@ class DHMamba_pl(pl.LightningModule):
                 'frequency': 1
             }
         }
-        # return optim.Adam(self.parameters(), lr=self.opt_hparams["learning_rate"])
    
 
  

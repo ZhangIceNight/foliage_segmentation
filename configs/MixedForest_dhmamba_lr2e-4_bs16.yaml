@@ -16,7 +16,7 @@ data:
 model:
   num_classes: 2
   HGNeighbors: 8
-  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/MixedForest/dhmamba/fold_0/exp_20250926_102949/checkpoints/0-80-val_mIoU0.60.ckpt"
+  # resume: 
 optimizer:
   learning_rate: 0.0002
   weight_decay: 0.00005

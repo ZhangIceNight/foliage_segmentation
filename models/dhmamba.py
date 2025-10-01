@@ -26,7 +26,6 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 
-# https://github.com/huggingface/transformers/blob/c28d04e9e252a1a099944e325685f14d242ecdcd/src/transformers/models/gpt2/modeling_gpt2.py#L454
 def _init_weights(
         module,
         n_layer,
@@ -42,18 +41,8 @@ def _init_weights(
         nn.init.normal_(module.weight, std=initializer_range)
 
     if rescale_prenorm_residual:
-        # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
-        #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
-        #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
-        #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
-        #
-        # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
         for name, p in module.named_parameters():
             if name in ["out_proj.weight", "fc2.weight"]:
-                # Special Scaled Initialization --> There are 2 Layer Norms per Mamba Block
-                # Following Pytorch init, except scale by 1/sqrt(2 * n_layer)
-                # We need to reinit p since this code could be called multiple times
-                # Having just p *= scale would repeatedly scale it down
                 nn.init.kaiming_uniform_(p, a=math.sqrt(5))
                 with torch.no_grad():
                     p /= math.sqrt(n_residuals_per_layer * n_layer)
@@ -63,18 +52,6 @@ class Block(nn.Module):
     def __init__(
             self, dim, mixer_cls, norm_cls=nn.LayerNorm, fused_add_norm=False, residual_in_fp32=False, drop_path=0.
     ):
-        """
-        Simple block wrapping a mixer class with LayerNorm/RMSNorm and residual connection"
-
-        This Block has a slightly different structure compared to a regular
-        prenorm Mamba block.
-        The standard block is: LN -> MHA/MLP -> Add.
-        [Ref: https://arxiv.org/abs/2002.04745]
-        Here we have: Add -> LN -> Mixer, returning both
-        the hidden_states (output of the mixer) and the residual.
-        This is purely for performance reasons, as we can fuse add and LayerNorm.
-        The residual needs to be provided (except for the very first block).
-        """
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
         self.fused_add_norm = fused_add_norm
@@ -160,18 +137,6 @@ def fps(data, number):
     return fps_data
 
 
-def get_density(xyz, avg_density):
-    """
-    计算点云的密度
-    :param xyz: 点云坐标，形状为 (B, N, 3)
-    :param avg_density: 平均密度，形状为 (B, 1)
-    :return: 点云密度，形状为 (B, N, 1)
-    """
-    # 计算每个点的体积
-    volume = torch.ones_like(xyz[..., :1])  # (B, N, 1)
-    density = avg_density / volume  # (B, N, 1)
-    return density
-
 class Group(nn.Module):
     def __init__(self, num_group, group_size, avg_density=None):
         super().__init__()
@@ -184,7 +149,7 @@ class Group(nn.Module):
         """
         xyz: [B, N, 3]
         centers: [B, G, 3]
-        k: 邻居数
+        k: number of neighbors
         return: neigh [B, G, k, 3]
         """
         B, N, _ = xyz.shape
@@ -193,9 +158,9 @@ class Group(nn.Module):
             # knn(query, support, k) -> (idx_query, idx_support)
             idx_query, idx_support = knn(x=xyz[b], y=centers[b], k=k)
 
-            # 按 query 分组，把 support 邻居取出来
+            # group as query, fetch support neighbors
             neigh = xyz[b][idx_support].view(centers[b].size(0), k, 3)
-            neigh_list.append(neigh - centers[b].unsqueeze(1))  # 相对坐标
+            neigh_list.append(neigh - centers[b].unsqueeze(1))  # Relative Coordinates
         return torch.stack(neigh_list, dim=0)  # [B, G, k, 3]
 
 
@@ -639,7 +604,6 @@ class DHMamba(nn.Module):
 
         self.propagation_0 = PointNetFeaturePropagation(in_channel=1152 + 3, mlp=[self.trans_dim * 4, 1024])
         
-        # 更新卷积层的输入维度
         self.convs1 = nn.Conv1d(3328, 512, 1)
         self.dp1 = nn.Dropout(0.5)
         self.convs2 = nn.Conv1d(512, 256, 1)
@@ -677,23 +641,22 @@ class DHMamba(nn.Module):
 
     def KNN(self, X, n_neighbors, is_prob=True, dist=None):
         """
-        torch 实现的 KNN 图构建
-        X: torch.Tensor, shape [N, D], 节点特征
-        n_neighbors: int, 邻居数
-        is_prob: bool, 是否用高斯权重，否则是0-1
+        KNN hypergraph construction
+        input:
+            X: torch.Tensor, shape [N, D], vertex feature
+            n_neighbors: int, number of neighbors
+            is_prob: bool, whether to use Gaussian weight, otherwise 0-1
+            dist: pairwise distance matrix, torch.Tensor, shape [N, N]
         return:
             knn: torch.Tensor, shape [N, N]
         """
         device = X.device
         N = X.size(0)
 
-        # pairwise 距离 (欧式)
-        # dist = torch.cdist(X, X, p=2)  # [N, N]
-
-        # 取每个节点 top-k 最近邻 (包含自己，因为 dist[i,i]=0 最小)
+        # select nearest k neighbors (including itself, since dist[i,i]=0 is the smallest)
         knn_val, knn_idx = torch.topk(dist, k=n_neighbors+1, dim=1, largest=False)
 
-        # 构造稠密邻接矩阵
+        # construction of dense adjacency matrix
         row_idx = torch.arange(N, device=device).unsqueeze(1).repeat(1, n_neighbors+1).reshape(-1)
         col_idx = knn_idx.reshape(-1)
 
@@ -706,111 +669,87 @@ class DHMamba(nn.Module):
         knn = torch.zeros((N, N), device=device)
         knn[row_idx, col_idx] = values
 
-        # 保证每个节点至少和自己相连（对角线 = 1）
+        # guarantee each node is connected to itself (diagonal = 1)
         knn.fill_diagonal_(1.0)
 
         return knn
 
     def similarity(self, X, n_neighbors):
         """
-        X: torch.Tensor, shape [N, D]，N个节点，每个节点D维特征
-        n_neighbors: int, top-k相似节点数量
-        返回:
-            sim: torch.Tensor, shape [N, N]，0-1矩阵表示超图连接
+        X: torch.Tensor, shape [N, D], N nodes, each node D-dimensional feature
+        n_neighbors: int, top-k similar nodes
+        return:
+            sim: torch.Tensor, shape [N, N], 0-1matrix representation of hypergraph connections
         """
-        # L2归一化
+        # L2 normalization
         X_norm = X / X.norm(dim=1, keepdim=True)  # [N, D]
         
-        # 相似度矩阵 (余弦相似度)
+        # similarity matrix (cosine similarity)
         sim_mat = X_norm @ X_norm.T  # [N, N]
-        
-        # 取每行 top-k 索引 (包含自己)
+
+        # select top-k index in each row (including itself, since dist[i,i]=0 is the smallest)
         topk_vals, topk_idx = torch.topk(sim_mat, k=n_neighbors+1, dim=1, largest=True)
-        
-        # 构建 sim 矩阵
+
+        # construct sim matrix
         N = X.shape[0]
         sim = torch.zeros(N, N, device=X.device, dtype=torch.float32)
         row_idx = torch.arange(N, device=X.device).unsqueeze(1).expand(-1, n_neighbors+1)  # [N, k+1]
         sim[row_idx, topk_idx] = 1.0
-        
-        # 强制对角线为1，保证每个节点自己被选上
+
+        # force diagonal to be 1, guarantee each node is selected
         sim.fill_diagonal_(1.0)
         
         return sim
 
     def hyperG(self, knn, l1, sim, W, device=None):
         """
-        knn, l1, sim: torch.Tensor, shape (N, E_knn / E_l1 / E_sim)，0/1 或权重矩阵
-        W: torch.Tensor, shape (E_total,) or (E_total, E_total)，超边权重
+        knn, l1, sim: torch.Tensor, shape (N, E_knn / E_l1 / E_sim), 0/1 or weight matrix
+        W: torch.Tensor, shape (E_total,) or (E_total, E_total), hyperedge weights
         return: G (torch.Tensor), shape (N, N)
         """
 
         if device is None:
             device = knn.device
 
-        # 拼接超图关联矩阵 H: [N, E]
+        # concatenate hypergraph incidence matrix H: [N, E]
         H = torch.cat((knn, l1, sim), dim=1).to(device)   # [N, E]
 
-        # 度矩阵（节点和超边）
+        # degree matrix (nodes and hyperedges)
         DV = torch.sum(H, dim=1)          # [N]
         DE = torch.sum(H, dim=0)          # [E]
 
-        # 构造对角矩阵的逆/平方逆
+        # construct inverse/square root of degree matrix
         invDE = torch.diag(torch.pow(DE, -1))
         DV2 = torch.diag(torch.pow(DV, -0.5))
 
         # H^T
         HT = H.t()
 
-        # 中间矩阵
+        # temporary intermediate matrix
         DV2_H = DV2 @ H                   # [N, E]
         invDE_HT_DV2 = invDE @ HT @ DV2   # [E, N]
 
-        # 权重矩阵 w
+        # weight matrix w
         if W.dim() == 1:
             W = torch.diag(W)
         w = W.to(device)
 
-        # 组合得到 G
+        # combine to get G
         G = DV2_H @ (w @ invDE_HT_DV2)    # [N, N]
         return G
-    
-    def abhyperG(self, hyp, W):
-        H = hyp
-        # H = knn
-        # the degree of the node
-        DV = np.sum(H, axis=1)
-        # the degree of the hyperedge
-        DE = np.sum(H, axis=0)
-        invDE = np.mat(np.diag(np.power(DE, -1)))
-        DV2 = np.mat(np.diag(np.power(DV, -0.5)))
-
-        HT = H.T
-        DV2_H = DV2 * H
-        invDE_HT_DV2 = invDE * HT * DV2
-        DV2_H = torch.as_tensor(DV2_H).cuda().float()
-        invDE_HT_DV2 = torch.as_tensor(invDE_HT_DV2).cuda().float()
-
-        w = torch.diag(W)
-        G = torch.mm(w, invDE_HT_DV2)
-        G = torch.mm(DV2_H, G)
-        return G
-    
+      
     def l1_representation(self, X, n_neighbors, reg_eps=1e-3, device=None, dist=None):
         """
-        Torch 版本的 L1-like (这里使用 L2/LLE 闭式解) 局部重建权重。
+        Torch version L1-like
         Args:
             X: torch.Tensor, shape (n_nodes, feat_dim), dtype=float32/64, on some device
             n_neighbors: int, number of neighbors to use (exclude self)
             reg_eps: float, regularization coefficient multiplier for trace(C)
-            device: optional device (if None, 使用 X.device)
+            device: optional device (if None, X.device)
         Returns:
             weights: torch.Tensor, shape (n_nodes, n_nodes), dtype same as X,
                     weights[j, i] = weight of neighbor j for reconstructing node i.
                     Columns sum to 1 (except columns that remain zero if something weird).
-        Notes:
-            - Complexity O(n_nodes * k^2 * d) per sample; 对 n_nodes ~ 128, k~8..32 很快。
-            - 如果想要稀疏 COO 输出可以再把非零元素取出来。
         """
         if device is None:
             device = X.device
@@ -820,13 +759,11 @@ class DHMamba(nn.Module):
         k = int(n_neighbors)
         assert k >= 1 and k < n_nodes, "n_neighbors must be >=1 and < n_nodes"
 
-        # 距离矩阵并取 topk（包含 self）
-        # dist = torch.cdist(X, X)  # (n_nodes, n_nodes)
-        # 取 k+1 个最近（包含自己），然后排除自己
+        # select k+1 nearest neighbors (including self), then exclude self
         _, knn_idx_all = torch.topk(dist, k=k+1, largest=False, sorted=False)  # (n_nodes, k+1)
-        knn_idx = knn_idx_all[:, 1:k+1]  # (n_nodes, k) 排除了自己
+        knn_idx = knn_idx_all[:, 1:k+1]  # (n_nodes, k) exclude self
 
-        # 预分配 weight 矩阵
+        # pre-allocate weight matrix
         weights = torch.zeros((n_nodes, n_nodes), device=device, dtype=X.dtype)
 
         ones_k = torch.ones((k,), device=device, dtype=X.dtype)
@@ -842,9 +779,9 @@ class DHMamba(nn.Module):
             # C = Z Z^T  (k x k)
             C = Z @ Z.transpose(0, 1)         # (k, k)
 
-            # regularize: add eps * trace(C) to diagonal (标准做法)
+            # regularize: add eps * trace(C) to diagonal
             traceC = torch.trace(C)
-            # 若 traceC == 0（所有邻居与中心相同）也要加一个小值
+            # add a small value if traceC == 0 (all neighbors are the same as center)
             reg = reg_eps * (traceC if traceC > 0 else 1.0) + 1e-6
             C = C + eye_k * reg
 
@@ -852,17 +789,17 @@ class DHMamba(nn.Module):
             try:
                 w = torch.linalg.solve(C, ones_k)    # (k,)
             except RuntimeError:
-                # 万一奇异，用伪逆回退
+                # if singular, use pseudo-inverse fallback
                 w = torch.matmul(torch.linalg.pinv(C), ones_k)
 
             s = w.sum()
             if s.abs() < 1e-12:
-                # 如果求解出全零（极端情况），退化到均匀权重
+                # if all-zero solution (extreme case), degenerate to uniform weights
                 w = torch.ones_like(w) / k
             else:
                 w = w / s
 
-            # 填入 weights 的第 i 列（neighbors 行）
+            # fill in the i-th column of weights (neighbors rows)
             weights[neighbors, i] = w
 
         return weights  # torch.Tensor, shape (n_nodes, n_nodes)
@@ -871,10 +808,9 @@ class DHMamba(nn.Module):
     def forward(self, pts):
         B, N, C = pts.shape
         # divide the point cloud in the same form. This is important
-        neighborhood, center = self.group_divider(pts)    # neighborhood: [B, G, M, 3] (G: num_group=128, M: group_size=32)
+        neighborhood, center = self.group_divider(pts)    # neighborhood: [B, G, M, 3] 
                                                         # center: [B, G, 3]
         group_input_tokens = self.encoder(neighborhood)  # [B, G, encoder_dims=384]
-
         pos = self.pos_embed(center) # [B, G, trans_dim=384]
 
         # hypergraph serailization
@@ -884,13 +820,12 @@ class DHMamba(nn.Module):
         for j in range(B):
             Xj = X[j, :, :]
             dist = torch.cdist(Xj, Xj, p=2)  # [N, N]
-            # 3种超图构建方式
+            # 3 types of hyperedges
             knn = self.KNN(Xj, n_neighbors, dist=dist)
             l1 = self.l1_representation(Xj, n_neighbors, dist=dist)
             sim = self.similarity(Xj, n_neighbors)
 
             G = self.hyperG(knn, l1, sim, self.W)
-
             H.append(G.unsqueeze(0))
 
         H = torch.cat(H, dim=0) # [B, 3G, 3G]

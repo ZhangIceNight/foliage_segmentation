@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# 用法:
-#   ./evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 5
-#   ./evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 1
-# bash scripts/evaluate.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --fold 1 --resume path/to/ckpt.ckpt
-# bash scripts/evaluate.sh --config-name ForestSemantic_Difficult_dhmamba_mse_lr2e-4_bs16 --fold 1 --resume 
+# Usage examples:
+# bash scripts/evaluate.sh --config-name ${Dataset_type}_${Model_type}_lr1e-3_bs32 --fold 5
+
+
+
 CONFIG_NAME="default"
 RESUME=""
 FOLD_NUM=""
@@ -21,7 +21,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# 构建 Hydra 参数
+# construct Hydra arguments
 HYDRA_ARGS=""
 [ -n "$RESUME" ] && HYDRA_ARGS+=" model.resume=$RESUME"
 

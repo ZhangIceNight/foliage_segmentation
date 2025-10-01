@@ -13,9 +13,9 @@ except ImportError:
     PlyData = None
 
 def read_single_las(file_path):
-    """读取单个 LAS 文件为 Open3D 点云对象"""
+    """read single las to Open3d point cloud"""
     if not os.path.exists(file_path):
-        print(f"❌ 文件未找到：{file_path}")
+        print(f"File not found: {file_path}")
         return None
     try:
         las = laspy.read(file_path)
@@ -24,23 +24,23 @@ def read_single_las(file_path):
         pcd.points = o3d.utility.Vector3dVector(xyz)
         return pcd
     except Exception as e:
-        print(f"⚠️ 读取失败 {file_path}：{e}")
+        print(f"Read failed: {file_path}: {e}")
         return None
 
 
 def split_and_save_tiles(file_path, output_dir, tile_size=1.0, min_points=100):
     """
-    将点云按 tile_size 网格切割并保存为 .npy
+    split point cloud into tiles and save as .npy
 
-    支持输入格式：`.las/.laz`, `.npy`, `.ply`, `.txt`
-    - 对于 `.npy`，将读取前三列作为坐标（如果超过3列会截断为3列）
-    - 对于 `.ply/.txt/.las`，自动读取 x,y,z
+    Supported input formats: `.las/.laz`, `.npy`, `.ply`, `.txt`
+    - For `.npy`, the first three columns are read as coordinates (if more than 3 columns, truncated to 3)
+    - For `.ply/.txt/.las`, x,y,z are automatically read
     """
     os.makedirs(output_dir, exist_ok=True)
     try:
         xyz, _, _ = _load_points(file_path)
     except Exception as e:
-        print(f"❌ 无法读取点云文件 {file_path}: {e}")
+        print(f"Read failed: {file_path}: {e}")
         return
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
@@ -49,7 +49,7 @@ def split_and_save_tiles(file_path, output_dir, tile_size=1.0, min_points=100):
         j = int((point[1] - min_y) // tile_size)
         key = (i, j)
         tiles.setdefault(key, []).append(point)
-    print(f"✅ 切割完成，共生成 {len(tiles)} 个格子")
+    print(f"Split completed, generated {len(tiles)} tiles")
     count = 0
     for key, points in tiles.items():
         if len(points) < min_points:
@@ -58,35 +58,35 @@ def split_and_save_tiles(file_path, output_dir, tile_size=1.0, min_points=100):
         out_path = os.path.join(output_dir, f"tile_{key[0]}_{key[1]}.npy")
         np.save(out_path, points)
         count += 1
-    print(f"✅ 有效 tile 保存完成，共保存 {count} 个")
+    print(f"Valid tiles saved, total {count} tiles")
 
 
 def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_points=100):
     """
-    按 tile_size 对大场景点云切割，并同步切割标签，保存为 `.npz` 文件。
+    Split point cloud into tiles and save labels as well, in `.npz` format.
 
-    支持输入格式：`.las/.laz`, `.npy`, `.ply`
-    - `.las/.laz`: 使用 classification 作为标签
-    - `.npy`: 若数组列数>=4，默认最后一列为标签；前三列为 x,y,z
-    - `.ply`: 自动检测顶点属性中的 label/class/classification 等字段作为标签
+    Supported input formats: `.las/.laz`, `.npy`, `.ply`
+    - `.las/.laz`: Use classification as labels
+    - `.npy`: If array has >=4 columns, last column is used as label; first three columns are x,y,z
+    - `.ply`: Automatically detect label/class/classification fields in vertex attributes as labels
 
-    :param file_path: str, 点云文件路径
-    :param output_dir: str, 输出目录
-    :param tile_size: float, 网格大小（单位：米）
-    :param min_points: int, 小于该点数的 tile 不保存
+    :param file_path: str, point cloud file path
+    :param output_dir: str, output directory
+    :param tile_size: float, tile size (in meters)
+    :param min_points: int, tiles with fewer points than this will not be saved
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Step 1: 读取坐标和标签（通用）
+    # Step 1: Read coordinates and labels (generic)
     xyz, labels = _load_points_and_labels(file_path)
     if labels is None:
-        raise ValueError("该文件未包含可用标签，无法执行带标签切块。请提供含标签的 .las/.laz、含标签列的 .npy 或带 label 属性的 .ply。")
-    assert xyz.shape[0] == labels.shape[0], "标签数与点数不一致"
+        raise ValueError("This file does not contain usable labels and cannot perform labeled tiling. Please provide a .las/.laz with labels, a .npy with label columns, or a .ply with label attributes.")
+    assert xyz.shape[0] == labels.shape[0], "Number of labels does not match number of points"
 
-    # Step 2: 初始化切块
+    # Step 2: Initialize tiles
     min_x, min_y = xyz[:, 0].min(), xyz[:, 1].min()
     tiles = {}
-    print(f"应该生成格子: {((xyz[:, 0].max() - min_x) // tile_size + 1) * ((xyz[:, 1].max() - min_y) // tile_size + 1)}")
+    print(f"Expected number of tiles: {((xyz[:, 0].max() - min_x) // tile_size + 1) * ((xyz[:, 1].max() - min_y) // tile_size + 1)}")
     for i, _ in tqdm(enumerate(range(xyz.shape[0]))):
         point = xyz[i]
         label = labels[i]
@@ -100,9 +100,9 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
         tiles[key]["xyz"].append(point)
         tiles[key]["label"].append(label)
 
-    # Step 3: 保存每个 tile（包含标签）
-    print(f"✅ 切割完成，共生成 {len(tiles)} 个格子")
-    print("正在保存每个 tile...")
+    # Step 3: Save each tile (including labels)
+    print(f"Split completed, generated {len(tiles)} tiles")
+    print("Saving each tile...")
     count = 0
     all_point_count = xyz.shape[0]
     unadded_point_count = 0
@@ -110,7 +110,7 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
     for key, tile_data in tiles.items():
         if len(tile_data["xyz"]) < min_points:
             unadded_point_count += len(tile_data["xyz"])
-            print(f"❌ Tile {key} 点数不足,只有: {len(tile_data['xyz'])}，已跳过")
+            print(f"❌ Tile {key} has insufficient points, only: {len(tile_data['xyz'])}, skipped")
             continue
         added_point_count += len(tile_data["xyz"])
         xyz_arr = np.array(tile_data["xyz"])
@@ -119,25 +119,25 @@ def split_and_save_tiles_with_labels(file_path, output_dir, tile_size=1.0, min_p
         np.savez(out_path, xyz=xyz_arr, label=label_arr)
         count += 1
 
-    print(f"✅ 保存完成，共保存 {count} 个带标签的 tile 到 {output_dir}")
+    print(f"Save completed, total {count} labeled tiles saved to {output_dir}")
     print(f"all points: {all_point_count}, added points: {added_point_count}, unadded points: {unadded_point_count}")
 
 
 def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=False):
     """
-    遍历 npz tile 文件，重标 label，并过滤点数不足的文件
-    :param input_dir: 输入的 tiles 文件夹路径
-    :param output_dir: 输出保存路径
-    :param min_points: 最小点数，低于则丢弃该 tile
+    Traverse npz tile files, relabel, and filter out files with insufficient points
+    :param input_dir: Input tiles folder path
+    :param output_dir: Output save path
+    :param min_points: Minimum points, tiles with fewer points than this will be discarded
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # 获取所有 .npz 文件
+    # Get all .npz files
     npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz') or f.endswith('.npy')]
     total_files = len(npz_files)
     saved_files = 0
 
-    print(f"开始处理 {total_files} 个 tile 文件...")
+    print(f"Starting processing {total_files} tile files...")
 
     for filename in tqdm(npz_files, desc="Processing Tiles"):
         file_path = os.path.join(input_dir, filename)
@@ -152,17 +152,17 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
                 label = data['label'].astype(np.uint8)
 
             if relabel:
-                # 选择有效标签的点
+                # Select valid points
                 valid_mask = np.isin(label, [2, 3, 4, 5]) # ForestSemantic_Difficult
                 # valid_mask = np.isin(label, [4, 5]) # Evo
                 if not np.any(valid_mask):
-                    # 没有有效点，跳过
+                    # No valid points, skip
                     continue
 
                 xyz_valid = xyz[valid_mask]
                 label_valid = label[valid_mask]
 
-                # 标签重新映射
+                # Label remapping
                 label_valid = np.where(np.isin(label_valid, [2, 3, 4]), 1, 0) # ForestSemantic_Difficult
                 # label_valid = np.where(np.isin(label_valid, [4]), 1, 0) # Evo
                 
@@ -170,28 +170,27 @@ def filter_and_relabel_tiles(input_dir, output_dir, min_points=4096, relabel=Fal
             else:
                 xyz_valid = xyz
                 label_valid = label
-            # 判断点数是否满足
+            # Check if point count meets the requirement
             if len(xyz_valid) < min_points:
                 continue
 
-            # 保存文件
+            # Save file
             out_path = os.path.join(output_dir, filename)
             np.savez(out_path, xyz=xyz_valid, label=label_valid)
             saved_files += 1
 
         except Exception as e:
-            tqdm.write(f"处理失败: {filename}, 错误: {e}")
+            tqdm.write(f"Processing failed: {filename}, Error: {e}")
 
-    print(f"处理完成，过滤后的 tile 保存在: {output_dir}")
-    print(f"共处理 {total_files} 个 tile，保留 {saved_files} 个。")
-
+    print(f"Processing completed, filtered tiles saved to: {output_dir}")
+    print(f"Total processed {total_files} tiles, retained {saved_files}.")
 
 def farthest_point_sampling_torch(xyz, npoint, device="cuda"):
     """
-    使用 PyTorch 实现的最远点采样 (FPS)，支持 GPU 加速
-    xyz: [N, 3] 点云 (numpy array)
-    npoint: 目标点数
-    return: [npoint] 采样点索引 (numpy array)
+    Use PyTorch implementation of Farthest Point Sampling (FPS), supports GPU acceleration
+    xyz: [N, 3] points (numpy array)
+    npoint: object points
+    return: [npoint] sampled point indices (numpy array)
     """
     xyz = torch.tensor(xyz, dtype=torch.float32, device=device)
     N, _ = xyz.shape
@@ -214,7 +213,7 @@ def fps_downsample_tiles(input_dir, output_dir, target_points=16384, device="cud
 
     npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
     total_files = len(npz_files)
-    print(f"开始对 {total_files} 个 tile 进行 FPS 下采样...")
+    print(f"Starting FPS downsampling for {total_files} tile files...")
 
     for filename in tqdm(npz_files, desc="FPS Downsample"):
         file_path = os.path.join(input_dir, filename)
@@ -227,34 +226,34 @@ def fps_downsample_tiles(input_dir, output_dir, target_points=16384, device="cud
             num_points = len(xyz)
 
             if num_points <= target_points:
-                # 点数不足，不采样，直接保留
+                # Not enough points, keep original
                 out_path = os.path.join(output_dir, filename)
                 np.savez(out_path, xyz=xyz, label=label)
                 continue
 
-            # FPS 下采样（GPU 优先）
+            # FPS downsampling (GPU preferred)
             idxs = farthest_point_sampling_torch(xyz, target_points, device=device)
 
-            # 采样点和标签
+            # Sampled points and labels
             xyz_sampled = xyz[idxs]
             label_sampled = label[idxs]
 
-            # 保存
+            # Save
             out_path = os.path.join(output_dir, filename)
             np.savez(out_path, xyz=xyz_sampled, label=label_sampled)
 
         except Exception as e:
-            tqdm.write(f"下采样失败: {filename}, 错误: {e}")
+            tqdm.write(f"Downsampling failed: {filename}, Error: {e}")
 
-    print(f"FPS 下采样完成，结果保存至: {output_dir}")
+    print(f"FPS downsampling completed, results saved to: {output_dir}")
 
 
 def _load_points(file_path):
-    """内部函数：读取单个点云文件"""
+    """Internal function: Read a single point cloud file"""
     ext = os.path.splitext(file_path)[-1].lower()
     if ext in [".las", ".laz"]:
         if laspy is None:
-            raise ImportError("请先安装 laspy: pip install laspy")
+            raise ImportError("Please install laspy first: pip install laspy")
         las = laspy.read(file_path)
         points = np.vstack((las.x, las.y, las.z)).T
         scale, offset = las.header.scales, las.header.offsets
@@ -262,21 +261,21 @@ def _load_points(file_path):
         with open(file_path, 'r') as f:
             first_line = f.readline()
         
-        # 判断首行是否包含非数字字符（简单判断）
+        # Determine whether the first line contains non-numeric characters (simple check)
         has_header = any(c.isalpha() for c in first_line)
         
-        # 根据是否有标题行决定是否跳过首行
+        # Decide whether to skip the first row based on the presence of a header row.
         skiprows = 1 if has_header else 0
         try:
-            # 先尝试空格/Tab
+            # First try space/Tab
             points = np.loadtxt(file_path, delimiter=None, usecols=(0, 1, 2), skiprows=skiprows)
         except ValueError:
-            # 如果失败，尝试逗号分隔
+            # If it fails, try comma separation
             points = np.loadtxt(file_path, delimiter=",", usecols=(0, 1, 2), skiprows=skiprows)
         scale, offset = None, None
     elif ext == ".ply":
         if PlyData is None:
-            raise ImportError("请先安装 plyfile: pip install plyfile")
+            raise ImportError("Please install plyfile first: pip install plyfile")
         ply = PlyData.read(file_path)
         vertex = ply["vertex"]
         points = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
@@ -289,23 +288,23 @@ def _load_points(file_path):
             points = points[:, :3]
         scale, offset = None, None
     else:
-        raise ValueError(f"不支持的文件格式: {ext}")
+        raise ValueError(f"Unsupported file format: {ext}")
     return points, scale, offset
 
 
 def _load_points_and_labels(file_path):
     """
-    通用读取函数：返回 (xyz, labels)
-    支持：
-    - .las/.laz: 使用 classification 作为标签
-    - .npy: 若列数>=4，最后一列视为标签；前三列为 xyz
-    - .ply: 顶点属性中存在 label/class/classification 等字段则作为标签
-    其它格式暂不支持返回标签。
+    generic loading function: returns (xyz, labels)
+    Supports:
+    - .las/.laz: uses classification as labels
+    - .npy: if columns >= 4, the last column is treated as labels; the first three columns are xyz
+    - .ply: if vertex attributes contain label/class/classification fields, they are used as labels
+    Other formats do not support returning labels.
     """
     ext = os.path.splitext(file_path)[-1].lower()
     if ext in [".las", ".laz"]:
         if laspy is None:
-            raise ImportError("请先安装 laspy: pip install laspy")
+            raise ImportError("Please install laspy first: pip install laspy")
         las = laspy.read(file_path)
         xyz = np.vstack((las.x, las.y, las.z)).T
         labels = np.asarray(las.classification, dtype=np.uint8)
@@ -313,15 +312,15 @@ def _load_points_and_labels(file_path):
     elif ext == ".npy":
         arr = np.load(file_path)
         if arr.ndim == 1:
-            raise ValueError(".npy 需要为二维数组 [N, C]")
+            raise ValueError(".npy requires a 2D array [N, C]")
         if arr.shape[1] < 3:
-            raise ValueError(".npy 至少需要3列表示 xyz")
+            raise ValueError(".npy requires at least 3 columns to represent xyz")
         xyz = arr[:, :3]
         labels = arr[:, -1].astype(np.int32) if arr.shape[1] >= 4 else None
         return xyz, labels
     elif ext == ".ply":
         if PlyData is None:
-            raise ImportError("请先安装 plyfile: pip install plyfile")
+            raise ImportError("Please install plyfile first: pip install plyfile")
         ply = PlyData.read(file_path)
         vertex = ply["vertex"]
         xyz = np.vstack((vertex["x"], vertex["y"], vertex["z"])).T
@@ -329,25 +328,25 @@ def _load_points_and_labels(file_path):
         if 'gt_class' in vertex:
             labels = np.asarray(vertex['gt_class'])
         else:
-            raise ValueError("PLY 文件中未找到 'gt_class' 标签字段，无法提取标签。")
+            raise ValueError("PLY file not found 'gt_class' label field, unable to extract labels.")
         return xyz, labels
     else:
-        # 其它格式目前不支持标签
+        # Other formats do not currently support labels
         xyz, _, _ = _load_points(file_path)
         return xyz, None
 
 def check_coordinate_unit(path, verbose=True):
     """
-    检查点云文件或目录的坐标单位和点密度
-    - 单个文件: 返回单位推测
-    - 目录: 汇总所有文件，返回平均密度和总点数
+    Check the coordinate unit and point density of a point cloud file or directory.
+    - Single file: returns unit guess
+    - Directory: summarizes all files, returns average density and total points
     """
-    # 如果是目录，收集文件列表
+    # If it's a directory, collect file list
     if os.path.isdir(path):
         files = [os.path.join(path, f) for f in os.listdir(path)
                  if os.path.splitext(f)[-1].lower() in [".las", ".laz", ".txt", ".ply", ".npy"]]
         if not files:
-            raise ValueError("目录中没有可识别的点云文件")
+            raise ValueError("No recognizable point cloud files found in directory")
 
         total_points = 0
         density_list = []
@@ -381,15 +380,15 @@ def check_coordinate_unit(path, verbose=True):
             unit_guess = "millimeter"
 
         if verbose:
-            print("====== 目录统计结果 ======")
-            print(f"📊 总点数: {total_points}")
-            print(f"📏 平均密度: {avg_density:.2f} pts/m²")
-            print(f"🧠 推测单位: {unit_guess}")
+            print("====== Dir Directory Statistics ======")
+            print(f"Total Points: {total_points}")
+            print(f"Average Density: {avg_density:.2f} pts/m²")
+            print(f"Guessed Unit: {unit_guess}")
 
         return unit_guess
 
     else:
-        # 单个文件情况
+        # Single file case
         points, scale, offset = _load_points(path)
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
         dx, dy = x.max() - x.min(), y.max() - y.min()
@@ -397,14 +396,14 @@ def check_coordinate_unit(path, verbose=True):
         density = points.shape[0] / area
 
         if verbose:
-            print("📦 File Info:")
+            print("File Info:")
             if scale is not None:
                 print(f"  Scale:  {scale}")
                 print(f"  Offset: {offset}")
-            print("📏 坐标范围差值:")
+            print("Coordinate Range:")
             print(f"  x: {dx:.2f}, y: {dy:.2f}, z: {z.max()-z.min():.2f}")
-            print(f"  点数: {points.shape[0]}")
-            print(f"  density: {density:.2f} pts/m²")
+            print(f"  Points: {points.shape[0]}")
+            print(f"  Density: {density:.2f} pts/m²")
 
         unit_guess = "unknown"
         if (scale is not None and scale[0] >= 1.0) or max(dx, dy) > 10:
@@ -415,7 +414,7 @@ def check_coordinate_unit(path, verbose=True):
             unit_guess = "millimeter"
 
         if verbose:
-            print(f"🧠 推测单位: {unit_guess}")
+            print(f"Guessed Unit: {unit_guess}")
 
         return unit_guess
 
@@ -423,26 +422,26 @@ def check_coordinate_unit(path, verbose=True):
 
 def generate_kfold_splits(tile_dir, k=5, output_dir="splits_kfold", seed=42, suffix=".npz"):
     """
-    将 tile_dir 中的 tile 文件按 k 折交叉验证划分，输出 train/test 文件列表。
-    
-    :param tile_dir: str，包含所有 tile_*.npz 的目录
-    :param k: int，折数
-    :param output_dir: str，保存划分文件的目录
-    :param seed: int，随机种子
-    :param suffix: str，tile 文件后缀（默认为 .npz）
+    Split files in tile_dir into k-fold cross-validation sets, outputting train/test file lists.
+
+    :param tile_dir: str. dir that contains all tile_*.npz 
+    :param k: int, number of folds
+    :param output_dir: str, dir to save splited files
+    :param seed: int, random seed of splitting
+    :param suffix: str, tile file suffix (default: .npz)
     """
     os.makedirs(output_dir, exist_ok=True)
     tile_files = [f for f in os.listdir(tile_dir) if f.endswith(suffix)]
-    tile_files.sort()  # 保证顺序稳定
+    tile_files.sort()  # make sure the order is stable
     random.seed(seed)
     random.shuffle(tile_files)
 
     fold_size = len(tile_files) // k
     folds = [tile_files[i * fold_size:(i + 1) * fold_size] for i in range(k - 1)]
-    folds.append(tile_files[(k - 1) * fold_size:])  # 最后一折可能稍多一点
+    folds.append(tile_files[(k - 1) * fold_size:])  # the last fold may be slightly larger
 
-    print(f"🔧 总 tile 数量：{len(tile_files)}")
-    print(f"📦 每折约 {fold_size} 个 tile")
+    print(f"Total tile count: {len(tile_files)}")
+    print(f"Each fold has about {fold_size} tiles")
 
     for i in range(k):
         fold_dir = os.path.join(output_dir, f"fold_{i}")
@@ -459,25 +458,25 @@ def generate_kfold_splits(tile_dir, k=5, output_dir="splits_kfold", seed=42, suf
             for name in test_files:
                 f.write(str(Path(tile_dir) / name) + "\n")
 
-        print(f"✅ fold_{i}: 训练集 {len(train_files)}，测试集 {len(test_files)}")
+        print(f"fold_{i}: training set {len(train_files)}, testing set: {len(test_files)}")
 
 
 
 def kfold_split_dataset(input_dir, output_json, k=5, seed=42):
     """
-    对点云数据 (.npz) 做 k 折交叉验证划分
-    - 不复制文件，只生成 splits.json
-    - splits.json 格式: { "fold_0": {"train": [...], "val": [...]}, ... }
+    k-fold cross validation split for point cloud data (.npz)
+    - only generate splits.json
+    - splits.json format: { "fold_0": {"train": [...], "val": [...]}, ... }
     """
     npz_files = [f for f in os.listdir(input_dir) if f.endswith('.npz')]
-    npz_files.sort()  # 确保一致性
+    npz_files.sort()  # make sure the order is stable
 
     random.seed(seed)
     random.shuffle(npz_files)
 
     total = len(npz_files)
     fold_size = total // k
-    print(f"总文件数: {total}, 每折大小: {fold_size}")
+    print(f"Total file count: {total}, each fold size: {fold_size}")
 
     splits = {}
 
@@ -493,4 +492,4 @@ def kfold_split_dataset(input_dir, output_json, k=5, seed=42):
     with open(output_json, "w") as f:
         json.dump(splits, f, indent=4)
 
-    print(f"{k}-折交叉验证划分完成，结果保存至: {output_json}")
+    print(f"{k}-fold cross validation split completed, results saved to: {output_json}")

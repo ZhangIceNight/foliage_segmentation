@@ -24,8 +24,7 @@ model:
   trans_dim: 384
   alpha: 10.0  # chamfer距离阈值倍数
   HGNeighbors: 8
-  resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/MixedForest/dhmamba_mse/fold_0/exp_20250926_102825/checkpoints/0-36-val_mIoU0.64.ckpt"
-
+  # resume:
 
 optimizer:
   learning_rate: 0.0002

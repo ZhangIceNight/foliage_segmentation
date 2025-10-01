@@ -16,8 +16,7 @@ data:
 model:
   num_classes: 2
   HGNeighbors: 8
-  # resume: "/home/wjzhang/workspace/codes/foliage_segmentation/Results/ForestSemantic_Difficult/dhmamba/fold_0/exp_20250918_162354/checkpoints/last.ckpt"
-optimizer:
+  # resume: 
   learning_rate: 0.0002
   weight_decay: 0.00005
   max_epochs: 100

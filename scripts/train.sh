@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# ./train.sh --config-name PLU_AUT_pointnet_lr1e-3_bs32 --epochs 50 --lr 0.0001 --fold 5
+# Usage examples:
+# bash scripts/train.sh --config-name ${Dataset_type}_${Model_type}_lr1e-3_bs32 --fold 5
 
-# 默认参数
+# Default parameters
 CONFIG_NAME="default"
 BATCH_SIZE=""
 RESUME=""
@@ -10,7 +11,7 @@ EPOCHS=""
 LR=""
 DEBUG=0
 
-# 使用 getopt 风格解析命令行参数
+# parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --config-name) CONFIG_NAME="$2"; shift ;;
@@ -19,13 +20,13 @@ while [[ "$#" -gt 0 ]]; do
         --epochs) EPOCHS="$2"; shift ;;
         --lr) LR="$2"; shift ;;
         --fold) FOLD_NUM="$2"; shift ;;
-        --debug) DEBUG=1 ;;  # 如果传了 --debug 就只跑一次
+        --debug) DEBUG=1 ;;  # only run on fold 0 if --debug is passed
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
 
-# 构建 Hydra 能识别的参数
+#  construct Hydra arguments
 HYDRA_ARGS=""
 [ -n "$BATCH_SIZE" ] && HYDRA_ARGS+=" data.batch_size=$BATCH_SIZE"
 [ -n "$RESUME" ] && HYDRA_ARGS+=" model.resume=$RESUME"

@@ -89,16 +89,16 @@ pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointn
 pip install causal-conv1d==1.1.1
 pip install mamba-ssm==1.1.1
 ```
-### Training
+### Train
+
+
+```bash
+bash scripts/train.sh --config-name Larch_dhmamba_lr2e-4_bs16 --fold 5
+```
+
+### Evaluation
 #### pretrain.pth could be download [here](https://pan.baidu.com/s/1EPuKfV9J_bKp1KPqpOt62w?pwd=stjh)
 
 ```bash
-cd scripts/train_scripts/
-bash ./train_script_{$DATASET_NAME}.sh
-```
-
-### Testing
-```bash
-cd scripts/train_scripts/
-bash ./train_script_{$DATASET_NAME}.sh
+bash scripts/evaluate.sh --config-name Larch_dhmamba_lr2e-4_bs16 --fold 5
 ```

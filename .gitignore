@@ -1,13 +1,4 @@
-# 已有的配置
-/vis_ForestSemantic/datas
-/vis_ForestSemantic/data_fs
-/vis_ForestSemantic/data_mix
-/vis_ForestSemantic/data_evo
-# Wandb相关
-wandb/
-*.wandb
-
-# 模型检查点和日志
+# model checkpoints and logs
 log/
 checkpoints/
 *.pth
@@ -16,7 +7,7 @@ checkpoints/
 
 
 
-# 数据文件
+# link and symbolic link
 */**/@*
 */**/*.lnk
 */**/*.sym
@@ -53,13 +44,13 @@ wheels/
 .installed.cfg
 *.egg
 
-# IDE配置
+# IDE and editor files
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# 系统文件
+# System files
 .DS_Store
 .DS_Store?
 ._*
@@ -68,10 +59,10 @@ wheels/
 ehthumbs.db
 Thumbs.db
 
-# 可视化输出
+# visual output
 visual/
 *.jpg
 *.jpeg
 
-# 忽略本地批处理脚本
+# ignore local batch scripts
 qp.bat

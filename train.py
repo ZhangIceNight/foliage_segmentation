@@ -26,12 +26,12 @@ def train(config: DictConfig):
         fold_idx=fold
     )
     
-    # 初始化 logger
+    # initialize logger
     log_file = os.path.join(log_dir, "training.log")
     logger = setup_logger(log_file)
     logger.info(f"===== Starting Fold {fold} =====")
 
-    # 保存当前 config 到实验目录
+    # save current config to experiment directory
     OmegaConf.save(config, os.path.join(exp_dir, "config.yaml"))
     logger.info(OmegaConf.to_yaml(config))
 
@@ -43,13 +43,10 @@ def train(config: DictConfig):
     )
     comet_logger.experiment.add_tag(f"dataset_{config.data.dataset_type}")
     comet_logger.experiment.add_tag(f"fold_{fold}")
-    # if config.model.get("alpha"):
-    #     comet_logger.experiment.add_tag(f"alpha_{config.model.alpha}")
-    # if config.model.get("HGNeighbors"):
-    #     comet_logger.experiment.add_tag(f"k_{config.model.HGNeighbors}")
+    # add any other relevant tags if you want
+    # if config.model.get("newTag"):
+    #     comet_logger.experiment.add_tag(f"newTag_{config.model.newTag}")
 
-    # comet_logger.experiment.add_tag(f"100")
-    
     comet_logger.experiment.log_parameters({"fold_idx": fold})
 
     # Setup Dataset Module

@@ -4,13 +4,13 @@ import torch
 
 
 def read_point_cloud(file_path):
-    """简单读取点云npz，返回xyz坐标"""
+    """read point cloud npz, return xyz coordinates"""
     data = np.load(file_path)
     point_cloud = data["xyz"].astype(np.float32)
     return point_cloud
 
 def downsample(points, max_points=4096):
-    """随机下采样到 max_points"""
+    """Randomly downsample to max_points"""
     N = points.shape[0]
     if N <= max_points:
         return points
@@ -18,7 +18,7 @@ def downsample(points, max_points=4096):
     return points[idx]
 
 def normalize(points):
-    """归一化到中心在原点，坐标[-1,1]范围"""
+    """Normalize to center at origin, coordinates in [-1,1] range"""
     centroid = points.mean(axis=0)
     points = points - centroid
     scale = np.max(np.linalg.norm(points, axis=1))
@@ -26,7 +26,7 @@ def normalize(points):
     return points
 
 def avg_distance_volume(points):
-    """体积估算的平均点间距"""
+    """Volume-based average point distance estimation"""
     if points.shape[0] < 4:
         return 0.0
     min_xyz = points.min(axis=0)
@@ -36,7 +36,7 @@ def avg_distance_volume(points):
     return avg_dist
 
 def avg_distance_chamfer(points):
-    """Chamfer 最近邻平均距离（每点1个邻居）"""
+    """Chamfer nearest neighbor average distance (1 neighbor per point)"""
     if points.shape[0] < 2:
         return 0.0
     pts = torch.tensor(points, dtype=torch.float32)

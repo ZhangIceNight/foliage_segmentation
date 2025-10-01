@@ -19,25 +19,25 @@ class LoggerWriter:
 
 
 def setup_logger(log_file='training.log'):
-    logging.shutdown()  # 清理旧的 handlers
-    logging.getLogger().handlers.clear()  # 清除缓存中的 handlers
-    # 创建目录
+    logging.shutdown()  # clean old handlers
+    logging.getLogger().handlers.clear()  # clean cached handlers
+    # create directory
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
  
-    # 创建 logger
+    # create logger
     logger = logging.getLogger('PointCloudTraining')
     logger.setLevel(logging.INFO)
  
-    # 避免重复添加 handler
+    # avoid repeatly add handler
     if not logger.handlers:
-        # 文件 handler：记录到日志文件
+        # file handler：log to file
         file_handler = logging.FileHandler(log_file, mode='w')
         file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
- 
-        # 终端 handler：输出到 stderr（这样 lightning 的进度条不会受到影响）
-        console_handler = logging.StreamHandler(sys.stderr)  
+
+        # terminal handler：log to stderr (so that lightning's progress bar is not affected)
+        console_handler = logging.StreamHandler(sys.stderr)
         console_formatter = logging.Formatter('%(levelname)s: %(message)s')
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
@@ -49,12 +49,12 @@ def setup_logger(log_file='training.log'):
 
 
 def create_experiment_dir(root_dir="Results", dataset_type=None, model_dir=None, fold_idx=0):
-    # 创建时间戳目录
+    # create timestamp directory
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     
     exp_dir = os.path.join(root_dir, dataset_type, model_dir, f"fold_{fold_idx}", f"exp_{timestamp}")
 
-    # 创建子目录
+    # create subdirectories
     ckpt_dir = os.path.join(exp_dir, "checkpoints")
     comet_dir = os.path.join(exp_dir, "comet_logs")
     log_dir = os.path.join(exp_dir, "logs")

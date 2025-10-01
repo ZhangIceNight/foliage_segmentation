@@ -9,14 +9,14 @@ from scipy.spatial import cKDTree
 def farthest_point_sampling(points, m=128):
     """
     points: (N, 3)
-    m: 采样点数
-    return: (m, 3) 采样点
+    m: number of sampled points
+    return: (m, 3) sampled points
     """
     N = points.shape[0]
     sampled_idx = np.zeros(m, dtype=np.int64)
     distances = np.full(N, np.inf)
 
-    # 随机选一个初始点
+    # select a initial point
     sampled_idx[0] = np.random.randint(0, N)
     farthest_point = points[sampled_idx[0]]
 
@@ -31,8 +31,8 @@ def farthest_point_sampling(points, m=128):
 def compute_volume_distance(points, radius=0.1):
     """
     points: (N, 3)
-    radius: 搜索半径
-    return: (N,) 每个点的 volume distance
+    radius: search radius
+    return: (N,) each point's volume distance
     """
     tree = cKDTree(points)
     counts = np.array([len(tree.query_ball_point(p, r=radius)) for p in points])
@@ -43,14 +43,14 @@ def compute_volume_distance(points, radius=0.1):
 def compute_chamfer_distance(points, radius=0.1):
     """
     points: (N, 3)
-    radius: 搜索半径
-    return: (N,) 每个点的 chamfer distance
+    radius: search radius
+    return: (N,) each point's chamfer distance
     """
     tree = cKDTree(points)
     chamfer = []
     for i, p in enumerate(points):
         idx = tree.query_ball_point(p, r=radius)
-        idx = [j for j in idx if j != i]  # 去掉自己
+        idx = [j for j in idx if j != i]  # remove self
         if len(idx) == 0:
             chamfer.append(0.0)
         else:
@@ -65,7 +65,7 @@ def analyze_pointcloud(points, file_path, save_dir, m=128, radius=0.1):
     sampled_points = farthest_point_sampling(points, m=m)
     save_dir = save_dir + '/' + file_path.split("/")[-1].split(".")[0] + '/'
     os.makedirs(save_dir, exist_ok=True)
-    # 计算两个距离
+    # compute two distance 
     vd = compute_volume_distance(sampled_points, radius=radius)
     cd = compute_chamfer_distance(sampled_points, radius=radius)
 
@@ -79,7 +79,7 @@ def analyze_pointcloud(points, file_path, save_dir, m=128, radius=0.1):
             "max": float(np.max(arr))
         }
 
-        # 可视化分布
+        # Visualize distribution
         plt.figure(figsize=(10,4))
 
         plt.subplot(1,2,1)
@@ -94,7 +94,7 @@ def analyze_pointcloud(points, file_path, save_dir, m=128, radius=0.1):
         save_path = os.path.join(save_dir, f"{fname}_{name}.png")
         plt.savefig(save_path, dpi=200)
         plt.close()
-    # ---- 可视化 FPS 采样点 vs 全部点 ----
+    # ---- Visualize FPS sampling points vs full cloud ----
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot(111, projection="3d")
     ax.scatter(points[:,0], points[:,1], points[:,2], s=1, c="lightgray", alpha=0.5)
@@ -110,7 +110,7 @@ def analyze_pointcloud(points, file_path, save_dir, m=128, radius=0.1):
     return stats
 
 def normalize(points):
-    """归一化到中心在原点，坐标[-1,1]范围"""
+    """Normalize to center at origin, coordinates in [-1,1] range"""
     centroid = points.mean(axis=0)
     points = points - centroid
     scale = np.max(np.linalg.norm(points, axis=1))
@@ -118,7 +118,7 @@ def normalize(points):
     return points
 
 def avg_distance_volume(points):
-    """体积估算的平均点间距"""
+    """Volume-based average point distance estimation"""
     if points.shape[0] < 4:
         return 0.0
     min_xyz = points.min(axis=0)
@@ -166,7 +166,7 @@ def analyze_directory(dir_path, save_dir):
         volume_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["volume"]["mean"]])
         chamfer_all.extend(np.load(fpath)["xyz"].astype(np.float32).shape[0] * [stats["chamfer"]["mean"]])
 
-    # 全局统计
+    # global statistics
     global_stats = {
         "volume": {
             "mean": float(np.mean(volume_all)),
@@ -193,4 +193,4 @@ if __name__ == "__main__":
         save_dir="./local_density_results_vis"
         )
 
-    print("全局统计：", global_stats)
+    print("global statistics:", global_stats)
