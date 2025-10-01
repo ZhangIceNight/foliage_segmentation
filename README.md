@@ -2,7 +2,7 @@
 ---
 
 ## Abstract
-Effective foliage-wood separation plays a crucial role in forestry applications such as Leaf Area Index (LAI) estimation and Quantitative Structure Models (QSM). Point clouds provide valuable support for this task. However, large-scale scenes, uneven density, and occlusions hinder the use of general 3D vision methods. Existing Transformer-based methods typically partition point clouds into local patches, but the high computational complexity restricts the feasible patch size, often fragmenting tree structures and causing semantic information loss. Moreover, the geometric similarity of fine-scale foliage, coupled with limited context in small patches, makes feature discrimination more difficult. These two issues severely limit the performance of existing methods on foliage segmentation tasks. To address these challenges, we propose the Dynamic Hypergraph-guided Mamba (DHMamba) model with two key innovations. First, we leverage a lightweight Mamba-based architecture whose linear complexity enables processing of larger patches, thereby expanding the receptive field and reducing erroneous segmentation of branches and leaves. Second, we introduce a dynamic hypergraph-based serialization strategy to capture higher-order topological dependencies within local regions, enhancing the model’s ability to extract discriminative features. Moreover, by designing two geometric feature descriptors—planarity and linearity, our framework further enhances the discrimination of subtle differences in canopy. Extensive experiments on individual-tree and plot-scale datasets demonstrate that DHMamba substantially advances segmentation accuracy and robustness, highlighting its strong potential for practical large-scale forest point-cloud analysis and sustainable forest-resource management.
+Effective foliage-wood separation plays a crucial role in forestry applications such as Leaf Area Index (LAI) estimation and Quantitative Structure Models (QSM). Point clouds provide valuable support for this task. However, large-scale scenes, uneven density, and occlusions hinder the use of general 3D vision methods. Existing Transformer-based methods typically partition point clouds into local patches, but the high computational complexity restricts the feasible patch size, often fragmenting tree structures and causing semantic information loss. Moreover, the geometric similarity of fine-scale foliage, coupled with limited context in small patches, makes feature discrimination more difficult. These two issues severely limit the performance of existing methods on foliage segmentation tasks. To address these challenges, we propose the Dynamic Hypergraph-guided Mamba (DHMamba) model with two key innovations. First, we leverage a lightweight Mamba-based architecture whose linear complexity enables processing of larger patches, thereby expanding the receptive field and reducing erroneous segmentation of branches and leaves. Second, we introduce a dynamic hypergraph-based serialization strategy to capture higher-order topological dependencies within local regions, enhancing the model’s ability to extract discriminative features. Moreover, by introducing prior global density and designing two geometric feature descriptors—planarity and linearity, our framework further enhances the multi-scale discrimination of subtle differences in canopy. Extensive experiments on individual-tree and plot-scale datasets demonstrate that DHMamba substantially advances segmentation accuracy and robustness, highlighting its strong potential for practical large-scale forest point-cloud analysis and sustainable forest-resource management.
 
 
 
@@ -62,7 +62,15 @@ Birch, Larch, and CST dataset is available at: [Download Link](https://datadryad
 
 Evo dataset is available at: [Download Link](https://etsin.fairdata.fi/dataset/81e2f3ad-ed88-4dd5-9f59-401d30fac7de)
 
+### Data preprocessing
 
+```python
+# To calculate global density:
+python data_utils/avg_dist_calculate.py
+
+# To preprocess the data:
+python data_utils/main.py
+```
 
 ### Environment
 This code was tested on Ubuntu 20.04, PyTorch 1.13.1 + cu117 and Python 3.9. It may work with other versions.
