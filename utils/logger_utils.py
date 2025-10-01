@@ -37,7 +37,7 @@ def setup_logger(log_file='training.log'):
         logger.addHandler(file_handler)
  
         # 终端 handler：输出到 stderr（这样 lightning 的进度条不会受到影响）
-        console_handler = logging.StreamHandler(sys.stderr)  # 👈 改成 stderr
+        console_handler = logging.StreamHandler(sys.stderr)  
         console_formatter = logging.Formatter('%(levelname)s: %(message)s')
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)

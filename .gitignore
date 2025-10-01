@@ -72,3 +72,6 @@ Thumbs.db
 visual/
 *.jpg
 *.jpeg
+
+# 忽略本地批处理脚本
+qp.bat
