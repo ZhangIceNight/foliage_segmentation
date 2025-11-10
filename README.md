@@ -1,4 +1,4 @@
-# Dynamic Hypergraph-guided Mamba for TLS Point Cloud Foliage Separation (TGRS-2025)
+# Dynamic Hypergraph-guided Mamba for TLS Point Cloud Foliage Separation (GIScience & Remote Sensing-2025)
 ---
 
 ## Abstract
